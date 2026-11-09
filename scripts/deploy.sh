@@ -87,7 +87,8 @@ print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub
   worker=$(docker inspect -f '{{.Config.Image}}' "$(docker compose --env-file "$env" ps -q worker)")
   [ "$web" = "fernway-web:$short" ] || stop "web runs $web, expected fernway-web:$short"
   [ "$worker" = "fernway-worker:$short" ] || stop "worker runs $worker, expected fernway-worker:$short"
-  code=$(curl -s -o /dev/null -w '%{http_code}' "$site/api/health")
+  # Through this box's own Nginx and certificate, pinned to this box: the check never depends on the box's DNS cache.
+  code=$(curl -s -o /dev/null -w '%{http_code}' --resolve "${site#https://}:443:127.0.0.1" "$site/api/health")
   [ "$code" = 200 ] || stop "$site/api/health answered $code"
   echo "DEPLOYED $short: $web and $worker healthy, $site/api/health 200"
 }
