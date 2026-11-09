@@ -64,6 +64,9 @@ jobs:
       POSTGRES_PASSWORD: ci0owner0only0
       FERNWAY_APP_PASSWORD: 0123456789abcdef0123456789abcdef
       REDIS_PASSWORD: fedcba9876543210fedcba9876543210
+      GHL_CLIENT_ID: ci0app0id-ci0suffix
+      GHL_CLIENT_SECRET: ci-client-secret
+      FERNWAY_TOKEN_KEY: 0000000000000000000000000000000000000000000000000000000000000001
       APP_COMMIT: ${{ github.sha }}
       COMPOSE: docker compose -f compose.yaml -f compose.ci.yaml
       PGHOST: 127.0.0.1
@@ -98,6 +101,19 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3103/)" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3103/no-such-page)" = 404
           curl -s http://127.0.0.1:3103/no-such-page | grep -q "No waybill at this address"
+
+      - name: Connect GHL refuses anything not started by a signed link, in the same browser
+        run: |
+          B=http://127.0.0.1:3103
+          test "$(curl -s -o /dev/null -w '%{redirect_url}' $B/api/connect/start)" = "https://fernway.jeromebadour.com/connected?problem=link"
+          test "$(curl -s -o /dev/null -w '%{redirect_url}' "$B/api/connect/callback?code=abc")" = "https://fernway.jeromebadour.com/connected?problem=expired"
+          curl -s "$B/connected?problem=agency" | grep -q "That was an agency"
+          # The box's setup tool makes an account and a signed link; the link sends the browser to GHL with our state.
+          $COMPOSE exec -T worker node apps/worker/dist/cli.js account "CI account" | grep -q "^account 1"
+          link=$($COMPOSE exec -T worker node apps/worker/dist/cli.js connect-link 1 | tail -1)
+          loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$B${link#https://fernway.jeromebadour.com}")
+          echo "$loc" | grep -q "^https://marketplace.gohighlevel.com/v2/oauth/chooselocation?.*&state="
+          echo "start sends the owner to GHL's chooser with a signed state"
 
       - name: The app's role reads and writes, but can't change tables
         run: |

@@ -14,12 +14,20 @@ export type GhlConnection = {
   refresh(): Promise<void>;
 };
 
+/** The connection itself can't be used until the owner reconnects (revoked, uninstalled, or refused by GHL). */
+export class ReconnectNeeded extends Error {
+  override name = "ReconnectNeeded";
+}
+
 /** What happened, sorted by what Fernway should do next. */
 export type GhlAnswer =
   | { ok: true; status: number; id: string; excerpt: string }
   | { ok: false; next: "retry" | "auth" | "hold"; status: number | null; excerpt: string };
 
+export type Pipeline = { id: string; name: string; stages: { id: string; name: string }[] };
+
 export type GhlClient = {
+  listPipelines(conn: GhlConnection): Promise<Pipeline[]>;
   upsertContact(conn: GhlConnection, contact: LeadContact, tags: string[]): Promise<GhlAnswer & { sent: object }>;
   upsertOpportunity(
     conn: GhlConnection,
@@ -46,11 +54,20 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   async function call(conn: GhlConnection, path: string, body: object, pickId: (json: unknown) => string | undefined) {
     let status: number | null = null;
     let text = "";
+    let token: string;
+    try {
+      token = await conn.accessToken();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // A connection the owner must reconnect holds the lead with that reason; anything else is worth a retry.
+      if (err instanceof ReconnectNeeded) return { ok: false as const, next: "hold" as const, status: null, excerpt: message, sent: body };
+      return { ok: false as const, next: "retry" as const, status: null, excerpt: `could not get a GHL token (${message})`, sent: body };
+    }
     try {
       const res = await doFetch(`${base}${path}`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${await conn.accessToken()}`,
+          Authorization: `Bearer ${token}`,
           Version: GHL_VERSION,
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -81,6 +98,16 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   }
 
   return {
+    async listPipelines(conn) {
+      const res = await doFetch(`${base}/opportunities/pipelines?locationId=${encodeURIComponent(conn.locationId)}`, {
+        headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`GHL answered ${res.status}: ${text.slice(0, 200)}`);
+      const json = JSON.parse(text) as { pipelines?: { id: string; name: string; stages?: { id: string; name: string }[] }[] };
+      return (json.pipelines ?? []).map((p) => ({ id: p.id, name: p.name, stages: (p.stages ?? []).map((st) => ({ id: st.id, name: st.name })) }));
+    },
     upsertContact(conn, c, tags) {
       const body = {
         locationId: conn.locationId,

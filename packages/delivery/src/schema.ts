@@ -70,3 +70,19 @@ export type LeadContact = {
   website?: string;
   message?: string;
 };
+
+export const ghlConnections = pgTable("ghl_connections", {
+  accountId: bigint("account_id", { mode: "number" }).primaryKey(),
+  locationId: text("location_id").notNull(),
+  companyId: text("company_id"),
+  userId: text("user_id"),
+  scopes: text("scopes").notNull(),
+  accessTokenEnc: text("access_token_enc").notNull(),
+  refreshTokenEnc: text("refresh_token_enc").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  status: text("status").$type<"connected" | "needs_reconnect">().notNull().default("connected"),
+  lastError: text("last_error"),
+  connectedAt: timestamp("connected_at", { withTimezone: true }).notNull().defaultNow(),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

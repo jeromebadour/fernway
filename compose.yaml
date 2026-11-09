@@ -1,6 +1,7 @@
 # Fernway on one box: Postgres 16, a migration step, Redis (the delivery queue), the web app and the worker.
 # Secrets come from an env file outside git (on the box: /srv/fernway/.env, owner fernway, mode 600):
-# POSTGRES_PASSWORD, FERNWAY_APP_PASSWORD, REDIS_PASSWORD. Hex passwords only (openssl rand -hex 32), so they sit in a
+# POSTGRES_PASSWORD, FERNWAY_APP_PASSWORD, REDIS_PASSWORD, APP_URL, GHL_CLIENT_ID, GHL_CLIENT_SECRET, FERNWAY_TOKEN_KEY.
+# Hex passwords only (openssl rand -hex 32), so they sit in a
 # URL as they are.
 # Run: docker compose --env-file /srv/fernway/.env up -d --build
 name: fernway
@@ -80,6 +81,9 @@ services:
       DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
+      GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
+      GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
+      FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
     # Only Nginx on the same box reaches it.
     ports:
       - "127.0.0.1:3103:3000"
@@ -101,6 +105,10 @@ services:
     environment:
       DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
+      GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
+      GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
+      FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
     <<: *logs
 
 volumes:
