@@ -3,7 +3,7 @@
   /* Content lives in one centred column (--wrap) whatever the screen width; only backgrounds and rules reach the edges.
      --edge is the side padding that keeps that column centred, never less than the gutter. */
   --gutter: 64px; --wrap: 1312px; --indent: 32px;
-  position: relative; min-height: min(100vh, 980px); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--paper);
+  position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--paper);
   font-family: var(--font-body);
 }
 .wb *, .wb *::before, .wb *::after { box-sizing: border-box; }
@@ -29,7 +29,7 @@
 .wb-go-lg { height: 52px; font-size: 17px; padding: 0 30px 0 22px; }
 .wb-ghost-lg { height: 52px; font-size: 17px; padding: 0 20px; border-color: rgba(190,210,232,0.22); }
 
-.wb-main { position: relative; z-index: 2; flex: 1; display: grid; grid-template-columns: minmax(0, 660px) minmax(0, 1fr); gap: 48px;
+.wb-main { position: relative; z-index: 2; flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 660px) minmax(0, 1fr); gap: 48px;
   padding: 44px max(var(--gutter), calc((100% - var(--wrap)) / 2)) 24px calc(max(var(--gutter), calc((100% - var(--wrap)) / 2)) + var(--indent)); }
 .wb-kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; color: var(--go);
   font: 600 16px/1 var(--font-label); letter-spacing: 0.22em; text-transform: uppercase; }
@@ -105,6 +105,10 @@
   border-right: 1px solid var(--line); }
 .wb-works li:last-child { border-right: 0; }
 .wb-works svg { color: var(--input); }
+
+/* The background fills the whole screen however tall it is, but the first screen's content stops growing at 980px
+   tall, so on a tall monitor the bottom strip stays with the content and the rest is background. */
+@media (min-width: 761px) { .wb-main { max-height: 850px; } }
 
 /* Bits that exist only on small screens */
 .wb-menu, .wb-thumb { display: none; }
