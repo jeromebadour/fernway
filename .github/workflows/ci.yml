@@ -105,13 +105,14 @@ jobs:
       - name: Connect GHL refuses anything not started by a signed link, in the same browser
         run: |
           B=http://127.0.0.1:3103
-          test "$(curl -s -o /dev/null -w '%{redirect_url}' $B/api/connect/start)" = "https://fernway.jeromebadour.com/connected?problem=link"
-          test "$(curl -s -o /dev/null -w '%{redirect_url}' "$B/api/connect/callback?code=abc")" = "https://fernway.jeromebadour.com/connected?problem=expired"
+          # (In CI the app's own address is http://localhost:3103, set in compose.ci.yaml.)
+          curl -s -o /dev/null -w '%{redirect_url}' $B/api/connect/start | grep -q "/connected?problem=link$"
+          curl -s -o /dev/null -w '%{redirect_url}' "$B/api/connect/callback?code=abc" | grep -q "/connected?problem=expired$"
           curl -s "$B/connected?problem=agency" | grep -q "That was an agency"
           # The box's setup tool makes an account and a signed link; the link sends the browser to GHL with our state.
           $COMPOSE exec -T worker node apps/worker/dist/cli.js account "CI account" | grep -q "^account 1"
           link=$($COMPOSE exec -T worker node apps/worker/dist/cli.js connect-link 1 | tail -1)
-          loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$B${link#https://fernway.jeromebadour.com}")
+          loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$B/api/connect/start?${link#*\?}")
           echo "$loc" | grep -q "^https://marketplace.gohighlevel.com/v2/oauth/chooselocation?.*&state="
           echo "start sends the owner to GHL's chooser with a signed state"
 
