@@ -7,7 +7,8 @@ const problems: Record<string, { title: string; text: string }> = {
   link: { title: "This connect link has expired.", text: "Connect links last 30 minutes. Make a new one and open it straight away." },
   expired: { title: "This connection attempt expired.", text: "Start again from the connect link, in the same browser, within 15 minutes." },
   declined: { title: "GHL wasn't connected.", text: "The approval in GHL was cancelled, so nothing was changed." },
-  agency: { title: "That was an agency, not a sub-account.", text: "Fernway delivers into one sub-account. Start again and pick a sub-account in GHL." },
+  agency: { title: "That was an agency, not a sub-account.", text: "The app isn't installed in any sub-account yet. Start again and install it into the sub-account Fernway should deliver to." },
+  several: { title: "The app went into several sub-accounts.", text: "Fernway delivers into one sub-account. Remove the app from the others in GHL, then start again." },
   refused: { title: "GHL didn't accept the connection.", text: "Nothing was saved. Start again from a new connect link." },
 };
 

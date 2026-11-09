@@ -18,7 +18,29 @@ const calls: { grant: string; body: Record<string, string>; json: boolean }[] = 
 let issued = 0;
 const spent = new Set<string>();
 let refuseRefresh = false;
+// Where the fake GHL says the app is installed, for an agency install; and what the swap endpoints were asked.
+let installed: { _id: string; name: string }[] = [];
+const agencyAsks: { path: string; auth: string | null; type: string | null; query: Record<string, string>; body: Record<string, string> }[] = [];
 const server = setupServer(
+  http.get(`${GHL_BASE}/oauth/installedLocations`, ({ request }) => {
+    const u = new URL(request.url);
+    agencyAsks.push({ path: u.pathname, auth: request.headers.get("authorization"), type: null, query: Object.fromEntries(u.searchParams), body: {} });
+    return HttpResponse.json({ locations: installed.map((l) => ({ ...l, address: "", isInstalled: true })), count: installed.length });
+  }),
+  http.post(`${GHL_BASE}/oauth/locationToken`, async ({ request }) => {
+    const body = Object.fromEntries(new URLSearchParams(await request.text()));
+    agencyAsks.push({ path: "/oauth/locationToken", auth: request.headers.get("authorization"), type: request.headers.get("content-type"), query: {}, body });
+    issued += 1;
+    return HttpResponse.json({
+      access_token: `access-${issued}`,
+      refresh_token: `refresh-${issued}`,
+      expires_in: 86399,
+      scope: "contacts.write contacts.readonly oauth.readonly oauth.write",
+      userType: "Location",
+      companyId: body.companyId,
+      locationId: body.locationId,
+    });
+  }),
   http.post(`${GHL_BASE}/oauth/token`, async ({ request }) => {
     const json = (request.headers.get("content-type") ?? "").includes("json");
     const body = json ? ((await request.json()) as Record<string, string>) : Object.fromEntries(new URLSearchParams(await request.text()));
@@ -36,7 +58,7 @@ const server = setupServer(
       scope: "contacts.write contacts.readonly",
       locationId: body.code === "agency-code" ? undefined : "loc_sandbox",
       companyId: "company_1",
-      userType: "Location",
+      userType: body.code === "agency-code" ? "Company" : "Location",
     });
   }),
   http.post(`${GHL_BASE}/contacts/upsert`, () => HttpResponse.json({ contact: { id: "c_1" } })),
@@ -61,6 +83,8 @@ afterAll(async () => {
 });
 beforeEach(() => {
   calls.length = 0;
+  agencyAsks.length = 0;
+  installed = [];
   refuseRefresh = false;
 });
 
@@ -92,7 +116,8 @@ describe("secrets and signatures", () => {
     expect(u.origin + u.pathname).toBe("https://marketplace.gohighlevel.com/v2/oauth/chooselocation");
     expect(u.searchParams.get("redirect_uri")).toBe(cfg.redirectUri);
     expect(u.searchParams.get("version_id")).toBe("6af24287e841246f14ab4de7");
-    expect(u.searchParams.get("scope")!.split(" ")).toHaveLength(10);
+    expect(u.searchParams.get("scope")!.split(" ")).toHaveLength(12);
+    expect(u.searchParams.get("scope")!.split(" ")).toEqual(expect.arrayContaining(["oauth.readonly", "oauth.write"]));
     expect(u.searchParams.get("state")).toBe("STATE");
   });
 });
@@ -111,11 +136,37 @@ describe("connecting and staying connected", () => {
     expect(row!.status).toBe("connected");
   });
 
-  it("refuses an agency-level connection: Fernway works per sub-account", async () => {
+  it("trades an agency install for the token of the one sub-account it went into", async () => {
     const other = createDb(database.url, 1);
-    const otherAccount = await seedAccountNamed(other, "Second account");
-    await expect(completeConnect(handle.db, cfg, "agency-code", otherAccount)).rejects.toThrow(/pick a sub-account/);
+    const otherAccount = await seedAccountNamed(other, "Agency account");
     await other.pool.end();
+    installed = [{ _id: "loc_agency", name: "Fernway" }];
+    const r = await completeConnect(handle.db, cfg, "agency-code", otherAccount);
+    expect(r.locationId).toBe("loc_agency");
+    const [ask, swap] = agencyAsks;
+    // Both calls carry the agency token; the lookup is for this app, installed only; the swap is form-encoded.
+    expect(ask).toMatchObject({ path: "/oauth/installedLocations", auth: `Bearer access-${issued - 1}` });
+    expect(ask!.query).toMatchObject({ companyId: "company_1", appId: "6af24287e841246f14ab4de7", isInstalled: "true" });
+    expect(swap).toMatchObject({ path: "/oauth/locationToken", auth: `Bearer access-${issued - 1}`, type: "application/x-www-form-urlencoded" });
+    expect(swap!.body).toEqual({ companyId: "company_1", locationId: "loc_agency" });
+    // What's kept is the sub-account's own pair, so refreshing works as for a direct install.
+    const [row] = await handle.db.select().from(ghlConnections).where(eq(ghlConnections.accountId, otherAccount));
+    expect(row!.locationId).toBe("loc_agency");
+    expect(open(key, row!.accessTokenEnc)).toBe(`access-${issued}`);
+    expect(open(key, row!.refreshTokenEnc)).toBe(`refresh-${issued}`);
+    await handle.db.delete(ghlConnections).where(eq(ghlConnections.accountId, otherAccount));
+  });
+
+  it("saves nothing when an agency install went into no sub-account, or into several", async () => {
+    const other = createDb(database.url, 1);
+    const otherAccount = await seedAccountNamed(other, "Agency account 2");
+    await other.pool.end();
+    await expect(completeConnect(handle.db, cfg, "agency-code", otherAccount)).rejects.toMatchObject({ kind: "none" });
+    installed = [{ _id: "loc_a", name: "A" }, { _id: "loc_b", name: "B" }];
+    await expect(completeConnect(handle.db, cfg, "agency-code", otherAccount)).rejects.toMatchObject({ kind: "several" });
+    expect(agencyAsks.filter((a) => a.path === "/oauth/locationToken")).toHaveLength(0);
+    const rows = await handle.db.select().from(ghlConnections).where(eq(ghlConnections.accountId, otherAccount));
+    expect(rows).toHaveLength(0);
   });
 
   it("uses the stored token while it is fresh, without asking GHL", async () => {

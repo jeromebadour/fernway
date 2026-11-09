@@ -4,10 +4,15 @@
 // POST services.leadconnectorhq.com/oauth/token, form-encoded, user_type Location. (The docs show JSON for the code
 // exchange; the real API refuses it with "content must be application/x-www-form-urlencoded", seen 2026-11-10.)
 // Access tokens last about 24 h; a refresh token works once and comes back new each time.
+// An agency can install the app for its sub-accounts (GHL forces "bulk install" on for private apps). Then the code
+// swap answers with an agency (Company) token, and Fernway trades it for the sub-account's own token: it asks GHL
+// where the app is installed (GET /oauth/installedLocations) and swaps (POST /oauth/locationToken). Both need the
+// oauth.readonly and oauth.write scopes. The sub-account token comes with its own refresh token, so from there on the
+// connection is the same as a direct sub-account install.
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "./db.js";
 import { open, seal, signValue, verifyValue } from "./crypto.js";
-import { GHL_API, ReconnectNeeded, type GhlConnection } from "./ghl.js";
+import { GHL_API, GHL_VERSION, ReconnectNeeded, type GhlConnection } from "./ghl.js";
 import { ghlConnections } from "./schema.js";
 
 export const SCOPES = [
@@ -21,6 +26,8 @@ export const SCOPES = [
   "locations/customFields.readonly",
   "locations.readonly",
   "workflows.readonly",
+  "oauth.readonly",
+  "oauth.write",
 ] as const;
 
 export type OAuthConfig = {
@@ -72,36 +79,68 @@ type TokenAnswer = {
   userType?: string;
 };
 
+/** kind says what the owner must do differently: install the app in a sub-account, or in just one. */
 export class OAuthError extends Error {
-  constructor(message: string, readonly status: number | null) {
+  constructor(message: string, readonly status: number | null, readonly kind: "none" | "several" | null = null) {
     super(message);
   }
 }
 
-async function tokenCall(cfg: OAuthConfig, body: Record<string, string>, form: boolean): Promise<TokenAnswer> {
-  const url = `${(cfg.apiBase ?? GHL_API).replace(/\/$/, "")}/oauth/token`;
+async function ghlCall<T>(cfg: OAuthConfig, path: string, init: RequestInit): Promise<T> {
+  const url = `${(cfg.apiBase ?? GHL_API).replace(/\/$/, "")}${path}`;
   const doFetch = cfg.fetch ?? fetch;
   let res: Response;
   try {
-    res = await doFetch(url, {
-      method: "POST",
-      headers: { Accept: "application/json", "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" },
-      body: form ? new URLSearchParams(body).toString() : JSON.stringify(body),
-      signal: AbortSignal.timeout(15_000),
-    });
+    res = await doFetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
   } catch (err) {
     throw new OAuthError(`could not reach GHL (${err instanceof Error ? err.message : String(err)})`, null);
   }
   const text = await res.text();
-  if (!res.ok) throw new OAuthError(`GHL answered ${res.status}: ${text.slice(0, 200)}`, res.status);
-  const json = JSON.parse(text) as TokenAnswer;
-  if (!json.access_token || !json.refresh_token || !json.expires_in) throw new OAuthError("GHL's answer had no tokens", res.status);
-  return json;
+  if (!res.ok) throw new OAuthError(`GHL answered ${res.status} on ${path.split("?")[0]}: ${text.slice(0, 200)}`, res.status);
+  return JSON.parse(text) as T;
+}
+
+function checkTokens(t: TokenAnswer): TokenAnswer {
+  if (!t.access_token || !t.refresh_token || !t.expires_in) throw new OAuthError("GHL's answer had no tokens", null);
+  return t;
+}
+
+async function tokenCall(cfg: OAuthConfig, body: Record<string, string>, form: boolean): Promise<TokenAnswer> {
+  return checkTokens(
+    await ghlCall<TokenAnswer>(cfg, "/oauth/token", {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" },
+      body: form ? new URLSearchParams(body).toString() : JSON.stringify(body),
+    }),
+  );
+}
+
+/** Agency token to sub-account token: the one sub-account the app is installed in. */
+async function locationFromAgency(cfg: OAuthConfig, agency: TokenAnswer): Promise<TokenAnswer> {
+  if (!agency.companyId) throw new OAuthError("GHL's agency answer had no company id", null);
+  const auth = { Authorization: `Bearer ${agency.access_token}`, Version: GHL_VERSION, Accept: "application/json" };
+  const q = new URLSearchParams({ companyId: agency.companyId, appId: cfg.clientId.split("-")[0]!, isInstalled: "true", limit: "100" });
+  const found = await ghlCall<{ locations?: { _id: string; name: string }[] }>(cfg, `/oauth/installedLocations?${q}`, { method: "GET", headers: auth });
+  const locations = found.locations ?? [];
+  if (locations.length === 0) throw new OAuthError("GHL connected an agency, not a sub-account: no sub-account has the app installed", null, "none");
+  // One Fernway account delivers into one sub-account. Guessing among several would send leads to the wrong place.
+  if (locations.length > 1) {
+    throw new OAuthError(`GHL installed the app in ${locations.length} sub-accounts: install it in one sub-account only`, null, "several");
+  }
+  const t = checkTokens(
+    await ghlCall<TokenAnswer>(cfg, "/oauth/locationToken", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ companyId: agency.companyId, locationId: locations[0]!._id }).toString(),
+    }),
+  );
+  if (t.locationId !== locations[0]!._id) throw new OAuthError("GHL's sub-account token was for another sub-account", null);
+  return t;
 }
 
 /** The callback: swaps GHL's one-time code for tokens and saves the connection for the account in the state. */
 export async function completeConnect(db: Db, cfg: OAuthConfig, code: string, accountId: number) {
-  const t = await tokenCall(
+  let t = await tokenCall(
     cfg,
     {
       client_id: cfg.clientId,
@@ -113,10 +152,10 @@ export async function completeConnect(db: Db, cfg: OAuthConfig, code: string, ac
     },
     true,
   );
-  if (!t.locationId) throw new OAuthError("GHL connected an agency, not a sub-account: pick a sub-account", null);
+  if (!t.locationId) t = await locationFromAgency(cfg, t);
   const values = {
     accountId,
-    locationId: t.locationId,
+    locationId: t.locationId!,
     companyId: t.companyId ?? null,
     userId: t.userId ?? null,
     scopes: t.scope ?? SCOPES.join(" "),
@@ -133,7 +172,7 @@ export async function completeConnect(db: Db, cfg: OAuthConfig, code: string, ac
       target: ghlConnections.accountId,
       set: { ...values, connectedAt: sql`now()`, refreshedAt: null, updatedAt: sql`now()` },
     });
-  return { locationId: t.locationId, scopes: values.scopes.split(" ").filter(Boolean) };
+  return { locationId: t.locationId!, scopes: values.scopes.split(" ").filter(Boolean) };
 }
 
 /**

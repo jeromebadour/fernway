@@ -26,8 +26,8 @@ export async function GET(request: Request) {
     const r = await completeConnect(db, cfg, code, state.accountId);
     return done(`location=${encodeURIComponent(r.locationId)}&scopes=${r.scopes.length}`);
   } catch (err) {
-    const agency = err instanceof OAuthError && err.message.includes("sub-account");
+    const kind = err instanceof OAuthError ? err.kind : null;
     console.error(`connect: ${err instanceof Error ? err.message : String(err)}`);
-    return done(agency ? "problem=agency" : "problem=refused");
+    return done(kind === "none" ? "problem=agency" : kind === "several" ? "problem=several" : "problem=refused");
   }
 }

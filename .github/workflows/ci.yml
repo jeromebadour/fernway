@@ -109,6 +109,7 @@ jobs:
           curl -s -o /dev/null -w '%{redirect_url}' $B/api/connect/start | grep -q "/connected?problem=link$"
           curl -s -o /dev/null -w '%{redirect_url}' "$B/api/connect/callback?code=abc" | grep -q "/connected?problem=expired$"
           curl -s "$B/connected?problem=agency" | grep -q "That was an agency"
+          curl -s "$B/connected?problem=several" | grep -q "several sub-accounts"
           # The box's setup tool makes an account and a signed link; the link sends the browser to GHL with our state.
           $COMPOSE exec -T worker node apps/worker/dist/cli.js account "CI account" | grep -q "^account 1"
           link=$($COMPOSE exec -T worker node apps/worker/dist/cli.js connect-link 1 | tail -1)
