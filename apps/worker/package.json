@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fernway/core": "0.0.0",
+    "@fernway/delivery": "0.0.0",
     "ioredis": "^5.11.1"
   }
 }

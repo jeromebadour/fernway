@@ -5,6 +5,7 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
+COPY packages/delivery/package.json packages/delivery/
 COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 RUN npm ci
@@ -21,6 +22,7 @@ FROM node:22-bookworm-slim AS worker-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
+COPY packages/delivery/package.json packages/delivery/
 COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 RUN npm ci --omit=dev --workspace @fernway/worker --include-workspace-root=false
@@ -46,6 +48,8 @@ ENV APP_COMMIT=$APP_COMMIT
 COPY --from=worker-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/packages/core/package.json ./packages/core/
 COPY --from=build --chown=node:node /app/packages/core/dist ./packages/core/dist
+COPY --from=build --chown=node:node /app/packages/delivery/package.json ./packages/delivery/
+COPY --from=build --chown=node:node /app/packages/delivery/dist ./packages/delivery/dist
 COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/
 COPY --from=build --chown=node:node /app/apps/worker/dist ./apps/worker/dist
 USER node

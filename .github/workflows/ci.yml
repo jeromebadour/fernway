@@ -11,6 +11,32 @@ jobs:
   checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # The delivery engine's tests run against a real Postgres (each test file builds its own database from the real
+    # migrations) and a real Redis queue, with a fake GHL that fails on demand.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_PG_ADMIN: postgres://postgres:postgres@127.0.0.1:5432/postgres
+      TEST_REDIS_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v7
 
@@ -26,7 +52,7 @@ jobs:
           npm run typecheck
           npm run lint
 
-      - name: Unit tests
+      - name: Unit tests and the delivery engine's suites
         run: npm run test:unit
 
   container:
