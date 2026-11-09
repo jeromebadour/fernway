@@ -1,6 +1,9 @@
 /* The public landing page (world G: A Waybill's layout, B Arrivals' palette and type). Tokens: src/ui/tokens.css. */
 .wb {
-  position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--paper);
+  /* Content lives in one centred column (--wrap) whatever the screen width; only backgrounds and rules reach the edges.
+     --edge is the side padding that keeps that column centred, never less than the gutter. */
+  --gutter: 64px; --wrap: 1312px; --indent: 32px;
+  position: relative; min-height: min(100vh, 980px); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--paper);
   font-family: var(--font-body);
 }
 .wb *, .wb *::before, .wb *::after { box-sizing: border-box; }
@@ -8,7 +11,7 @@
 .wb svg { flex: none; }
 .wb-floor { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-.wb-top { position: relative; z-index: 2; height: 72px; display: flex; align-items: center; padding: 0 64px;
+.wb-top { position: relative; z-index: 2; height: 72px; display: flex; align-items: center; padding: 0 max(var(--gutter), calc((100% - var(--wrap)) / 2));
   border-bottom: 1px solid var(--line); }
 .wb-brand { display: flex; align-items: center; gap: 12px; color: var(--paper);
   font: 700 26px/1 var(--font-label); letter-spacing: 0.14em; }
@@ -26,7 +29,8 @@
 .wb-go-lg { height: 52px; font-size: 17px; padding: 0 30px 0 22px; }
 .wb-ghost-lg { height: 52px; font-size: 17px; padding: 0 20px; border-color: rgba(190,210,232,0.22); }
 
-.wb-main { position: relative; z-index: 2; flex: 1; display: grid; grid-template-columns: minmax(0, 660px) minmax(0, 1fr); gap: 48px; padding: 44px 64px 24px 96px; }
+.wb-main { position: relative; z-index: 2; flex: 1; display: grid; grid-template-columns: minmax(0, 660px) minmax(0, 1fr); gap: 48px;
+  padding: 44px max(var(--gutter), calc((100% - var(--wrap)) / 2)) 24px calc(max(var(--gutter), calc((100% - var(--wrap)) / 2)) + var(--indent)); }
 .wb-kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; color: var(--go);
   font: 600 16px/1 var(--font-label); letter-spacing: 0.22em; text-transform: uppercase; }
 .wb-dot { width: 8px; height: 8px; background: var(--go); }
@@ -94,7 +98,7 @@
 
 .wb-ticker { position: relative; z-index: 2; flex: none; height: 58px; display: flex; align-items: center;
   border-top: 1px solid var(--line); background: rgba(5,8,13,0.55); }
-.wb-ticker-tag { display: flex; align-items: center; gap: 10px; height: 100%; padding: 0 22px 0 64px; border-right: 1px solid var(--line);
+.wb-ticker-tag { display: flex; align-items: center; gap: 10px; height: 100%; padding: 0 22px 0 max(var(--gutter), calc((100% - var(--wrap)) / 2)); border-right: 1px solid var(--line);
   font: 600 15px var(--font-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--go); }
 .wb-works { display: flex; align-items: center; gap: 0; margin: 0; padding: 0 0 0 10px; list-style: none; white-space: nowrap; }
 .wb-works li { display: flex; align-items: center; gap: 9px; padding: 0 20px; font: 500 14.5px var(--font-body); color: #cfd8e3;
@@ -107,11 +111,10 @@
 
 /* Laptop widths (1366, 1536): narrower gutters, the bill keeps its size */
 @media (max-width: 1400px) {
-  .wb-top { padding: 0 40px; }
+  .wb { --gutter: 40px; --indent: 16px; }
   .wb-nav { margin-left: 36px; }
-  .wb-main { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding: 48px 40px 36px 56px; }
+  .wb-main { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding-top: 48px; padding-bottom: 36px; }
   .wb-bill { margin-right: 8px; }
-  .wb-ticker-tag { padding-left: 40px; }
   .wb-works li { padding: 0 16px; }
 }
 
