@@ -62,11 +62,11 @@ jobs:
     env:
       # Test-only values for a stack that lives for one CI run.
       POSTGRES_PASSWORD: ci0owner0only0
-      FERNWAY_APP_PASSWORD: 0123456789abcdef0123456789abcdef
-      REDIS_PASSWORD: fedcba9876543210fedcba9876543210
+      FERNWAY_APP_PASSWORD: "0123456789abcdef0123456789abcdef"
+      REDIS_PASSWORD: "fedcba9876543210fedcba9876543210"
       GHL_CLIENT_ID: ci0app0id-ci0suffix
       GHL_CLIENT_SECRET: ci-client-secret
-      FERNWAY_TOKEN_KEY: 0000000000000000000000000000000000000000000000000000000000000001
+      FERNWAY_TOKEN_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
       APP_COMMIT: ${{ github.sha }}
       COMPOSE: docker compose -f compose.yaml -f compose.ci.yaml
       PGHOST: 127.0.0.1
