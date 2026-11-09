@@ -1,0 +1,12 @@
+# Restores the newest backup into a scratch database to prove it works (ops/restore-test.sh). Installed by
+# scripts/deploy.sh.
+[Unit]
+Description=Fernway: weekly restore test of the newest backup
+After=docker.service fernway-backup.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/sites/tools/fernway/restore-test.sh
+Nice=10
+TimeoutStartSec=30min

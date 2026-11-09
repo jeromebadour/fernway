@@ -1,0 +1,11 @@
+# Every night at 03:07 UTC (06:07 in Istanbul), 20 minutes after Distill's, so the two never run together.
+# Installed and enabled by scripts/deploy.sh.
+[Unit]
+Description=Fernway: nightly database backup
+
+[Timer]
+OnCalendar=*-*-* 03:07:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+# Every Sunday at 03:37 UTC, after that night's backup (and 20 minutes after Distill's test).
+# Installed and enabled by scripts/deploy.sh.
+[Unit]
+Description=Fernway: weekly restore test
+
+[Timer]
+OnCalendar=Sun *-*-* 03:37:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

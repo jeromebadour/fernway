@@ -1,0 +1,11 @@
+# Fernway's nightly database backup (ops/backup.sh). Installed by scripts/deploy.sh.
+[Unit]
+Description=Fernway: nightly database backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/sites/tools/fernway/backup.sh
+Nice=10
+TimeoutStartSec=15min

@@ -117,6 +117,40 @@ jobs:
           echo "$loc" | grep -q "^https://marketplace.gohighlevel.com/v2/oauth/chooselocation?.*&state="
           echo "start sends the owner to GHL's chooser with a signed state"
 
+      - name: A backup is made, and it restores
+        # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
+        # scratch database next to the live one, every table compared. (Account 1 exists by now, so the dump isn't empty.)
+        run: |
+          sudo BACKUP_DIR=/tmp/fernway-backups ops/backup.sh
+          sudo BACKUP_DIR=/tmp/fernway-backups ops/restore-test.sh | tee /tmp/restore.txt
+          grep -q "RESTORE OK" /tmp/restore.txt
+          grep -Eq "^  accounts +1 +1$" /tmp/restore.txt
+          sudo test "$(sudo stat -c %a /tmp/fernway-backups)" = 700
+          test "$(psql -Atc "select count(*) from pg_database where datname = 'fernway_restore_test'")" = 0
+          # A dump cut in half must fail the restore test, not pass it.
+          f=$(sudo sh -c 'ls /tmp/fernway-backups/fernway-*.dump | tail -1')
+          sudo sh -c "head -c \$(( \$(stat -c %s $f) / 2 )) $f > $f.half && mv $f.half $f"
+          if sudo BACKUP_DIR=/tmp/fernway-backups ops/restore-test.sh; then echo "a broken dump passed the restore test"; exit 1; fi
+          sudo grep -q '"ok": false' /tmp/fernway-backups/restore-test.json
+
+      - name: The backup goes off the box encrypted, and that copy restores
+        # The same scripts with the off-box copy on (ops/offsite.sh), pointed at a folder instead of R2: the dump is
+        # encrypted with age before it leaves; the restore test downloads and decrypts the newest copy and restores it.
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq rclone age > /dev/null
+          sudo sh -c 'age-keygen -o /tmp/offsite-age.key 2> /dev/null'
+          off="OFFSITE_REMOTE=:local:/tmp/offsite OFFSITE_KEY=/tmp/offsite-age.key BACKUP_DIR=/tmp/fernway-backups"
+          sudo env $off ops/backup.sh | tee /tmp/offsite.txt
+          grep -q "kept off the box" /tmp/offsite.txt
+          sudo sh -c 'head -c 21 "$(ls /tmp/offsite/*.age | head -1)"' | grep -q "age-encryption.org"
+          sudo env $off ops/restore-test.sh | tee /tmp/restore-offsite.txt
+          grep -q "from off the box" /tmp/restore-offsite.txt
+          grep -q "RESTORE OK" /tmp/restore-offsite.txt
+          if sudo env OFFSITE_REMOTE=:local:/proc/nope OFFSITE_KEY=/tmp/offsite-age.key BACKUP_DIR=/tmp/fernway-backups ops/backup.sh; then
+            echo "a failed upload did not fail the backup"; exit 1
+          fi
+          sudo grep -q '"ok": false' /tmp/fernway-backups/offsite.json
+
       - name: The app's role reads and writes, but can't change tables
         run: |
           test "$(psql -Atc "select rolsuper or rolcreaterole or rolcreatedb from pg_roles where rolname = 'fernway_app'")" = f

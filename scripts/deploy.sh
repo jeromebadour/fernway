@@ -8,7 +8,7 @@
 # GitHub). Then it moves the checkout forward to that commit, builds and starts it, waits until every part is healthy
 # (database, queue, web, worker, all on this commit) and checks the public site. The build log goes to
 # /srv/fernway/deploy-logs/. The running version is only replaced once the new images have built; a failed build
-# leaves it untouched. Backups and the box's own timers join this script when real data arrives (plan step 3).
+# leaves it untouched. Last, it installs the box's tools (ops/: nightly backup, weekly restore test) and their timers.
 #
 # The whole script lives in main(), which bash reads in full before running anything: the deploy moves this very file
 # forward, and a script edited while it runs must not pick up the new lines halfway.
@@ -16,7 +16,7 @@
 main() {
   set -uo pipefail
   local box=vmi3464201 app=/srv/fernway/app env=/srv/fernway/.env logs=/srv/fernway/deploy-logs
-  local repo=jeromebadour/fernway site=https://fernway.jeromebadour.com
+  local repo=jeromebadour/fernway site=https://fernway.jeromebadour.com tools=/opt/sites/tools/fernway
 
   stop() { echo "STOPPED: $*"; exit 1; }
   as_app() { sudo -u fernway git -C "$app" "$@"; }
@@ -90,6 +90,18 @@ print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub
   # Through this box's own Nginx and certificate, pinned to this box: the check never depends on the box's DNS cache.
   code=$(curl -s -o /dev/null -w '%{http_code}' --resolve "${site#https://}:443:127.0.0.1" "$site/api/health")
   [ "$code" = 200 ] || stop "$site/api/health answered $code"
+
+  echo "== the box's tools and timers"
+  install -d -m 755 "$tools"
+  install -m 755 "$app/ops/backup.sh" "$app/ops/restore-test.sh" "$tools/" || stop "could not install the backup tools"
+  install -m 644 "$app/ops/offsite.sh" "$tools/" || stop "could not install the backup tools"
+  install -m 644 "$app"/ops/systemd/fernway-*.service "$app"/ops/systemd/fernway-*.timer /etc/systemd/system/ \
+    || stop "could not install the timers"
+  systemctl daemon-reload || stop "systemd would not reload"
+  systemctl enable --now --quiet fernway-backup.timer fernway-restore-test.timer || stop "the backup timers would not start"
+  echo "   next backup $(systemctl show fernway-backup.timer -p NextElapseUSecRealtime --value)"
+  echo "   next restore test $(systemctl show fernway-restore-test.timer -p NextElapseUSecRealtime --value)"
+
   echo "DEPLOYED $short: $web and $worker healthy, $site/api/health 200"
 }
 
