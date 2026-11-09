@@ -1,0 +1,29 @@
+/* Fernway's world (G, Kami 2026-11-09 21:51): every lead is a tracked shipment.
+   Palette from B Arrivals, type from B, layout language from A Waybill. One meaning per colour, the same everywhere.
+   The public site is navy only; the console's light theme comes with plan step 6. */
+:root {
+  /* ground and ink */
+  --bg: #0a1019;
+  --kraft: #0e1621;      /* cards */
+  --kraft-2: #131d2b;    /* raised cards, nodes */
+  --paper: #eef2f6;      /* text people read */
+  --muted: #a9b6c6;      /* quieter text, still 4.5:1 on the ground */
+  --faint: #7f8da0;      /* glyphs and hairline labels only */
+  --line: rgba(170, 196, 225, 0.14);
+
+  /* meanings */
+  --go: #5cc8b8;         /* the main action */
+  --go-ink: #04211d;     /* text on the main action */
+  --input: #7aa8e0;      /* input and arrivals */
+  --ok: #86c28f;         /* delivered, checked */
+  --re: #a5aff2;         /* re-sent */
+  --hazard: #e3b04f;     /* held, real problems only */
+
+  /* type */
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  --font-label: "Archivo Narrow", "Arial Narrow", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html { background: var(--bg); color-scheme: dark; }
+body { margin: 0; }

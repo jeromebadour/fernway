@@ -1,0 +1,17 @@
+{
+  "name": "fernway",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "npm run build -w @fernway/core && npm run build -w @fernway/worker && npm run build -w @fernway/web",
+    "typecheck": "npm run build -w @fernway/core && npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test:unit": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.5",
+    "typescript": "^5.9.3"
+  }
+}

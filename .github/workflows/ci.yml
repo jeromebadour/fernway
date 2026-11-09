@@ -1,0 +1,103 @@
+name: CI
+
+# Every push and pull request. First the code: types, lint, unit tests. Then what ships: both real images and
+# compose.yaml (Postgres, the migration step, Redis, the web app, the worker), checked as the box will run them.
+# Nothing broken reaches the server: scripts/deploy.sh refuses any commit where either job failed.
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types and lint
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  container:
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Test-only values for a stack that lives for one CI run.
+      POSTGRES_PASSWORD: ci0owner0only0
+      FERNWAY_APP_PASSWORD: 0123456789abcdef0123456789abcdef
+      REDIS_PASSWORD: fedcba9876543210fedcba9876543210
+      APP_COMMIT: ${{ github.sha }}
+      COMPOSE: docker compose -f compose.yaml -f compose.ci.yaml
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: ci0owner0only0
+      PGDATABASE: fernway
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and start the stack
+        run: |
+          $COMPOSE up -d --build
+          for i in $(seq 1 90); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && exit 0; sleep 2; done
+          echo "the stack did not become healthy"; curl -s http://127.0.0.1:3103/api/health; echo
+          $COMPOSE ps -a; $COMPOSE logs; exit 1
+
+      - name: Every part reports healthy, on this commit
+        run: |
+          out=$(curl -sf http://127.0.0.1:3103/api/health)
+          echo "$out"
+          echo "$out" | python3 -c '
+          import json, os, sys
+          h = json.load(sys.stdin)
+          assert h["ok"] and h["database"]["ok"] and h["queue"]["ok"] and h["worker"]["ok"], "a part is down"
+          assert h["commit"] == os.environ["APP_COMMIT"], "web runs another commit"
+          assert h["worker"]["commit"] == os.environ["APP_COMMIT"], "worker runs another commit"
+          print("all parts healthy on", h["commit"])'
+
+      - name: The pages answer
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3103/)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3103/no-such-page)" = 404
+          curl -s http://127.0.0.1:3103/no-such-page | grep -q "No waybill at this address"
+
+      - name: The app's role reads and writes, but can't change tables
+        run: |
+          test "$(psql -Atc "select rolsuper or rolcreaterole or rolcreatedb from pg_roles where rolname = 'fernway_app'")" = f
+          if PGUSER=fernway_app PGPASSWORD=$FERNWAY_APP_PASSWORD psql -qc "create table nope (id int)" 2>/dev/null; then
+            echo "fernway_app could create a table"; exit 1
+          fi
+
+      - name: A second deploy applies nothing twice
+        run: |
+          out=$($COMPOSE run --rm migrate)
+          echo "$out"
+          if echo "$out" | grep -q applying; then echo "a migration ran twice"; exit 1; fi
+
+      - name: Health tells the truth when the worker stops
+        run: |
+          $COMPOSE stop worker
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3103/api/health)
+            [ "$code" = 503 ] && { echo "health 503 with the worker down"; exit 0; }
+            sleep 2
+          done
+          echo "health still said ok with the worker down"; exit 1
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          $COMPOSE ps -a || true
+          $COMPOSE logs --tail 200 || true

@@ -1,0 +1,17 @@
+# dependencies and builds
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets never enter git
+.env*
+
+# misc
+.DS_Store
+*.pem
+__pycache__/
+npm-debug.log*

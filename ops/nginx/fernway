@@ -1,0 +1,10 @@
+# fernway.jeromebadour.com. Plain HTTP until certbot adds HTTPS to this file and turns this block into a redirect, as
+# it did for Distill and the root site. Installed to /etc/nginx/sites-available/ and linked from sites-enabled.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name fernway.jeromebadour.com;
+    server_tokens off;
+    default_type text/plain;
+    include snippets/fernway-app.conf;
+}

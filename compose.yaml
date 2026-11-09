@@ -1,0 +1,108 @@
+# Fernway on one box: Postgres 16, a migration step, Redis (the delivery queue), the web app and the worker.
+# Secrets come from an env file outside git (on the box: /srv/fernway/.env, owner fernway, mode 600):
+# POSTGRES_PASSWORD, FERNWAY_APP_PASSWORD, REDIS_PASSWORD. Hex passwords only (openssl rand -hex 32), so they sit in a
+# URL as they are.
+# Run: docker compose --env-file /srv/fernway/.env up -d --build
+name: fernway
+
+x-logs: &logs
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fernway
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fernway"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    <<: *logs
+
+  # Runs once per deploy and exits: new migrations, then the app role's password.
+  migrate:
+    image: postgres:16
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: fernway
+      FERNWAY_APP_PASSWORD: ${FERNWAY_APP_PASSWORD:?set FERNWAY_APP_PASSWORD}
+    volumes:
+      - ./db:/db:ro
+    entrypoint: ["sh", "/db/migrate.sh"]
+    <<: *logs
+
+  # The delivery queue. Append-only file on, so a restart never loses a queued retry. No port leaves the network.
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD}"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    <<: *logs
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        APP_COMMIT: ${APP_COMMIT:-dev}
+    image: fernway-web:${APP_COMMIT:-dev}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
+    # Only Nginx on the same box reaches it.
+    ports:
+      - "127.0.0.1:3103:3000"
+    <<: *logs
+
+  worker:
+    build:
+      context: .
+      target: worker
+      args:
+        APP_COMMIT: ${APP_COMMIT:-dev}
+    image: fernway-worker:${APP_COMMIT:-dev}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    <<: *logs
+
+volumes:
+  pgdata:
+  redisdata:
