@@ -1,7 +1,8 @@
 // Connecting a GHL sub-account the way a Marketplace app does: the owner presses Connect GHL, picks the sub-account
 // in GHL and approves; GHL sends a one-time code to /api/connect/callback; Fernway swaps it for tokens and keeps them
 // encrypted. Endpoints and fields as in GHL's OAuth docs: the install link from the app's Auth page, and
-// POST services.leadconnectorhq.com/oauth/token (JSON for the code, form-encoded for a refresh, user_type Location).
+// POST services.leadconnectorhq.com/oauth/token, form-encoded, user_type Location. (The docs show JSON for the code
+// exchange; the real API refuses it with "content must be application/x-www-form-urlencoded", seen 2026-11-10.)
 // Access tokens last about 24 h; a refresh token works once and comes back new each time.
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "./db.js";
@@ -110,7 +111,7 @@ export async function completeConnect(db: Db, cfg: OAuthConfig, code: string, ac
       user_type: "Location",
       redirect_uri: cfg.redirectUri,
     },
-    false,
+    true,
   );
   if (!t.locationId) throw new OAuthError("GHL connected an agency, not a sub-account: pick a sub-account", null);
   const values = {

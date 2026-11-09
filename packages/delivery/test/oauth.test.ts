@@ -102,7 +102,8 @@ describe("connecting and staying connected", () => {
     const r = await completeConnect(handle.db, cfg, "code-1", accountId);
     expect(r.locationId).toBe("loc_sandbox");
     const [c] = calls;
-    expect(c).toMatchObject({ grant: "authorization_code", json: true });
+    // Form-encoded: the real GHL refuses JSON here, whatever its docs say.
+    expect(c).toMatchObject({ grant: "authorization_code", json: false });
     expect(c!.body).toMatchObject({ code: "code-1", user_type: "Location", redirect_uri: cfg.redirectUri, client_id: cfg.clientId });
     const [row] = await handle.db.select().from(ghlConnections).where(eq(ghlConnections.accountId, accountId));
     expect(row!.accessTokenEnc).not.toContain("access-");
