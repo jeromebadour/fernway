@@ -234,6 +234,48 @@ jobs:
           fi
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/break-it)" = 200
 
+      - name: The API takes, tracks and refuses leads as its docs say, and the docs' key reaches only the demo
+        run: |
+          B=http://127.0.0.1:3103
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          $W route 2 demo "API demo" - api | grep -q "route demo"
+          D=$($W apikey 2 "Docs (public)" | tail -1); R=$($W apikey 1 "CI" | tail -1)
+          echo "$D" | grep -Eq '^fw_[a-z0-9]{8}_[a-z0-9]{32}$'
+          before=$(curl -s 127.0.0.1:4010/__calls | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+          post() { curl -s -o /tmp/a.json -w '%{http_code}' -H "authorization: Bearer $1" -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.60' -d "$2" $B/api/v1/leads; }
+          j() { python3 -c "import json; print(json.load(open('/tmp/a.json'))$1)"; }
+          signed() { for i in $(seq 1 20); do curl -s -H "authorization: Bearer $1" $B$2 > /tmp/a.json; [ "$(j '["lead"]["state"]')" = signed ] && return 0; sleep 1; done; cat /tmp/a.json; return 1; }
+          k=docs-$(cat /proc/sys/kernel/random/uuid)
+          lead="{\"idempotencyKey\":\"$k\",\"route\":\"demo\",\"contact\":{\"firstName\":\"Ada\",\"email\":\"ada@example.com\"}}"
+          test "$(post $D "$lead")" = 201; n=$(j '["number"]'); self=$(j '["links"]["self"]')
+          test "$(post $D "$lead")" = 200; test "$(j '["duplicate"]')" = True; test "$(j '["number"]')" = "$n"
+          signed $D $self
+          python3 -c "import json; d=json.load(open('/tmp/a.json')); assert 'consignee' not in d['lead'], d"
+          # Another account's key can't see it; no key, a wrong one, a bad lead and a chosen source are each refused.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "authorization: Bearer $R" $B$self)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST $B/api/v1/leads)" = 401
+          test "$(post ${D%????}zzzz "$lead")" = 401
+          test "$(post $D '{"idempotencyKey":"docs-bad-0001","route":"demo","contact":{"email":"nope"}}')" = 422
+          j '["problems"]' | grep -q "contact.email"
+          test "$(post $D '{"idempotencyKey":"docs-bad-0002","route":"demo","source":"form","contact":{"email":"a@b.co"}}')" = 422
+          after=$(curl -s 127.0.0.1:4010/__calls | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+          if [ "$before" != "$after" ]; then echo "the docs' key reached the fake GHL"; exit 1; fi
+          # A real account's key delivers into its GHL (here the fake one).
+          test "$(post $R "{\"idempotencyKey\":\"ci-$(cat /proc/sys/kernel/random/uuid)\",\"route\":\"trial\",\"contact\":{\"email\":\"api@example.com\"}}")" = 201
+          rself=$(j '["links"]["self"]')
+          signed $R $rself
+          curl -s 127.0.0.1:4010/__calls | python3 -c "import json,sys; d=json.load(sys.stdin)[$after:]; assert {'method':'POST','path':'/contacts/upsert'} in d, d"
+          # A revoked key stops at once.
+          $W revoke-apikey "$(echo $R | cut -d_ -f2)" | grep -q revoked
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "authorization: Bearer $R" $B$rself)" = 401
+          # The OpenAPI file and the docs pages.
+          curl -s $B/api/v1/openapi.json | python3 -c '
+          import json,sys; d=json.load(sys.stdin)
+          assert d["openapi"]=="3.1.0" and set(d["paths"])=={"/api/v1/leads","/api/v1/leads/{number}"}, d["paths"].keys()
+          assert "contact" in d["paths"]["/api/v1/leads"]["post"]["requestBody"]["content"]["application/json"]["schema"]["properties"]'
+          curl -s $B/docs | grep -q "Your first lead, in one request"
+          curl -s $B/docs/api | grep -q "idempotencyKey"
+
       - name: The plain pages answer, and the public site sets no cookies
         # Privacy promises no cookies on the public site: every public page is checked for a Set-Cookie header.
         run: |
@@ -241,7 +283,7 @@ jobs:
           curl -s $B/privacy | grep -q "How long it is kept"
           curl -s $B/terms | grep -q "What Fernway is"
           curl -s $B/about | grep -q "What is real"
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /api/slots; do
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /api/slots; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 

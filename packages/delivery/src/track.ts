@@ -30,6 +30,8 @@ export type TrackView = {
   state: string;
   pickedUpAt: string;
   route: string;
+  /** How the lead came in: "api" for a customer's own code, "form" for a website form, and so on. */
+  source: string;
   consignee: { firstName: string | null; lastName: string | null; company: string | null; email: string | null };
   holdReason: string | null;
   /** The meeting time picked on a booking route (ISO), or null. */
@@ -51,6 +53,7 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
     state: s.shipment.state,
     pickedUpAt: s.shipment.createdAt.toISOString(),
     route: s.routeLabel,
+    source: s.shipment.source,
     consignee: { firstName: c.firstName ?? null, lastName: c.lastName ?? null, company: c.companyName ?? null, email: maskEmail(c.email) },
     holdReason: readable(s.shipment.holdReason),
     meeting: s.shipment.bookingStart ? s.shipment.bookingStart.toISOString() : null,
@@ -82,4 +85,10 @@ export async function findWaybill(db: Db, accountId: number, number: string, ema
       sql`${shipments.contact}->>'email' = ${e}`,
     ));
   return s?.id ?? null;
+}
+
+/** Which account a lead belongs to (for pages that word things per account, never sent to the browser). */
+export async function shipmentAccount(db: Db, shipmentId: number): Promise<number | null> {
+  const [s] = await db.select({ accountId: shipments.accountId }).from(shipments).where(eq(shipments.id, shipmentId));
+  return s?.accountId ?? null;
 }

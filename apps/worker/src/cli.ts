@@ -10,12 +10,17 @@
 //                                                                    "calendar=<id>" anywhere makes it a booking route)
 //   send-test <account> <route> <email>         send one test lead through the real queue
 //   waybill <number>                            a shipment and every scan, e.g. "FW 26 00002"
+//   apikey <account> <label>                    make an API key; shown once, only its hash is kept
+//   apikeys <account>                           list an account's keys (prefix, label, last used, revoked)
+//   revoke-apikey <prefix>                      stop a key at once
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
 import { formatWaybill, parseWaybill } from "@fernway/core";
 import {
   accounts,
+  apiKeys,
   connectionFor,
+  createApiKey,
   createDb,
   createGhlClient,
   createQueue,
@@ -23,6 +28,7 @@ import {
   ingestLead,
   keyFrom,
   oauthConfigFromEnv,
+  revokeApiKey,
   routes,
   scans,
   seal,
@@ -54,6 +60,30 @@ try {
       const name = args.join(" ").trim() || fail("a name, e.g. account Fernway Demo");
       const [a] = await db.insert(accounts).values({ name }).returning();
       console.log(`account ${a!.id}: ${a!.name}`);
+      break;
+    }
+    case "apikey": {
+      const accountId = accountArg(args[0]);
+      const label = args.slice(1).join(" ").trim() || fail("a label, e.g. apikey 1 Website");
+      const [a] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+      if (!a) fail(`no account ${accountId}`);
+      const { key: apiKey, prefix } = await createApiKey(db, accountId, label);
+      console.log(`API key ${prefix} for "${a!.name}" (${label}). It is shown once; keep it somewhere safe:\n${apiKey}`);
+      break;
+    }
+    case "apikeys": {
+      const accountId = accountArg(args[0]);
+      const rows = await db.select().from(apiKeys).where(eq(apiKeys.accountId, accountId)).orderBy(asc(apiKeys.id));
+      if (!rows.length) console.log(`no keys for account ${accountId}`);
+      for (const r of rows) {
+        const used = r.lastUsedAt ? `last used ${r.lastUsedAt.toISOString()}` : "never used";
+        console.log(`${r.prefix}  ${r.label}  ${used}${r.revokedAt ? `  REVOKED ${r.revokedAt.toISOString()}` : ""}`);
+      }
+      break;
+    }
+    case "revoke-apikey": {
+      const prefix = /^[a-z0-9]{8}$/.test(args[0] ?? "") ? args[0]! : fail("which key? its 8-letter prefix, from `apikeys`");
+      console.log((await revokeApiKey(db, prefix)) ? `key ${prefix} revoked` : `no live key ${prefix}`);
       break;
     }
     case "connect-link": {

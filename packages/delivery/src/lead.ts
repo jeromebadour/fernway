@@ -15,22 +15,23 @@ const phone = z
 
 export const leadInput = z
   .object({
-    idempotencyKey: z.string().trim().min(8).max(200),
+    idempotencyKey: z.string().trim().min(8).max(200).describe("Your own id for this lead, 8 to 200 characters, like an order or form-entry id. Send it again and you get the same waybill back."),
     source: z.enum(sources),
-    route: z.string().regex(/^[a-z0-9-]{1,40}$/),
+    route: z.string().regex(/^[a-z0-9-]{1,40}$/).describe("Which route the lead takes: the pipeline, stage and tags it lands in. Set up per account."),
     // The time picked on a booking route (ISO with its offset), checked against the route's calendar at the door.
-    slot: z.iso.datetime({ offset: true }).optional(),
+    slot: z.iso.datetime({ offset: true }).optional().describe("Booking routes only: the meeting time, ISO 8601 with its offset, e.g. 2026-11-12T14:30:00+03:00."),
     contact: z
       .object({
-        firstName: trimmed(80).optional(),
-        lastName: trimmed(80).optional(),
-        email: z.string().trim().toLowerCase().pipe(z.email("a real email address")).optional(),
-        phone: phone.optional(),
-        companyName: trimmed(120).optional(),
-        website: trimmed(200).optional(),
-        message: trimmed(2000).optional(),
+        firstName: trimmed(80).optional().describe("Up to 80 characters."),
+        lastName: trimmed(80).optional().describe("Up to 80 characters."),
+        email: z.string().trim().toLowerCase().pipe(z.email("a real email address")).optional().describe("Email or phone is required. GHL matches the contact on it, so one person is one contact."),
+        phone: phone.optional().describe("With its country code, e.g. +1 503 555 0142. Spaces, dots and brackets are fine."),
+        companyName: trimmed(120).optional().describe("Up to 120 characters."),
+        website: trimmed(200).optional().describe("Up to 200 characters."),
+        message: trimmed(2000).optional().describe("Up to 2,000 characters. Added to the contact in GHL as a note."),
       })
       .strict()
+      .describe("The person. Only these fields; anything else is refused.")
       .refine((c) => c.email || c.phone, { message: "an email or a phone number, so GHL can match the contact" }),
   })
   .strict();

@@ -24,11 +24,12 @@ afterAll(async () => {
 });
 
 /** Sends a Break it lead and runs its tries the way the queue would, until it stops. */
-async function run(failure: Failure) {
+async function run(failure: Failure | null) {
   const { deps, scheduled } = testDeps(app.db, null);
+  const uuid = `00000000-0000-0000-0000-${String(++n).padStart(12, "0")}`;
   const r = await ingestLead(deps, accountId, {
-    idempotencyKey: breakItKey(failure, `00000000-0000-0000-0000-${String(++n).padStart(12, "0")}`),
-    source: "demo", route: "trial", contact: { firstName: "Visitor", email: `visitor${n}@breakit.example` },
+    idempotencyKey: failure ? breakItKey(failure, uuid) : `api-${uuid}`,
+    source: failure ? "demo" : "api", route: "trial", contact: { firstName: "Visitor", email: `visitor${n}@breakit.example` },
   });
   if (!r.ok) throw new Error(r.problems.join());
   const outcomes: string[] = [];
@@ -76,6 +77,14 @@ describe("Break it", () => {
     const r = await run("twice");
     expect(r.outcomes).toEqual(["signed"]);
     const [s] = await app.db.select().from(shipments).where(eq(shipments.id, r.id));
+    expect(s!.ghlContactId).toBe(`breakit_c_${r.id}`);
+  });
+
+  it("a demo-account lead that names no failure (the docs' API key) is delivered by the stand-in, first try", async () => {
+    const r = await run(null);
+    expect(r.outcomes).toEqual(["signed"]);
+    const [s] = await app.db.select().from(shipments).where(eq(shipments.id, r.id));
+    expect(s!.state).toBe("signed");
     expect(s!.ghlContactId).toBe(`breakit_c_${r.id}`);
   });
 });

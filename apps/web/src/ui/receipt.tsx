@@ -68,7 +68,9 @@ export function Receipt({ initial, token, to, fast }: { initial: TrackView; toke
         <div className={`wb-stamp rc-stamp ${s.cls}`}><s.G size={15} />{s.text}</div>
       </div>
       <div className="wb-route">
-        <div><p className="wb-label">From</p><p>Website<span>Fernway&rsquo;s {v.route.toLowerCase()} form</span></p></div>
+        <div><p className="wb-label">From</p>{v.source === "api"
+          ? <p>Your code<span>Fernway API</span></p>
+          : <p>Website<span>Fernway&rsquo;s {v.route.toLowerCase()} form</span></p>}</div>
         <GRoute size={22} />
         <div><p className="wb-label">To</p><p>GoHighLevel<span>{to ?? "Fernway’s sandbox"} · {v.route}</span></p></div>
       </div>

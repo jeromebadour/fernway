@@ -31,10 +31,10 @@ const no = (status: number | null, next: "retry" | "auth" | "hold", excerpt: str
   ({ ok: false, status, next, excerpt, sent });
 
 /**
- * The stand-in GHL for one try. `resent` is true once the visitor has resent a held lead (it then goes through, as
+ * The stand-in GHL for one try; with no failure it takes everything at once. `resent` is true once the visitor has resent a held lead (it then goes through, as
  * if they had fixed the data).
  */
-export function standInGhl(failure: Failure, tryNumber: number, resent: boolean, shipmentId: number): GhlClient {
+export function standInGhl(failure: Failure | null, tryNumber: number, resent: boolean, shipmentId: number): GhlClient {
   return {
     async upsertContact(_conn, contact) {
       const sent = { email: contact.email, firstName: contact.firstName, source: "Fernway (Break it)" };
@@ -82,7 +82,7 @@ const standInConnection: GhlConnection = {
 };
 
 /** The engine's deps for one Break it try: the real database and queue, the stand-in GHL, the clock sped up. */
-export function breakItDeps(base: Deps, failure: Failure, tryNumber: number, resent: boolean, shipmentId: number): Deps {
+export function breakItDeps(base: Deps, failure: Failure | null, tryNumber: number, resent: boolean, shipmentId: number): Deps {
   return {
     ...base,
     ghl: standInGhl(failure, tryNumber, resent, shipmentId),
@@ -94,8 +94,9 @@ export function breakItDeps(base: Deps, failure: Failure, tryNumber: number, res
 /** One try of a Break it lead, as the worker runs it: the failure from its key, and whether the visitor resent it. */
 export async function breakItTry(base: Deps, shipmentId: number, tryNumber: number): Promise<TryOutcome> {
   const [s] = await base.db.select({ key: shipments.idempotencyKey }).from(shipments).where(eq(shipments.id, shipmentId));
-  const failure = s ? failureOf(s.key) : null;
-  if (!failure) return "skipped";
+  if (!s) return "skipped";
+  // No failure in the key (a lead sent with the docs' public API key): the stand-in simply takes it, first try.
+  const failure = failureOf(s.key);
   const resent = (await base.db.select({ id: scans.id }).from(scans).where(and(eq(scans.shipmentId, shipmentId), eq(scans.kind, "resent")))).length > 0;
   return deliverTry(breakItDeps(base, failure, tryNumber, resent, shipmentId), shipmentId, tryNumber);
 }
