@@ -252,7 +252,11 @@ jobs:
           sudo BACKUP_DIR=/tmp/fernway-backups ops/backup.sh
           sudo BACKUP_DIR=/tmp/fernway-backups ops/restore-test.sh | tee /tmp/restore.txt
           grep -q "RESTORE OK" /tmp/restore.txt
-          grep -Eq "^  accounts +1 +1$" /tmp/restore.txt
+          # Every table comes back with the live count, and there is something to restore.
+          python3 -c "
+          import re; rows=[l.split() for l in open('/tmp/restore.txt') if re.match(r'^  [a-z_]+ +[0-9]+ +[0-9]+$', l)]
+          assert rows and all(r[1]==r[2] for r in rows), rows
+          assert dict((r[0], int(r[1])) for r in rows)['accounts'] >= 1, rows"
           sudo test "$(sudo stat -c %a /tmp/fernway-backups)" = 700
           test "$(psql -Atc "select count(*) from pg_database where datname = 'fernway_restore_test'")" = 0
           # A dump cut in half must fail the restore test, not pass it.
