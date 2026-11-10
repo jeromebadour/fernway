@@ -1,0 +1,65 @@
+/* Status: a carrier's board. Calm when running; the held amber only for a part down, a run failed or late. */
+.st-head { max-width: 900px; padding-bottom: 12px; }
+.st-live { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 26px 0 0; font: 500 13.5px var(--font-mono); color: var(--muted); }
+.st-pulse { width: 9px; height: 9px; background: var(--ok); animation: st-beat 2s ease-in-out infinite; }
+@keyframes st-beat { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .st-pulse { animation: none; } }
+.st-again { display: inline-flex; align-items: center; gap: 7px; height: 32px; margin-left: 6px; padding: 0 11px; font: 500 13px var(--font-mono); color: var(--paper);
+  background: none; border: 1px solid var(--line); cursor: pointer; }
+.st-again svg { color: var(--input); }
+.st-again:disabled { opacity: 0.6; cursor: progress; }
+
+.st-block { margin-top: 48px; padding-top: 36px; border-top: 1px dashed var(--line); }
+.wb .st-block h2 { margin: 0 0 18px; font: 600 26px/1.2 var(--font-body); letter-spacing: -0.015em; color: var(--paper); }
+
+.st-table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+.st-table th { padding: 10px 16px 10px 0; text-align: left; font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.st-table td { padding: 13px 16px 13px 0; color: #cfd8e3; border-bottom: 1px dashed var(--line); vertical-align: middle; }
+.st-table td:nth-child(2) { color: var(--paper); font-weight: 600; }
+.st-num { width: 34px; font: 500 13px var(--font-mono); color: var(--muted) !important; font-weight: 500 !important; }
+.st-detail { font: 500 13px var(--font-mono); color: var(--muted) !important; overflow-wrap: anywhere; }
+.st-row-bad td { background: rgba(227,176,79,0.05); }
+
+.st-stamp { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; font: 600 12px/1 var(--font-label); letter-spacing: 0.12em; text-transform: uppercase;
+  border: 1.5px solid currentColor; }
+.st-ok { color: var(--ok); }
+.st-bad { color: var(--hazard); }
+
+.st-commit { margin: 16px 0 0; font-size: 15px; color: #cfd8e3; }
+.st-commit a { display: inline-flex; align-items: center; gap: 7px; color: var(--paper); }
+.st-commit a svg { color: var(--ok); }
+.st-commit code { font: 500 14px var(--font-mono); color: var(--input); }
+
+.st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.st-tile { padding: 18px 20px; background: var(--kraft); border: 1px solid rgba(190,210,232,0.12); border-top: 3px solid var(--input); }
+.st-tile .wb-label { margin-bottom: 10px; }
+.st-big { margin: 0; font: 600 38px/1 var(--font-mono); color: var(--paper); letter-spacing: -0.02em; }
+.st-big em { margin-left: 4px; font: 500 15px var(--font-mono); font-style: normal; color: var(--muted); }
+.st-sub { margin: 10px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.st-tile-ok { border-top-color: var(--ok); }
+.st-tile-ok .st-big { color: var(--ok); }
+.st-tile-hz { border-top-color: var(--hazard); }
+.st-tile-hz .st-big { color: var(--hazard); }
+
+.st-calls { margin-top: 20px; }
+.st-calls td:nth-child(3) { display: flex; align-items: center; gap: 8px; }
+.st-calls td:nth-child(3) svg { color: var(--input); }
+.st-calls code { font: 600 13px var(--font-mono); }
+.st-c-ok { color: var(--ok); }
+.st-c-hz { color: var(--hazard); }
+.st-calls td:last-child { display: flex; align-items: center; gap: 12px; }
+.st-bar { flex: 1; max-width: 260px; height: 8px; background: rgba(122,168,224,0.12); }
+.st-bar i { display: block; height: 100%; background: var(--input); }
+.st-calls b { min-width: 72px; font: 500 13px var(--font-mono); color: var(--paper); text-align: right; }
+.st-none { margin: 0; font-size: 16px; color: var(--muted); }
+
+@media (max-width: 1000px) { .st-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .st-table thead { display: none; }
+  .st-table tr { display: grid; grid-template-columns: 34px 1fr auto; gap: 6px 10px; padding: 12px 0; border-bottom: 1px dashed var(--line); }
+  .st-table td { padding: 0; border: 0; }
+  .st-table td:nth-child(4), .st-table td:nth-child(5) { grid-column: 2 / -1; }
+  .st-calls td:nth-child(3) { display: flex; }
+  .st-big { font-size: 30px; }
+  .st-again { margin-left: 0; }
+}

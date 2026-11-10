@@ -90,11 +90,15 @@ print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub
   # Through this box's own Nginx and certificate, pinned to this box: the check never depends on the box's DNS cache.
   code=$(curl -s -o /dev/null -w '%{http_code}' --resolve "${site#https://}:443:127.0.0.1" "$site/api/health")
   [ "$code" = 200 ] || stop "$site/api/health answered $code"
+  # The status page shows what is live and since when.
+  # shellcheck source=../ops/record.sh
+  . "$app/ops/record.sh"
+  record_run "$(docker compose --env-file "$env" ps -q db)" deploy true "$short"
 
   echo "== the box's tools and timers"
   install -d -m 755 "$tools"
   install -m 755 "$app/ops/backup.sh" "$app/ops/restore-test.sh" "$tools/" || stop "could not install the backup tools"
-  install -m 644 "$app/ops/offsite.sh" "$tools/" || stop "could not install the backup tools"
+  install -m 644 "$app/ops/offsite.sh" "$app/ops/record.sh" "$tools/" || stop "could not install the backup tools"
   install -m 644 "$app"/ops/systemd/fernway-*.service "$app"/ops/systemd/fernway-*.timer /etc/systemd/system/ \
     || stop "could not install the timers"
   systemctl daemon-reload || stop "systemd would not reload"

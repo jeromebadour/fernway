@@ -1,11 +1,20 @@
 // Typed view of db/migrations (Drizzle). The SQL migrations are the source of truth; test/schema.test.ts proves this
 // file still matches the real tables, column by column.
-import { bigint, integer, jsonb, pgTable, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, integer, jsonb, pgTable, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 export const accounts = pgTable("accounts", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The box's own runs (each deploy, the nightly backup, its off-box copy, the weekly restore test), written as the owner. */
+export const opsRuns = pgTable("ops_runs", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  kind: text("kind").$type<"deploy" | "backup" | "offsite" | "restore_test">().notNull(),
+  ok: boolean("ok").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  detail: text("detail").notNull(),
 });
 
 export const apiKeys = pgTable("api_keys", {
@@ -73,6 +82,8 @@ export const scans = pgTable("scans", {
   sent: jsonb("sent"),
   answerStatus: smallint("answer_status"),
   answerExcerpt: text("answer_excerpt"),
+  /** How long GHL took to answer this call, when there was a call. */
+  answerMs: integer("answer_ms"),
   note: text("note"),
 });
 

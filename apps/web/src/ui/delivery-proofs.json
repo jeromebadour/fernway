@@ -9,7 +9,7 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "waits and tries again when GHL says too many requests",
-          "line": 115
+          "line": 128
         },
         {
           "file": "packages/delivery/test/breakit.test.ts",
@@ -33,7 +33,7 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "tries 8 times over 24 h on the promised schedule, then returns the waybill",
-          "line": 180
+          "line": 193
         },
         {
           "file": "packages/delivery/test/queue.test.ts",
@@ -56,7 +56,7 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "holds a lead GHL refuses for its data, at once, with the reason",
-          "line": 154
+          "line": 167
         },
         {
           "file": "packages/delivery/test/track.test.ts",
@@ -66,7 +66,7 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "resends a held waybill with a fresh set of tries, on the receipt",
-          "line": 231
+          "line": 244
         },
         {
           "file": "packages/delivery/test/queue.test.ts",
@@ -99,7 +99,7 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "refreshes the token after a 401 and tries again",
-          "line": 168
+          "line": 181
         },
         {
           "file": "packages/delivery/test/oauth.test.ts",
@@ -122,17 +122,17 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "never makes a second contact: a try after a failed stage reuses the contact GHL already gave",
-          "line": 131
+          "line": 144
         },
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "never makes a second contact when GHL took the lead but its answer was lost",
-          "line": 143
+          "line": 156
         },
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "adds the message once, between the contact and the opportunity, and never again on a retry",
-          "line": 257
+          "line": 270
         },
         {
           "file": "packages/delivery/test/booking.test.ts",
@@ -150,17 +150,17 @@
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "lets the app add scans but never change or remove one",
-          "line": 247
+          "line": 260
         },
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "puts overdue shipments back on the queue (the safety net if Redis lost them)",
-          "line": 219
+          "line": 232
         },
         {
           "file": "packages/delivery/test/engine.test.ts",
           "name": "does nothing for a try that already ran or isn't due",
-          "line": 209
+          "line": 222
         }
       ]
     }

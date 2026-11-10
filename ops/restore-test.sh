@@ -8,12 +8,25 @@ set -euo pipefail
 here=$(dirname "$(readlink -f "$0")")
 # shellcheck source=offsite.sh
 . "$here/offsite.sh"
+# shellcheck source=record.sh
+. "$here/record.sh"
 dir=${BACKUP_DIR:-/srv/fernway/backups}
 scratch=fernway_restore_test
 
 db=$(docker ps -q --filter label=com.docker.compose.project=fernway --filter label=com.docker.compose.service=db)
 [ -n "$db" ] || { echo "restore test: the database container is not running" >&2; exit 1; }
 fetched=""
+psql_in() { docker exec -i "$db" psql -X -At -U postgres -v ON_ERROR_STOP=1 -d "$1" -c "$2"; }
+drop_scratch() { docker exec "$db" dropdb -U postgres --if-exists "$scratch" >/dev/null 2>&1 || true; }
+# On the way out: the scratch database goes, and so does the downloaded copy (never before the restore has read it).
+# Recorded for the status page whatever happens: a run that stops early (no copy to fetch) counts as a failed one.
+recorded=false
+cleanup() {
+  rc=$?
+  drop_scratch; [ -z "$fetched" ] || rm -f "$fetched" "$fetched.age"
+  $recorded || record_run "$db" restore_test false "stopped before the restore finished (exit $rc)"
+}
+trap cleanup EXIT
 if offsite_ready; then
   install -d -m 700 "$dir"
   fetched="$dir/.restore-test-offsite.dump"
@@ -27,11 +40,6 @@ else
   from=box
 fi
 
-psql_in() { docker exec -i "$db" psql -X -At -U postgres -v ON_ERROR_STOP=1 -d "$1" -c "$2"; }
-drop_scratch() { docker exec "$db" dropdb -U postgres --if-exists "$scratch" >/dev/null 2>&1 || true; }
-# On the way out: the scratch database goes, and so does the downloaded copy (never before the restore has read it).
-cleanup() { drop_scratch; [ -z "$fetched" ] || rm -f "$fetched" "$fetched.age"; }
-trap cleanup EXIT
 
 start=$(date +%s%N)
 drop_scratch
@@ -42,7 +50,7 @@ if ! docker exec -i "$db" pg_restore -U postgres -d "$scratch" --exit-on-error <
 ms=$(( ($(date +%s%N) - start) / 1000000 ))
 seconds=$((ms / 1000)).$(( (ms % 1000) / 100 ))
 
-tables="accounts routes shipments scans ghl_connections schema_migrations"
+tables="accounts routes shipments scans ghl_connections api_keys schema_migrations"
 echo "restore test: $copy (from $( [ "$from" = offsite ] && echo "off the box" || echo "the box")) into $scratch in $seconds s"
 printf '  %-18s %10s %10s\n' table live restored
 for t in $tables; do
@@ -60,5 +68,7 @@ fi
 echo "  schema: live $live_schema, restored $back_schema"
 
 printf '{"at": "%s", "seconds": %s, "ok": %s, "dump": "%s", "from": "%s"}\n' "$(date -u +%FT%TZ)" "$seconds" "$ok" "$copy" "$from" > "$dir/restore-test.json"
+record_run "$db" restore_test "$ok" "$copy, from $( [ "$from" = offsite ] && echo "off the box" || echo "the box"), restored in $seconds s"
+recorded=true
 chmod 600 "$dir/restore-test.json"
 if $ok; then echo "RESTORE OK"; else echo "RESTORE FAILED"; exit 1; fi

@@ -224,7 +224,7 @@ async function hold(deps: Deps, shipmentId: number, tryNumber: number, reason: s
   return "held";
 }
 
-function scan(shipmentId: number, kind: ScanKind, tryNumber: number, step: Step, a: { status: number | null; excerpt: string; sent: object }, note: string) {
+function scan(shipmentId: number, kind: ScanKind, tryNumber: number, step: Step, a: { status: number | null; excerpt: string; sent: object; ms?: number }, note: string) {
   return {
     shipmentId,
     kind,
@@ -233,6 +233,7 @@ function scan(shipmentId: number, kind: ScanKind, tryNumber: number, step: Step,
     sent: a.sent,
     answerStatus: a.status,
     answerExcerpt: a.excerpt.slice(0, 500),
+    answerMs: a.ms ?? null,
     note: note.slice(0, 300),
   };
 }

@@ -112,6 +112,19 @@ describe("delivering", () => {
     expect(ghl.requests.map((q) => q.path)).toEqual(["contact"]);
   });
 
+  it("records how long GHL took to answer each call, and nothing for a scan that called no one", async () => {
+    const { deps } = testDeps(handle.db, fakeConnection());
+    const r = await ingestLead(deps, accountId, lead());
+    if (!r.ok) throw new Error();
+    ghl.fail("contact", { status: 200, body: { contact: { id: "c-slow" } }, delayMs: 150 });
+    expect(await deliverTry(deps, r.waybill.id, 1)).toBe("signed");
+    const rows = await handle.db.select().from(scans).where(eq(scans.shipmentId, r.waybill.id)).orderBy(asc(scans.id));
+    const contact = rows.find((s) => s.kind === "handed" && s.step === "contact")!;
+    expect(contact.answerMs).toBeGreaterThanOrEqual(150);
+    expect(contact.answerMs).toBeLessThan(5_000);
+    expect(rows.find((s) => s.kind === "picked_up")!.answerMs).toBeNull();
+  });
+
   it("waits and tries again when GHL says too many requests", async () => {
     const { deps, scheduled } = testDeps(handle.db, fakeConnection());
     const r = await ingestLead(deps, accountId, lead());

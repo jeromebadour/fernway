@@ -284,7 +284,7 @@ jobs:
           curl -s $B/terms | grep -q "What Fernway is"
           curl -s $B/about | grep -q "What is real"
           curl -s $B/delivery | grep -q "What happens when GHL says no"
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /api/slots; do
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /api/slots; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 
@@ -302,11 +302,17 @@ jobs:
           assert dict((r[0], int(r[1])) for r in rows)['accounts'] >= 1, rows"
           sudo test "$(sudo stat -c %a /tmp/fernway-backups)" = 700
           test "$(psql -Atc "select count(*) from pg_database where datname = 'fernway_restore_test'")" = 0
+          # Both runs are recorded for the status page, which shows them.
+          test "$(psql -Atc "select string_agg(kind || ':' || ok, ',' order by id) from ops_runs")" = "backup:true,restore_test:true"
+          curl -s http://127.0.0.1:3103/status > /tmp/status.html
+          grep -q "Nightly backup" /tmp/status.html; grep -q "Restore test" /tmp/status.html; grep -q "Every part is running" /tmp/status.html
           # A dump cut in half must fail the restore test, not pass it.
           f=$(sudo sh -c 'ls /tmp/fernway-backups/fernway-*.dump | tail -1')
           sudo sh -c "head -c \$(( \$(stat -c %s $f) / 2 )) $f > $f.half && mv $f.half $f"
           if sudo BACKUP_DIR=/tmp/fernway-backups ops/restore-test.sh; then echo "a broken dump passed the restore test"; exit 1; fi
           sudo grep -q '"ok": false' /tmp/fernway-backups/restore-test.json
+          test "$(psql -Atc "select ok from ops_runs where kind = 'restore_test' order by id desc limit 1")" = f
+          curl -s http://127.0.0.1:3103/status | grep -q "Failed"
 
       - name: The backup goes off the box encrypted, and that copy restores
         # The same scripts with the off-box copy on (ops/offsite.sh), pointed at a folder instead of R2: the dump is
@@ -325,6 +331,7 @@ jobs:
             echo "a failed upload did not fail the backup"; exit 1
           fi
           sudo grep -q '"ok": false' /tmp/fernway-backups/offsite.json
+          test "$(psql -Atc "select string_agg(ok::text, ',' order by id) from ops_runs where kind = 'offsite'")" = "true,false"
 
       - name: The app's role reads and writes, but can't change tables
         run: |

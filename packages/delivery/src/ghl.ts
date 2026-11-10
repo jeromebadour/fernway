@@ -21,8 +21,8 @@ export class ReconnectNeeded extends Error {
 
 /** What happened, sorted by what Fernway should do next. */
 export type GhlAnswer =
-  | { ok: true; status: number; id: string; excerpt: string }
-  | { ok: false; next: "retry" | "auth" | "hold"; status: number | null; excerpt: string };
+  | { ok: true; status: number; id: string; excerpt: string; ms?: number }
+  | { ok: false; next: "retry" | "auth" | "hold"; status: number | null; excerpt: string; ms?: number };
 
 export type Pipeline = { id: string; name: string; stages: { id: string; name: string }[] };
 
@@ -75,6 +75,8 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
       if (err instanceof ReconnectNeeded) return { ok: false as const, next: "hold" as const, status: null, excerpt: message, sent: body };
       return { ok: false as const, next: "retry" as const, status: null, excerpt: `could not get a GHL token (${message})`, sent: body };
     }
+    // How long GHL took to answer (or until Fernway stopped waiting), for the status page.
+    const started = performance.now();
     try {
       const res = await doFetch(`${base}${path}`, {
         method: "POST",
@@ -93,6 +95,7 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
       const name = err instanceof Error ? err.name : "";
       text = name === "TimeoutError" ? `no answer in ${timeoutMs / 1000} s` : `could not reach GHL (${err instanceof Error ? err.message : String(err)})`;
     }
+    const ms = Math.round(performance.now() - started);
     const excerpt = text.slice(0, EXCERPT);
     const sorted = sortAnswer(status);
     if (sorted === "ok") {
@@ -103,10 +106,10 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
         id = undefined;
       }
       // A 2xx without the id we need can't be signed for: hold it and say so, rather than guess.
-      if (!id) return { ok: false as const, next: "hold" as const, status, excerpt: `GHL answered ${status} without an id: ${excerpt}`, sent: body };
-      return { ok: true as const, status: status!, id, excerpt, sent: body };
+      if (!id) return { ok: false as const, next: "hold" as const, status, excerpt: `GHL answered ${status} without an id: ${excerpt}`, sent: body, ms };
+      return { ok: true as const, status: status!, id, excerpt, sent: body, ms };
     }
-    return { ok: false as const, next: sorted, status, excerpt, sent: body };
+    return { ok: false as const, next: sorted, status, excerpt, sent: body, ms };
   }
 
   async function get(conn: GhlConnection, path: string): Promise<unknown> {
