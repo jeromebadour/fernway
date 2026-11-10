@@ -3,7 +3,7 @@
 // then the same lead again (one waybill), then tracked. Each answer is shown as the API gave it.
 import Link from "next/link";
 import { useState } from "react";
-import { GCheck, GFind, GResend, GRoute } from "./glyphs";
+import { GCheck, GClock, GFind, GResend, GRoute, GScan } from "./glyphs";
 
 type Shown = { label: string; status: number; body: unknown };
 type Accepted = { ok: true; number: string; duplicate: boolean; links: { self: string; receipt: string } };
@@ -11,11 +11,11 @@ type Accepted = { ok: true; number: string; duplicate: boolean; links: { self: s
 export function TryIt({ apiKey, body }: { apiKey: string; body: object }) {
   const [shown, setShown] = useState<Shown[]>([]);
   const [lead, setLead] = useState<Accepted | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function call(label: string, path: string, init?: RequestInit) {
-    setBusy(true);
+    setBusy(label === "Track it" ? "Asking Fernway for its scans" : label === "Send the lead" ? "Sending the lead to Fernway" : "Sending the same lead again");
     setError(null);
     try {
       const res = await fetch(path, { ...init, headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } });
@@ -26,7 +26,7 @@ export function TryIt({ apiKey, body }: { apiKey: string; body: object }) {
       setError("The request didn't reach Fernway. Check your connection and try again.");
       return null;
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -41,15 +41,16 @@ export function TryIt({ apiKey, body }: { apiKey: string; body: object }) {
       <p className="wb-label" id="dc-try-h">Run it here</p>
       <p className="dc-try-lede">The same request, sent from this page with the demo key.</p>
       <div className="dc-try-do">
-        {!lead && <button type="button" className="wb-go fm-btn" disabled={busy} onClick={() => send(false)}><GRoute size={16} />Send the lead</button>}
-        {lead && <button type="button" className="wb-ghost" disabled={busy} onClick={() => send(true)}><GResend size={16} />Same key again</button>}
-        {lead && <button type="button" className="wb-ghost" disabled={busy} onClick={() => call("Track it", lead.links.self)}><GFind size={16} />Track it</button>}
+        {!lead && <button type="button" className="wb-go fm-btn" disabled={busy !== null} onClick={() => send(false)}><GRoute size={16} />Send the lead</button>}
+        {lead && <button type="button" className="wb-ghost" disabled={busy !== null} onClick={() => send(true)}><GResend size={16} />Same key again</button>}
+        {lead && <button type="button" className="wb-ghost" disabled={busy !== null} onClick={() => call("Track it", lead.links.self)}><GFind size={16} />Track it</button>}
       </div>
-      {step > 0 && (
+      {busy && <p className="dc-try-busy" role="status"><GClock size={15} />{busy}</p>}
+      {!busy && step > 0 && (
         <p className="dc-try-note" role="status">
           <GCheck size={15} />
           <span>{step === 1 ? <>Waybill <b>{lead!.number}</b> picked up. Send the same key again: you get the same waybill, nothing twice.</>
-            : <>Same key, same waybill <b>{lead!.number}</b>. Track it to see every scan, or <Link href={new URL(lead!.links.receipt).pathname}>open its receipt</Link>.</>}</span>
+            : <>Same key, same waybill <b>{lead!.number}</b>. Track it to see every scan, or <Link href={new URL(lead!.links.receipt).pathname}><GScan size={14} />open its receipt</Link>.</>}</span>
         </p>
       )}
       {error && <p className="dc-try-err" role="alert">{error}</p>}

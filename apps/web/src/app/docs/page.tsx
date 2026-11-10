@@ -6,7 +6,7 @@ import { appUrl } from "@/lib/api";
 import { DOCS_ROUTE, publicDocsKey } from "@/lib/docs-key";
 import { CodeBlock } from "@/ui/code-block";
 import { DocsFrame } from "@/ui/docs-frame";
-import { GHold, GKey, GManifest } from "@/ui/glyphs";
+import { GBrackets, GHold, GKey, GManifest } from "@/ui/glyphs";
 import { TryIt } from "@/ui/try-it";
 
 export const metadata: Metadata = { title: "Docs · Fernway", description: "Send your first lead into GoHighLevel with one request, and track it." };
@@ -81,22 +81,22 @@ export default async function Docs() {
 
       <section id="again" className="dc-sec">
         <h2><span className="dc-n">4</span>Sending twice is safe</h2>
-        <p>The <code>idempotencyKey</code> is your own id for the lead: an order number, a form entry id, anything that stays the same for the same lead. Send it again, after a timeout or a crash, and you get the same waybill back with <code>&quot;duplicate&quot;: true</code>. Nothing reaches GHL twice. So when in doubt, send again.</p>
+        <p>The <code>idempotencyKey</code> is your own id for the lead: an order number, a form entry id, anything that stays the same for the same lead. Sent again, after a timeout or a crash, it gives the same waybill back with <code>&quot;duplicate&quot;: true</code>, and nothing reaches GHL twice. A send that may have failed is always safe to repeat.</p>
       </section>
 
       <section id="wrong" className="dc-sec">
         <h2>When something&rsquo;s wrong</h2>
         <p>Every refusal says what to change, one line per problem, the field first. Nothing is made when a lead is refused.</p>
         <table className="dc-table">
-          <thead><tr><th>Status</th><th>Means</th><th>Do</th></tr></thead>
+          <thead><tr><th className="dc-num">#</th><th>Status</th><th>Means</th><th>Good to know</th></tr></thead>
           <tbody>
-            <tr><td><code>401</code></td><td>No key, or a revoked one.</td><td>Check the <code>Authorization</code> header.</td></tr>
-            <tr><td><code>422</code></td><td>The lead was refused at the door.</td><td>Fix what each problem says, then send again.</td></tr>
-            <tr><td><code>429</code></td><td>Over the limit: {PER_KEY_MINUTE} requests a minute per key.</td><td>Wait for <code>Retry-After</code>, then send the same key again.</td></tr>
+            <tr><td className="dc-num">1</td><td><code className="dc-no">401</code></td><td>No key, or a revoked one.</td><td>The key travels in the <code>Authorization</code> header.</td></tr>
+            <tr><td className="dc-num">2</td><td><code className="dc-no">422</code></td><td>The lead was refused at the door.</td><td>Each problem names its field and what the field needs.</td></tr>
+            <tr><td className="dc-num">3</td><td><code className="dc-no">429</code></td><td>Over the limit: {PER_KEY_MINUTE} requests a minute per key.</td><td><code>Retry-After</code> gives the wait in seconds; the same key sends nothing twice.</td></tr>
           </tbody>
         </table>
         <CodeBlock label="422 answer" code={JSON.stringify({ ok: false, problems: ["contact.email: a real email address"] }, null, 2)} />
-        <p className="dc-next">Every field, every answer: <Link href="/docs/api">the API reference</Link>.</p>
+        <p className="dc-next">Every field, every answer: <Link href="/docs/api"><GBrackets size={15} />the API reference</Link>.</p>
       </section>
     </DocsFrame>
   );

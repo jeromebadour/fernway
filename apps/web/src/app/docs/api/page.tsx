@@ -3,7 +3,7 @@ import { examples, openApi, scanKinds } from "@fernway/delivery";
 import { appUrl, DEMO_SENDS_HOUR, PER_KEY_MINUTE } from "@/lib/api";
 import { CodeBlock } from "@/ui/code-block";
 import { DocsFrame } from "@/ui/docs-frame";
-import { GManifest } from "@/ui/glyphs";
+import { GDown, GManifest } from "@/ui/glyphs";
 
 export const metadata: Metadata = { title: "API reference · Fernway", description: "Fernway API v1: send a lead, track a lead." };
 export const dynamic = "force-dynamic";
@@ -19,25 +19,26 @@ const typeOf = (s: Js) => {
   return s.format ? `${t} (${s.format})` : t;
 };
 
-function Fields({ schema, prefix = "" }: { schema: Js; prefix?: string }) {
+// Every field, nested ones included, as one flat numbered list (BUILD-RULES 3.1).
+function flatten(schema: Js, prefix = ""): { name: string; s: Js; required: boolean }[] {
   const req = new Set(schema.required ?? []);
-  return (
-    <>
-      {Object.entries(schema.properties ?? {}).map(([name, s]) => (
-        <FieldRows key={name} name={`${prefix}${name}`} s={s} required={req.has(name)} />
-      ))}
-    </>
-  );
+  return Object.entries(schema.properties ?? {}).flatMap(([name, s]) => [
+    { name: `${prefix}${name}`, s, required: req.has(name) },
+    ...(s.properties ? flatten(s, `${prefix}${name}.`) : []),
+  ]);
 }
-function FieldRows({ name, s, required }: { name: string; s: Js; required: boolean }) {
+
+function Fields({ schema }: { schema: Js }) {
   return (
     <>
-      <tr>
-        <td><code>{name}</code>{required && <span className="dc-req">required</span>}</td>
-        <td><code className="dc-type">{s.properties ? "object" : typeOf(s)}</code></td>
-        <td>{s.description}</td>
-      </tr>
-      {s.properties && <Fields schema={s} prefix={`${name}.`} />}
+      {flatten(schema).map(({ name, s, required }, i) => (
+        <tr key={name}>
+          <td className="dc-num">{i + 1}</td>
+          <td><code>{name}</code>{required && <span className="dc-req">required</span>}</td>
+          <td><code className="dc-type">{s.properties ? "object" : typeOf(s)}</code></td>
+          <td>{s.description}</td>
+        </tr>
+      ))}
     </>
   );
 }
@@ -66,8 +67,8 @@ type Op = { summary: string; description: string; requestBody?: { content: { "ap
 function Responses({ op }: { op: Op }) {
   return (
     <table className="dc-table">
-      <thead><tr><th>Status</th><th>Means</th></tr></thead>
-      <tbody>{Object.entries(op.responses).sort(([a], [b]) => (a === "201" ? -1 : b === "201" ? 1 : Number(a) - Number(b))).map(([code, r]) => <tr key={code}><td><code className={Number(code) < 300 ? "dc-ok" : "dc-no"}>{code}</code></td><td>{r.description}</td></tr>)}</tbody>
+      <thead><tr><th className="dc-num">#</th><th>Status</th><th>Means</th></tr></thead>
+      <tbody>{Object.entries(op.responses).sort(([a], [b]) => (a === "201" ? -1 : b === "201" ? 1 : Number(a) - Number(b))).map(([code, r], i) => <tr key={code}><td className="dc-num">{i + 1}</td><td><code className={Number(code) < 300 ? "dc-ok" : "dc-no"}>{code}</code></td><td>{r.description}</td></tr>)}</tbody>
     </table>
   );
 }
@@ -83,7 +84,7 @@ export default function ApiReference() {
       <header className="dc-head">
         <p className="wb-eyebrow"><GManifest size={16} />Docs · API reference</p>
         <h1 className="fm-h1">Fernway API v1</h1>
-        <p className="wb-sec-lede">Two calls: send a lead, and track it. JSON in and out, at <code>{base}</code>. The same reference as a file: <a href="/api/v1/openapi.json">OpenAPI 3.1</a>.</p>
+        <p className="wb-sec-lede">Two calls: send a lead, and track it. JSON in and out, at <code>{base}</code>. The same reference as a file: <a href="/api/v1/openapi.json"><GDown size={15} />OpenAPI 3.1</a>.</p>
       </header>
 
       <section id="auth" className="dc-sec">
@@ -102,7 +103,7 @@ export default function ApiReference() {
         <p className="dc-sum">{post.summary}. {post.description}</p>
         <h3>Body</h3>
         <table className="dc-table dc-fields">
-          <thead><tr><th>Field</th><th>Type</th><th>About</th></tr></thead>
+          <thead><tr><th className="dc-num">#</th><th>Field</th><th>Type</th><th>About</th></tr></thead>
           <tbody><Fields schema={post.requestBody!.content["application/json"].schema} /></tbody>
         </table>
         <p className="dc-small">Send only these fields. An unknown field is refused, so a typo can&rsquo;t drop data without you knowing.</p>

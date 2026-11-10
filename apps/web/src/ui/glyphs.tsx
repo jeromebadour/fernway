@@ -38,3 +38,7 @@ export const GFind = (p: P) => (<S {...p}><rect x="2" y="2" width="11" height="1
 export const GDown = (p: P) => (<S {...p}><path d="M3 3h14v6H3z" /><path d="M3 12h6M13 12h4v5H3v-2" /><path d="M10 10l2 4" /></S>);
 export const GSilent = (p: P) => (<S {...p}><path d="M3 10h2M8 10h2M13 10h2" /><path d="M17 6v8" /></S>);
 export const GShield = (p: P) => (<S {...p}><path d="M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5z" /><path d="M7 10l2 2 4-4" /></S>);
+// Docs: run it (quick start), the reference, a jump to a section on the page.
+export const GPlay = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M8 6.5l5 3.5-5 3.5z" /></S>);
+export const GBrackets = (p: P) => (<S {...p}><path d="M7 3H4v14h3M13 3h3v14h-3" /><path d="M8 10h4" /></S>);
+export const GJump = (p: P) => (<S {...p}><path d="M4 3v8h11" /><path d="M12 8l3 3-3 3" /></S>);

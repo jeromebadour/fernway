@@ -15,7 +15,7 @@ const phone = z
 
 export const leadInput = z
   .object({
-    idempotencyKey: z.string().trim().min(8).max(200).describe("Your own id for this lead, 8 to 200 characters, like an order or form-entry id. Send it again and you get the same waybill back."),
+    idempotencyKey: z.string().trim().min(8).max(200).describe("Your own id for this lead, 8 to 200 characters, like an order or form-entry id. Sent again, it gives the same waybill back."),
     source: z.enum(sources),
     route: z.string().regex(/^[a-z0-9-]{1,40}$/).describe("Which route the lead takes: the pipeline, stage and tags it lands in. Set up per account."),
     // The time picked on a booking route (ISO with its offset), checked against the route's calendar at the door.

@@ -4,12 +4,12 @@ import type { ReactNode } from "react";
 import "./site.css";
 import "./forms.css";
 import "./docs.css";
-import { GDown, GManifest } from "./glyphs";
+import { GBrackets, GDown, GJump, GManifest, GPlay } from "./glyphs";
 import { SiteFooter, SiteHeader } from "./site";
 
 const pages = [
-  { href: "/docs", label: "Quick start" },
-  { href: "/docs/api", label: "API reference" },
+  { href: "/docs", label: "Quick start", G: GPlay },
+  { href: "/docs/api", label: "API reference", G: GBrackets },
 ];
 
 export function DocsFrame({ current, sections, children }: { current: string; sections: { id: string; label: string }[]; children: ReactNode }) {
@@ -22,9 +22,9 @@ export function DocsFrame({ current, sections, children }: { current: string; se
           <ul>
             {pages.map((p) => (
               <li key={p.href}>
-                <Link href={p.href} aria-current={p.href === current ? "page" : undefined}>{p.label}</Link>
+                <Link href={p.href} aria-current={p.href === current ? "page" : undefined}><p.G size={15} />{p.label}</Link>
                 {p.href === current && (
-                  <ul>{sections.map((s) => <li key={s.id}><a href={`#${s.id}`}>{s.label}</a></li>)}</ul>
+                  <ul>{sections.map((s) => <li key={s.id}><a href={`#${s.id}`}><GJump size={13} />{s.label}</a></li>)}</ul>
                 )}
               </li>
             ))}
