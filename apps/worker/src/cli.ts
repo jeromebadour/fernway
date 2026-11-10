@@ -13,13 +13,17 @@
 //   apikey <account> <label>                    make an API key; shown once, only its hash is kept
 //   apikeys <account>                           list an account's keys (prefix, label, last used, revoked)
 //   revoke-apikey <prefix>                      stop a key at once
+//   stripe-catalog                              makes or checks Fernway's plans in Stripe (test mode only): one
+//                                               product and monthly price per plan, and the customer portal
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
 import { formatWaybill, parseWaybill } from "@fernway/core";
 import {
   accounts,
   apiKeys,
+  catalog,
   connectionFor,
+  createStripe,
   createApiKey,
   createDb,
   createGhlClient,
@@ -27,6 +31,9 @@ import {
   ghlConnections,
   ingestLead,
   keyFrom,
+  lookupKey,
+  PLANS,
+  planKeys,
   oauthConfigFromEnv,
   revokeApiKey,
   routes,
@@ -84,6 +91,16 @@ try {
     case "revoke-apikey": {
       const prefix = /^[a-z0-9]{8}$/.test(args[0] ?? "") ? args[0]! : fail("which key? its 8-letter prefix, from `apikeys`");
       console.log((await revokeApiKey(db, prefix)) ? `key ${prefix} revoked` : `no live key ${prefix}`);
+      break;
+    }
+    case "stripe-catalog": {
+      const stripe = createStripe(need("STRIPE_SECRET_KEY"));
+      const c = await catalog(stripe);
+      for (const plan of planKeys) {
+        const p = await stripe.prices.retrieve(c.prices[plan]);
+        console.log(`${PLANS[plan].name.padEnd(8)} ${lookupKey(plan).padEnd(24)} ${p.id}  $${(p.unit_amount ?? 0) / 100} ${p.currency.toUpperCase()} a ${p.recurring?.interval}  ${p.livemode ? "LIVE" : "test mode"}`);
+      }
+      console.log(`portal   ${c.portalConfig}`);
       break;
     }
     case "connect-link": {
@@ -182,7 +199,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, route, send-test, waybill");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog");
   }
 } finally {
   await pool.end();

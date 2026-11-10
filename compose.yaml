@@ -91,6 +91,9 @@ services:
       FERNWAY_ACCOUNTS: ${FERNWAY_ACCOUNTS:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
+      # Stripe, test mode only (the app refuses a live key). Billing stays off until both are set.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
@@ -124,6 +127,8 @@ services:
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
       FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
+      # For the stripe-catalog command only (test mode).
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
     <<: *logs
 
 volumes:

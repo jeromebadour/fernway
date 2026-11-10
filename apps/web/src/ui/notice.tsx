@@ -10,6 +10,7 @@ const notices: Record<string, { title: string; line: string; G: (p: { size?: num
   confirmed: { title: "Email confirmed", line: "Fernway will tell you here and by email when a lead needs you.", G: GMail },
   "signed-out": { title: "Signed out", line: "This device is signed out. Your account and its leads are as you left them.", G: GSignOut, stays: true },
   "password-changed": { title: "Password changed", line: "Every device was signed out. Sign in with the new password.", G: GCheck, stays: true },
+  "plan-started": { title: "Payment taken", line: "Stripe took the first payment. The plan below shows it as soon as Stripe confirms, in a few seconds.", G: GCheck },
   "signed-out-elsewhere": { title: "Signed out elsewhere", line: "This session ended on another device. Sign in again to carry on.", G: GSignOut, stays: true },
 };
 

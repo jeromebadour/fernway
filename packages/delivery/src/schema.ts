@@ -7,6 +7,42 @@ export const accounts = pgTable("accounts", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  plan: text("plan").$type<PlanKey>(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  billingStatus: text("billing_status").$type<BillingStatus>(),
+  periodStart: timestamp("period_start", { withTimezone: true }),
+  periodEnd: timestamp("period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  customerShipmentId: bigint("customer_shipment_id", { mode: "number" }),
+});
+
+export const planKeys = ["starter", "growth", "scale"] as const;
+export type PlanKey = (typeof planKeys)[number];
+export const billingStatuses = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid", "paused"] as const;
+export type BillingStatus = (typeof billingStatuses)[number];
+
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  accountId: bigint("account_id", { mode: "number" }),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const stripeInvoices = pgTable("stripe_invoices", {
+  id: text("id").primaryKey(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  number: text("number"),
+  status: text("status").$type<"draft" | "open" | "paid" | "uncollectible" | "void">().notNull(),
+  attemptedUnpaid: boolean("attempted_unpaid").notNull().default(false),
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").notNull(),
+  plan: text("plan").$type<PlanKey>(),
+  periodStart: timestamp("period_start", { withTimezone: true }),
+  periodEnd: timestamp("period_end", { withTimezone: true }),
+  hostedUrl: text("hosted_url"),
+  pdfUrl: text("pdf_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 });
 
 export const roles = ["owner", "admin", "member"] as const;
@@ -88,7 +124,7 @@ export const routes = pgTable("routes", {
 export const shipmentStates = ["picked_up", "in_transit", "waiting", "signed", "held", "returned"] as const;
 export type ShipmentState = (typeof shipmentStates)[number];
 
-export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo"] as const;
+export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo", "stripe"] as const;
 export type Source = (typeof sources)[number];
 
 export const shipments = pgTable("shipments", {

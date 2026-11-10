@@ -13,3 +13,4 @@ export * from "./apikeys.js";
 export * from "./api.js";
 export * from "./status.js";
 export * from "./people.js";
+export * from "./billing.js";
