@@ -117,7 +117,7 @@ export async function signOut(db: Db, token: string, others = false): Promise<nu
   return ended.length;
 }
 
-async function useLink(db: Db, token: string, purpose: "confirm" | "reset") {
+async function spendLink(db: Db, token: string, purpose: "confirm" | "reset") {
   const [l] = await db.update(emailLinks).set({ usedAt: sql`now()` })
     .where(and(eq(emailLinks.tokenHash, sha(token)), eq(emailLinks.purpose, purpose), isNull(emailLinks.usedAt), gt(emailLinks.expiresAt, sql`now()`)))
     .returning({ userId: emailLinks.userId });
@@ -126,7 +126,7 @@ async function useLink(db: Db, token: string, purpose: "confirm" | "reset") {
 
 /** Confirms the address the link was sent to. Each link works once, within 48 hours. */
 export async function confirmEmail(db: Db, token: string): Promise<boolean> {
-  const userId = await useLink(db, token, "confirm");
+  const userId = await spendLink(db, token, "confirm");
   if (userId === null) return false;
   await db.update(users).set({ emailConfirmedAt: sql`coalesce(${users.emailConfirmedAt}, now())` }).where(eq(users.id, userId));
   return true;
@@ -147,7 +147,7 @@ export async function requestReset(db: Db, emailIn: string): Promise<{ token: st
 export async function resetPassword(db: Db, token: string, newPassword: string): Promise<{ ok: true } | Problems> {
   const p = password.safeParse(newPassword);
   if (!p.success) return problemsOf(p.error);
-  const userId = await useLink(db, token, "reset");
+  const userId = await spendLink(db, token, "reset");
   if (userId === null) return { ok: false, problems: ["link: this reset link has been used or is over an hour old; ask for a new one"] };
   const passwordHash = await hashPassword(p.data);
   await db.transaction(async (tx) => {
