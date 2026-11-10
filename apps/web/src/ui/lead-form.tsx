@@ -5,41 +5,46 @@
 import { useEffect, useRef, useState } from "react";
 import type { TrackView } from "@fernway/delivery";
 import Link from "next/link";
+import { Field, type FieldKind } from "@/ui/field";
+import { companyFromEmail, emailTypo } from "@/ui/field-help";
 import { GCheck, GClock, GCopy, GRoute, GScan } from "@/ui/glyphs";
 import { Receipt } from "@/ui/receipt";
 import { meetingText, SlotPicker } from "@/ui/slot-picker";
 
 type Key = "firstName" | "lastName" | "email" | "phone" | "companyName" | "website" | "message";
-type Field = { key: Key; label: string; hint: string; type: "text" | "email" | "tel" | "url" | "textarea"; required?: boolean; placeholder: string;
+type FieldSpec = { key: Key; label: string; hint: string; type: "text" | "email" | "tel" | "url" | "textarea"; required?: boolean; placeholder: string;
   autoComplete: string; half?: boolean; pre?: string; clean?: (s: string) => string; max: number; called?: string };
 
+// What each field holds, for its glyph (ui/field.tsx).
+const kindOf: Record<Key, FieldKind> = { firstName: "name", lastName: "name", email: "email", phone: "phone", companyName: "company", website: "website", message: "message" };
+
 // Each field helps as you type (BUILD-RULES, Kami 2026-11-10): what it takes, an example, and only what it can hold.
-export const fieldSet: Record<Key, Field> = Object.fromEntries(([
+export const fieldSet: Record<Key, FieldSpec> = Object.fromEntries(([
   { key: "firstName", label: "First name", hint: "", type: "text", required: true, placeholder: "e.g. Lena", autoComplete: "given-name", half: true, max: 80 },
   { key: "lastName", label: "Last name", hint: "", type: "text", placeholder: "e.g. Hartmann", autoComplete: "family-name", half: true, max: 80 },
   { key: "email", label: "Work email", hint: "GHL matches your contact by this first", type: "email", required: true, placeholder: "e.g. lena@northpine.com",
-    autoComplete: "email", max: 200, clean: (s) => s.replace(/\s/g, "") },
-  { key: "phone", label: "Phone", hint: "Optional. With the country code, so GHL can match it too", type: "tel", placeholder: "503 555 0142",
-    autoComplete: "tel", pre: "+", max: 20, clean: (s) => s.replace(/[^\d\s()-]/g, "").replace(/^\s+/, "") },
-  { key: "companyName", label: "Company", hint: "", type: "text", required: true, placeholder: "e.g. Northpine Dental", autoComplete: "organization", max: 120 },
-  { key: "website", label: "Website", hint: "Optional. Where your forms live today", type: "url", placeholder: "northpine.com", autoComplete: "url",
-    pre: "https://", max: 200, clean: (s) => s.replace(/^https?:\/\//i, "").replace(/\s/g, "") },
+    autoComplete: "email", half: true, max: 200, clean: (s) => s.replace(/\s/g, "") },
+  { key: "phone", label: "Phone", hint: "With the country code, so GHL can match it too", type: "tel", placeholder: "503 555 0142",
+    autoComplete: "tel", half: true, pre: "+", max: 20, clean: (s) => s.replace(/[^\d\s()-]/g, "").replace(/^\s+/, "") },
+  { key: "companyName", label: "Company", hint: "", type: "text", required: true, placeholder: "e.g. Northpine Dental", autoComplete: "organization", half: true, max: 120 },
+  { key: "website", label: "Website", hint: "Where your forms live today", type: "url", placeholder: "northpine.com", autoComplete: "url",
+    half: true, pre: "https://", max: 200, clean: (s) => s.replace(/^https?:\/\//i, "").replace(/\s/g, "") },
   { key: "message", label: "What would you like to talk about?", hint: "Reaches GHL as a note on your contact", type: "textarea", required: true,
     placeholder: "e.g. We run 12 dental sites on WordPress and lose leads when GHL is slow.", autoComplete: "off", max: 2000, called: "a message" },
-] as Field[]).map((f) => [f.key, f])) as Record<Key, Field>;
+] as FieldSpec[]).map((f) => [f.key, f])) as Record<Key, FieldSpec>;
 
 export type LeadFormSpec = {
   form: "trial" | "contact" | "demo";
   /** A booking form: the visitor picks a meeting time from the route's calendar. */
   booking?: boolean;
-  fields: (Key | [Key, Partial<Field>])[];
+  fields: (Key | [Key, Partial<FieldSpec>])[];
   from: string;
   route: string;
   send: string;
 };
 
 /** "contact.email: a real email address" from the engine, as a message under the email field. */
-function byField(problems: string[], fields: Field[]) {
+function byField(problems: string[], fields: FieldSpec[]) {
   const out: Partial<Record<Key | "form", string>> = {};
   for (const p of problems) {
     const m = p.match(/^contact\.(\w+): (.*)$/);
@@ -154,10 +159,17 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
         {/* Hidden from people; a bot that fills it in is turned away. */}
         <label className="fm-trap" aria-hidden="true">Fax<input name="fax" tabIndex={-1} autoComplete="off" /></label>
         <div className="fm-fields">
-          {fields.map((f) => (
-            <label key={f.key} className={f.half ? "fm-field fm-half" : "fm-field"}>
-              <span className="fm-label">{f.label}{!f.required && <em>Optional</em>}</span>
-              <span className={`fm-input${f.type === "textarea" ? " fm-area" : ""}${errors[f.key] ? " fm-bad" : ""}`}>
+          {fields.map((f) => {
+            const typo = f.key === "email" ? emailTypo(v.email) : null;
+            const company = f.key === "companyName" && !v.companyName ? companyFromEmail(v.email) : null;
+            return (
+            <Field key={f.key} kind={kindOf[f.key]} label={f.label} aside={!f.required ? <em>Optional</em> : undefined} half={f.half}
+              area={f.type === "textarea"} bad={!!errors[f.key]} error={errors[f.key]} hint={f.hint || undefined}
+              suggest={typo ? { text: <>Did you mean <b>{typo}</b>?</>, apply: () => setV({ ...v, email: typo }) }
+                : company ? { text: <>From your email: <b>{company}</b></>, apply: () => setV({ ...v, companyName: company }) } : null}
+              after={f.type === "textarea" ? (
+                <span className={`fm-count${v[f.key].length > f.max * 0.9 ? " fm-count-near" : ""}`}>{v[f.key].length.toLocaleString("en-US")} / {f.max.toLocaleString("en-US")}</span>
+              ) : undefined}>
                 {f.pre && <i>{f.pre}</i>}
                 {f.type === "textarea" ? (
                   <textarea
@@ -173,15 +185,9 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
                     onChange={(e) => { setV({ ...v, [f.key]: f.clean ? f.clean(e.target.value) : e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
                   />
                 )}
-              </span>
-              <span className="fm-under">
-                {errors[f.key] ? <span className="fm-error">{errors[f.key]}</span> : f.hint ? <span className="fm-hint">{f.hint}</span> : <span />}
-                {f.type === "textarea" && (
-                  <span className={`fm-count${v[f.key].length > f.max * 0.9 ? " fm-count-near" : ""}`}>{v[f.key].length.toLocaleString("en-US")} / {f.max.toLocaleString("en-US")}</span>
-                )}
-              </span>
-            </label>
-          ))}
+            </Field>
+            );
+          })}
         </div>
         {spec.booking && (
           <div className="fm-field fm-slot">

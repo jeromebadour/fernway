@@ -18,6 +18,7 @@
   --ok: #86c28f;         /* delivered, checked */
   --re: #a5aff2;         /* re-sent */
   --hazard: #e3b04f;     /* held, real problems only */
+  --stop: #d38a7c;       /* removes or ends something: delete, sign out, revoke (Kami's 2.2 meanings) */
 
   /* type */
   --font-body: "Instrument Sans", system-ui, sans-serif;

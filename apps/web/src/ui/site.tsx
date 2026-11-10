@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { JEROME } from "./builder";
-import { GDepot, GFind, GKey, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan } from "./glyphs";
+import { GDepot, GFind, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan, GSignIn } from "./glyphs";
 
 const nav = [
   { href: "/#how", label: "Product", G: GDepot },
@@ -22,7 +22,7 @@ export function SiteHeader({ current }: { current?: string }) {
         ))}
       </nav>
       <div className="wb-top-right">
-        <Link className="wb-ghost" href="/sign-in"><GKey size={16} />Sign in</Link>
+        <Link className="wb-ghost" href="/sign-in"><GSignIn size={16} />Sign in</Link>
         <Link className="wb-go" href="/trial"><GRoute size={16} />Start a trial</Link>
       </div>
       <button className="wb-menu" type="button" aria-label="Menu"><GMenu size={20} /></button>

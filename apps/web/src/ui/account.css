@@ -1,0 +1,110 @@
+/* Sign up, sign in and the account area (dark first: World G's navy; light and system follow once approved, 2.12). */
+
+/* Sign up and sign in */
+.au-wrap { margin-top: 34px; max-width: 640px; }
+.au-form .fm-has-g .au-show { flex: none; }
+.au-wrap-in { max-width: 460px; }
+.au-other { margin: 22px 0 0; font-size: 15px; color: var(--muted); }
+.au-other a { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px; color: var(--paper); border-bottom: 1px solid rgba(92,200,184,0.6); }
+.au-other a svg { color: var(--go); }
+.au-forgot { font: 500 13px var(--font-body); color: var(--input) !important; border-bottom: 1px solid rgba(122,168,224,0.45); }
+.au-show { display: inline-flex; align-items: center; gap: 6px; height: 34px; margin-right: 8px; padding: 0 10px; cursor: pointer;
+  font: 500 13px var(--font-mono); color: var(--muted); background: none; border: 1px solid var(--line); }
+.au-show svg { color: var(--input); }
+.au-meter { display: flex; align-items: center; gap: 12px; height: 50px; }
+.au-meter-cell { align-self: start; }
+.au-bars { display: grid; grid-template-columns: repeat(4, 34px); gap: 4px; }
+.au-bars i { height: 5px; background: rgba(190,210,232,0.14); }
+.au-bars .au-1 { background: var(--hazard); } .au-bars .au-2 { background: var(--input); } .au-bars .au-3, .au-bars .au-4 { background: var(--ok); }
+.au-word { font-size: 13.5px; color: var(--muted); }
+.au-word.au-1 { color: var(--hazard); } .au-word.au-4, .au-word.au-3 { color: var(--ok); }
+.au-draft { opacity: 0.96; }
+.au-draft-tag { margin-left: 8px; padding: 2px 6px; font: 500 11px var(--font-mono); color: var(--faint); border: 1px dashed var(--faint); }
+.wb .au-stamp { position: relative; flex: none; color: var(--go); border-color: currentColor; transform: rotate(-4deg); background: rgba(92,200,184,0.06); }
+
+.au-in-grid { align-items: center; }
+.au-now { padding: 28px 30px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); }
+.au-now .wb-label { display: flex; align-items: center; gap: 8px; }
+.au-now-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font: 600 24px/1.2 var(--font-body); }
+.au-ok { color: var(--ok); } .au-hz { color: var(--hazard); }
+.au-now-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 22px 0 22px; }
+.au-now-grid div { padding: 14px 16px; background: #070c13; border: 1px solid var(--line); }
+.au-now-grid dt { font: 500 11px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.au-now-grid dd { margin: 8px 0 0; font: 600 30px/1 var(--font-mono); color: var(--paper); }
+.au-now-grid dd em { margin-left: 3px; font: 500 13px var(--font-mono); font-style: normal; color: var(--muted); }
+.au-now-grid .au-sub { margin-top: 8px; font: 400 12.5px var(--font-body); color: var(--muted); }
+
+/* The account area's frame */
+.ac { min-height: 100vh; }
+.ac-top { display: flex; align-items: center; gap: 22px; height: 72px; padding: 0 var(--edge); border-bottom: 1px solid var(--line); background: #070c13; }
+.ac-where { padding-left: 22px; border-left: 1px solid var(--line); font: 600 14px var(--font-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.ac-me { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.ac-ava { width: 36px; height: 36px; font-size: 13px; }
+.ac-me-who { display: grid; line-height: 1.25; }
+.ac-me-who b { font-size: 14.5px; color: var(--paper); }
+.ac-me-who em { font-size: 12.5px; font-style: normal; color: var(--muted); }
+.ac-out { display: inline-flex; align-items: center; gap: 7px; height: 36px; margin-left: 10px; padding: 0 12px; cursor: pointer; font: 500 14px var(--font-body);
+  color: var(--paper); background: none; border: 1px solid var(--line); }
+.ac-out svg { color: var(--stop); }
+.ac-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 56px; padding: 44px var(--edge) 100px; }
+.ac-nav { position: sticky; top: 24px; align-self: start; display: grid; gap: 22px; }
+.ac-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ac-nav a { display: flex; align-items: center; gap: 11px; height: 42px; padding: 0 14px; font-size: 15px; font-weight: 500; color: #cfd8e3; border-left: 2px solid transparent; }
+.ac-nav a svg { color: var(--input); }
+.ac-nav a:hover { color: var(--paper); background: rgba(190,210,232,0.04); }
+.ac-nav a[aria-current="page"] { color: var(--paper); background: rgba(92,200,184,0.08); border-left-color: var(--go); }
+.ac-nav a[aria-current="page"] svg { color: var(--go); }
+.ac-nav .ac-delete { border-top: 1px solid var(--line); padding-top: 0; margin-top: 4px; }
+.ac-nav .ac-delete svg { color: var(--stop); }
+.ac-main { min-width: 0; max-width: 860px; }
+
+/* Profile */
+.ac-head { padding-bottom: 26px; }
+.wb .ac-h1 { margin: 0; font: 600 40px/1.1 var(--font-body); letter-spacing: -0.03em; color: var(--paper); }
+.ac-label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 24px 26px;
+  background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); border-left: 3px solid var(--go); }
+.ac-ava-lg { width: 96px; height: 96px; font-size: 30px; }
+.ac-photo img { width: 96px; height: 96px; object-fit: cover; border: 1px solid rgba(92,200,184,0.4); }
+.ac-label-name { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 24px/1.2 var(--font-body); color: var(--paper); }
+.ac-label-name .wb-role { margin: 0; color: var(--go); border-color: rgba(92,200,184,0.5); }
+.ac-label-org { margin: 4px 0 0; font-size: 15px; color: var(--muted); }
+.ac-label-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 0; }
+.ac-label-facts div { display: grid; gap: 3px; }
+.ac-label-facts dt { font: 500 10.5px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.ac-label-facts dd { margin: 0; font: 500 14px var(--font-mono); color: var(--paper); }
+.ac-photo-do { display: grid; gap: 8px; justify-items: start; max-width: 200px; }
+.ac-photo-do .wb-ghost { background: transparent; }
+.ac-stop svg { color: var(--stop) !important; }
+
+.ac-form { margin-top: 34px; }
+.ac-email { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ac-email-box { flex: 1; min-width: 240px; }
+.ac-ok-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; font: 600 11.5px/1 var(--font-label); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ok); border: 1.5px solid currentColor; }
+.ac-email .wb-ghost { background: transparent; height: 50px; }
+.ac-select { display: flex; flex: 1; height: 100%; }
+.ac-select select { flex: 1; height: 100%; padding: 0 14px; border: 0; background: none; color: var(--paper); font: 400 16px var(--font-body); outline: none; cursor: pointer; }
+.ac-select select option { background: var(--kraft); }
+.ac-save { display: flex; align-items: center; gap: 16px; margin-top: 30px; padding-top: 22px; border-top: 1px dashed var(--line); }
+.ac-save button:disabled { opacity: 0.45; cursor: default; }
+.ac-save-state { display: inline-flex; align-items: center; gap: 8px; font: 500 13.5px var(--font-mono); color: var(--muted); }
+.ac-save-state svg { color: var(--ok); }
+
+@media (max-width: 1000px) {
+  .ac-body { grid-template-columns: 1fr; gap: 24px; padding-top: 24px; }
+  .ac-nav { position: static; }
+  .ac-nav ul { display: flex; overflow-x: auto; gap: 4px; }
+  .ac-nav a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; }
+  .ac-nav a[aria-current="page"] { border-bottom-color: var(--go); }
+  .ac-label { grid-template-columns: auto minmax(0, 1fr); }
+  .ac-photo-do { grid-column: 1 / -1; display: flex; flex-wrap: wrap; max-width: none; }
+}
+@media (max-width: 700px) {
+  .ac-top { gap: 12px; }
+  .ac-where, .ac-me-who, .ac-me .ac-ava { display: none; }
+  .ac-out { white-space: nowrap; margin-left: 0; }
+  .ac-ava-lg { width: 72px; height: 72px; font-size: 24px; }
+  .wb .ac-h1 { font-size: 30px; }
+  .ac-label { grid-template-columns: 1fr; }
+  .au-now-grid { grid-template-columns: 1fr; }
+}

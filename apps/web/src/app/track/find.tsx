@@ -1,6 +1,8 @@
 "use client";
 // Find a lead again: the waybill number and the email it was sent with. The number field types like a waybill:
 // "FW" is already there, only digits go in, and the spaces appear by themselves (FW 26 00017).
+import { Field } from "@/ui/field";
+import { emailTypo } from "@/ui/field-help";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GScan } from "@/ui/glyphs";
@@ -41,25 +43,20 @@ export function FindWaybill() {
     }
   }
 
+  const typo = emailTypo(email);
   return (
     <form className="fm tr-find" onSubmit={find} noValidate>
       <div className="fm-fields">
-        <label className="fm-field">
-          <span className="fm-label">Waybill number</span>
-          <span className={`fm-input${problem && !complete ? " fm-bad" : ""}`}>
-            <i>FW</i>
-            <input name="number" inputMode="numeric" autoComplete="off" placeholder="26 00017" value={num}
-              onChange={(e) => { setNum(shape(e.target.value)); setProblem(null); }} className="tr-num" />
-          </span>
-          <span className="fm-hint">On your receipt, and in the address of its page</span>
-        </label>
-        <label className="fm-field">
-          <span className="fm-label">Email you sent it with</span>
-          <span className="fm-input">
-            <input name="email" type="email" inputMode="email" autoComplete="email" placeholder="e.g. lena@northpine.com" value={email}
-              onChange={(e) => { setEmail(e.target.value.replace(/\s/g, "")); setProblem(null); }} />
-          </span>
-        </label>
+        <Field kind="waybill" label="Waybill number" bad={!!problem && !complete} hint="On your receipt, and in the address of its page">
+          <i>FW</i>
+          <input name="number" inputMode="numeric" autoComplete="off" placeholder="26 00017" value={num}
+            onChange={(e) => { setNum(shape(e.target.value)); setProblem(null); }} className="tr-num" />
+        </Field>
+        <Field kind="email" label="Email you sent it with"
+          suggest={typo ? { text: <>Did you mean <b>{typo}</b>?</>, apply: () => setEmail(typo) } : null}>
+          <input name="email" type="email" inputMode="email" autoComplete="email" placeholder="e.g. lena@northpine.com" value={email}
+            onChange={(e) => { setEmail(e.target.value.replace(/\s/g, "")); setProblem(null); }} />
+        </Field>
       </div>
       {problem && <p className="fm-error fm-error-form">{problem}</p>}
       <button className="wb-go wb-go-lg fm-send" type="submit" disabled={busy}><GScan />{busy ? "Looking…" : "Find my waybill"}</button>

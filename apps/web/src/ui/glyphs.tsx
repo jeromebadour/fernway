@@ -46,3 +46,24 @@ export const GJump = (p: P) => (<S {...p}><path d="M4 3v8h11" /><path d="M12 8l3
 export const GProof = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M5.5 10l2.5 2.5 5-5" /><path d="M5 15.5h10" /></S>);
 // A link out to another site (the builder's own site, GitHub).
 export const GOut = (p: P) => (<S {...p}><path d="M9 4H3v13h13v-6" /><path d="M11 2h7v7" /><path d="M18 2l-8 8" /></S>);
+// The account area: each section and action its own glyph.
+export const GUser = (p: P) => (<S {...p}><rect x="6" y="2" width="8" height="8" /><path d="M2 18v-3l3-3h10l3 3v3" /></S>);
+export const GSliders = (p: P) => (<S {...p}><path d="M2 5h16M2 10h16M2 15h16" /><rect x="5" y="3" width="3" height="4" fill="currentColor" stroke="none" /><rect x="12" y="8" width="3" height="4" fill="currentColor" stroke="none" /><rect x="7" y="13" width="3" height="4" fill="currentColor" stroke="none" /></S>);
+export const GLock = (p: P) => (<S {...p}><rect x="3" y="9" width="14" height="9" /><path d="M6 9V5h8v4" /><path d="M10 12v3" /></S>);
+export const GDevice = (p: P) => (<S {...p}><rect x="2" y="3" width="16" height="10" /><path d="M7 17h6M10 13v4" /></S>);
+export const GRecord = (p: P) => (<S {...p}><rect x="2" y="2" width="7" height="16" /><rect x="11" y="2" width="7" height="16" /><path d="M4 6h3M4 9h3M13 6h3M13 9h3" /></S>);
+export const GTrash = (p: P) => (<S {...p}><path d="M3 5h14M8 5V2h4v3" /><path d="M5 5l1 13h8l1-13" /></S>);
+export const GEye = (p: P) => (<S {...p}><path d="M1 10l4-5h10l4 5-4 5H5z" /><rect x="8" y="8" width="4" height="4" /></S>);
+export const GEyeOff = (p: P) => (<S {...p}><path d="M1 10l4-5h10l4 5-4 5H5z" /><path d="M3 17L17 3" /></S>);
+export const GCamera = (p: P) => (<S {...p}><rect x="2" y="5" width="16" height="12" /><path d="M7 5V3h6v2" /><rect x="7" y="8" width="6" height="6" /></S>);
+export const GSignIn = (p: P) => (<S {...p}><path d="M11 3h6v14h-6" /><path d="M2 10h10M9 7l3 3-3 3" /></S>);
+export const GSignUp = (p: P) => (<S {...p}><rect x="2" y="2" width="9" height="9" /><path d="M2 18v-2l3-3h6" /><path d="M15 11v7M11.5 14.5h7" /></S>);
+export const GSave = (p: P) => (<S {...p}><path d="M3 3h11l3 3v11H3z" /><path d="M6 3v5h7V3" /><rect x="6" y="12" width="8" height="5" /></S>);
+export const GMail = (p: P) => (<S {...p}><rect x="2" y="4" width="16" height="12" /><path d="M2 5l8 6 8-6" /></S>);
+export const GSignOut = (p: P) => (<S {...p}><path d="M9 3H3v14h6" /><path d="M7 10h11M15 7l3 3-3 3" /></S>);
+// Field kinds (each its own glyph, shown inside the field).
+export const GBuilding = (p: P) => (<S {...p}><rect x="4" y="2" width="12" height="16" /><path d="M7 6h2M11 6h2M7 10h2M11 10h2M9 18v-4h2v4" /></S>);
+export const GPhone = (p: P) => (<S {...p}><rect x="5" y="2" width="10" height="16" /><path d="M9 15h2" /></S>);
+export const GGlobe = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M2 10h16M10 2c-3 3-3 13 0 16M10 2c3 3 3 13 0 16" /></S>);
+export const GNote = (p: P) => (<S {...p}><path d="M3 3h14v10l-5 5H3z" /><path d="M12 18v-5h5" /><path d="M6 7h8M6 10h5" /></S>);
+export const GCaps = (p: P) => (<S {...p}><path d="M10 3l7 7h-4v4H7v-4H3z" /><path d="M7 17h6" /></S>);
