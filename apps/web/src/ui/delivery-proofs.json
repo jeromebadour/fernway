@@ -6,8 +6,16 @@
       "ghl": "GHL limits how fast an app may call it, and answers 429 when the calls come too fast.",
       "fernway": "Fernway's queue sends at most 40 requests every 10 seconds, whatever arrives at once. If GHL still answers 429, the lead waits for its next try on the retry clock (case 02). It is never dropped.",
       "proofs": [
-        { "file": "packages/delivery/test/engine.test.ts", "name": "waits and tries again when GHL says too many requests" },
-        { "file": "packages/delivery/test/breakit.test.ts", "name": "too many requests: waits 30 s sped up 10 times, then delivers" }
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "waits and tries again when GHL says too many requests",
+          "line": 115
+        },
+        {
+          "file": "packages/delivery/test/breakit.test.ts",
+          "name": "too many requests: waits 30 s sped up 10 times, then delivers",
+          "line": 48
+        }
       ]
     },
     {
@@ -17,10 +25,26 @@
       "fernway": "Those pass on their own, so the lead is tried again on the retry clock: 8 tries over about 24 hours. After the eighth it is returned with every answer kept, and one press sends it again.",
       "clock": true,
       "proofs": [
-        { "file": "packages/core/test/delivery.test.ts", "name": "spreads them over about 24 hours" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "tries 8 times over 24 h on the promised schedule, then returns the waybill" },
-        { "file": "packages/delivery/test/queue.test.ts", "name": "retries through the queue on its own until GHL takes the lead" },
-        { "file": "packages/delivery/test/breakit.test.ts", "name": "no answer, and an expired token: each retried once, then delivered" }
+        {
+          "file": "packages/core/test/delivery.test.ts",
+          "name": "spreads them over about 24 hours",
+          "line": 9
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "tries 8 times over 24 h on the promised schedule, then returns the waybill",
+          "line": 180
+        },
+        {
+          "file": "packages/delivery/test/queue.test.ts",
+          "name": "retries through the queue on its own until GHL takes the lead",
+          "line": 33
+        },
+        {
+          "file": "packages/delivery/test/breakit.test.ts",
+          "name": "no answer, and an expired token: each retried once, then delivered",
+          "line": 61
+        }
       ]
     },
     {
@@ -29,23 +53,59 @@
       "ghl": "GHL refuses the data itself, like a phone number without its country code (any other 4xx).",
       "fernway": "Trying again would only repeat the refusal, so the lead is held at once, with GHL's reason in words on its receipt. Once the data is fixed, a resend starts it on a fresh set of tries. A lead GHL could never match (no email and no phone) is refused at the door, before a waybill is made.",
       "proofs": [
-        { "file": "packages/delivery/test/engine.test.ts", "name": "holds a lead GHL refuses for its data, at once, with the reason" },
-        { "file": "packages/delivery/test/track.test.ts", "name": "shows GHL's refusal as words, not JSON" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "resends a held waybill with a fresh set of tries, on the receipt" },
-        { "file": "packages/delivery/test/queue.test.ts", "name": "runs a resend through the real queue, though its first try's job already ran" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "refuses a lead GHL couldn't match, with a reason the sender can act on" }
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "holds a lead GHL refuses for its data, at once, with the reason",
+          "line": 154
+        },
+        {
+          "file": "packages/delivery/test/track.test.ts",
+          "name": "shows GHL's refusal as words, not JSON",
+          "line": 76
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "resends a held waybill with a fresh set of tries, on the receipt",
+          "line": 231
+        },
+        {
+          "file": "packages/delivery/test/queue.test.ts",
+          "name": "runs a resend through the real queue, though its first try's job already ran",
+          "line": 72
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "refuses a lead GHL couldn't match, with a reason the sender can act on",
+          "line": 72
+        }
       ]
     },
     {
       "id": "token",
-      "title": "A token running out mid-delivery",
+      "title": "A token running out mid‑delivery",
       "ghl": "GHL's access tokens expire, and each refresh token can be spent only once.",
       "fernway": "Tokens are refreshed 5 minutes before they expire, under a lock, so two workers that need a token at the same moment spend the refresh token once. If GHL answers 401 anyway, Fernway refreshes and tries again. If GHL refuses the refresh, the connection is marked for reconnecting and leads are held with that reason, never lost.",
       "proofs": [
-        { "file": "packages/delivery/test/oauth.test.ts", "name": "refreshes an expired token once, form-encoded, and keeps the new refresh token" },
-        { "file": "packages/delivery/test/oauth.test.ts", "name": "spends the single-use refresh token once even when two workers need a token at the same moment" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "refreshes the token after a 401 and tries again" },
-        { "file": "packages/delivery/test/oauth.test.ts", "name": "marks the connection for reconnecting when GHL refuses the refresh, and holds leads with that reason" }
+        {
+          "file": "packages/delivery/test/oauth.test.ts",
+          "name": "refreshes an expired token once, form-encoded, and keeps the new refresh token",
+          "line": 180
+        },
+        {
+          "file": "packages/delivery/test/oauth.test.ts",
+          "name": "spends the single-use refresh token once even when two workers need a token at the same moment",
+          "line": 196
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "refreshes the token after a 401 and tries again",
+          "line": 168
+        },
+        {
+          "file": "packages/delivery/test/oauth.test.ts",
+          "name": "marks the connection for reconnecting when GHL refuses the refresh, and holds leads with that reason",
+          "line": 208
+        }
       ]
     },
     {
@@ -54,11 +114,31 @@
       "ghl": "A website sends a form again after a timeout, or GHL takes a contact but its answer never arrives.",
       "fernway": "Each lead carries an idempotency key, so the same lead sent twice is one waybill. Fernway keeps every id GHL gives back (contact, note, meeting, opportunity), so a retry carries on where the last try stopped and never makes a second. Contacts go through GHL's upsert, matched by email, then phone.",
       "proofs": [
-        { "file": "packages/delivery/test/engine.test.ts", "name": "makes one shipment of the same lead sent twice" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "never makes a second contact: a try after a failed stage reuses the contact GHL already gave" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "never makes a second contact when GHL took the lead but its answer was lost" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "adds the message once, between the contact and the opportunity, and never again on a retry" },
-        { "file": "packages/delivery/test/booking.test.ts", "name": "books the meeting between the contact and the opportunity, once, even when a later step is retried" }
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "makes one shipment of the same lead sent twice",
+          "line": 60
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "never makes a second contact: a try after a failed stage reuses the contact GHL already gave",
+          "line": 131
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "never makes a second contact when GHL took the lead but its answer was lost",
+          "line": 143
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "adds the message once, between the contact and the opportunity, and never again on a retry",
+          "line": 257
+        },
+        {
+          "file": "packages/delivery/test/booking.test.ts",
+          "name": "books the meeting between the contact and the opportunity, once, even when a later step is retried",
+          "line": 46
+        }
       ]
     },
     {
@@ -67,9 +147,21 @@
       "ghl": "Not GHL this time: the worker restarts, or the queue loses a job.",
       "fernway": "Every scan is written in the same database transaction that moves the lead on, and the app's own database role can add scans but never change or remove one. Every minute a sweep puts back on the queue any lead whose try is more than 2 minutes late. A try that already ran, or isn't due yet, does nothing, so a job that arrives twice is harmless.",
       "proofs": [
-        { "file": "packages/delivery/test/engine.test.ts", "name": "lets the app add scans but never change or remove one" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "puts overdue shipments back on the queue (the safety net if Redis lost them)" },
-        { "file": "packages/delivery/test/engine.test.ts", "name": "does nothing for a try that already ran or isn't due" }
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "lets the app add scans but never change or remove one",
+          "line": 247
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "puts overdue shipments back on the queue (the safety net if Redis lost them)",
+          "line": 219
+        },
+        {
+          "file": "packages/delivery/test/engine.test.ts",
+          "name": "does nothing for a try that already ran or isn't due",
+          "line": 209
+        }
       ]
     }
   ]

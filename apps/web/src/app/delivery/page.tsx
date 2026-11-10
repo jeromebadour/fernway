@@ -14,9 +14,10 @@ export const metadata: Metadata = {
 };
 
 // Each case: what GHL (or the world) does, what Fernway does, and the tests that prove it. The tests are named word for
-// word; packages/delivery/test/proofs.test.ts fails the build if a name stops matching its file.
+// word with their line; packages/delivery/test/proofs.test.ts fails the build if a name or a line stops matching.
+// (GitHub's code view ignores text fragments, so the link names the line: Kami 2026-11-10 17:39.)
 const REPO = "https://github.com/jeromebadour/fernway";
-const testLink = (file: string, name: string) => `${REPO}/blob/main/${file}#:~:text=${encodeURIComponent(name)}`;
+const testLink = (file: string, line: number) => `${REPO}/blob/main/${file}#L${line}`;
 const base = (file: string) => file.split("/").pop()!;
 
 export default function Delivery() {
@@ -48,8 +49,8 @@ export default function Delivery() {
                 <ol>
                   {c.proofs.map((p) => (
                     <li key={p.name}>
-                      <a href={testLink(p.file, p.name)} target="_blank" rel="noopener">
-                        <GProof size={15} /><code>{base(p.file)}</code><span>{p.name}</span>
+                      <a href={testLink(p.file, p.line)} target="_blank" rel="noopener">
+                        <GProof size={15} /><code>{base(p.file)}:{p.line}</code><span>{p.name}</span>
                       </a>
                     </li>
                   ))}
