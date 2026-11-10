@@ -155,6 +155,13 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.20' \
             -d "{\"form\":\"contact\",\"key\":\"$(cat /proc/sys/kernel/random/uuid)\",\"contact\":{\"email\":\"ask@b.example\",\"message\":\"Can Fernway hold our leads?\"}}" $B/api/leads/site)" = 201
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/contact)" = 200
+          # Track a lead: the number and the email it was sent with open the receipt; a wrong email gives nothing away.
+          number=$(echo "$out" | num)
+          find() { curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.30' -d "$1" $B/api/track/find; }
+          test "$(find "{\"number\":\"$number\",\"email\":\"Lena@Northpine.example\"}")" = 200
+          test "$(find "{\"number\":\"$number\",\"email\":\"someone@else.example\"}")" = 404
+          test "$(find "{\"number\":\"FW 26 99999\",\"email\":\"lena@northpine.example\"}")" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/track)" = 200
 
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a

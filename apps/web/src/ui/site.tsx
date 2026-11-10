@@ -1,12 +1,13 @@
 // The public site's shared frame: the top bar, the footer and the phone's pinned trial button (styles in site.css).
 import Link from "next/link";
-import { GDepot, GKey, GManifest, GMark, GMenu, GPrice, GRoute, GScan } from "./glyphs";
+import { GDepot, GFind, GKey, GManifest, GMark, GMenu, GPrice, GRoute, GScan } from "./glyphs";
 
 const nav = [
   { href: "/#how", label: "Product", G: GDepot },
   { href: "/pricing", label: "Pricing", G: GPrice },
   { href: "/docs", label: "Docs", G: GManifest },
   { href: "/break-it", label: "Live demo", G: GScan },
+  { href: "/track", label: "Track a lead", G: GFind },
 ];
 
 export function SiteHeader({ current }: { current?: string }) {
@@ -36,9 +37,9 @@ export function SiteFooter() {
           <p>Lead delivery for GoHighLevel. Every lead delivered, and the receipt to prove it.</p>
         </div>
         <nav className="wb-foot-cols" aria-label="Footer">
-          <div><p>Product</p><Link href="/#how">How a lead travels</Link><Link href="/pricing">Pricing</Link><Link href="/break-it">Live demo</Link><Link href="/status">Status</Link></div>
+          <div><p>Product</p><Link href="/#how">How a lead travels</Link><Link href="/track">Track a lead</Link><Link href="/pricing">Pricing</Link><Link href="/break-it">Live demo</Link><Link href="/status">Status</Link></div>
           <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link><Link href="/docs/wordpress">WordPress</Link><Link href="/docs/laravel">Laravel</Link></div>
-          <div><p>Fernway</p><Link href="/about">About</Link><Link href="/changelog">Changelog</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div>
+          <div><p>Fernway</p><Link href="/contact">Contact sales</Link><Link href="/about">About</Link><Link href="/changelog">Changelog</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div>
         </nav>
       </div>
       <div className="wb-foot-bottom">

@@ -27,6 +27,13 @@ export function intake() {
 export const PER_VISITOR_HOUR = 5;
 export const SITE_DAY = 200;
 
+/** Looking a waybill up by number and email: enough tries for typos, too few to guess other people's leads. */
+export async function lookupAllowed(ip: string): Promise<boolean> {
+  const key = `fernway:track-find:ip:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
+  const res = (await redis().multi().incr(key).expire(key, 3_700).exec()) ?? [];
+  return Number(res[0]?.[1]) <= 10;
+}
+
 /** Counts one send; true if it is within both limits. */
 export async function withinLimits(ip: string): Promise<{ ok: true } | { ok: false; reason: "visitor" | "site" }> {
   const r = redis();

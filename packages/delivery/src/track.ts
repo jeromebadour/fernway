@@ -1,8 +1,8 @@
 // The public tracking receipt: what a visitor may see about their own lead, reached only through a signed link.
 // The link names one shipment and expires; nothing in it can be changed to reach another. The view shows the
 // waybill, its route and every scan with what GHL answered, but never what was sent, GHL's ids, or the full email.
-import { formatWaybill } from "@fernway/core";
-import { asc, eq } from "drizzle-orm";
+import { formatWaybill, parseWaybill } from "@fernway/core";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { signValue, verifyValue } from "./crypto.js";
 import type { Db } from "./db.js";
 import { routes, scans, shipments, type ScanKind } from "./schema.js";
@@ -55,4 +55,22 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
       note: r.kind === "handed" || r.kind === "signed" ? null : r.note,
     })),
   };
+}
+
+/**
+ * Finds a waybill again from what the visitor knows: its number and the email they sent it with. Both must match a
+ * lead of this account; anything else is "not found", the same answer whether the number exists or not.
+ */
+export async function findWaybill(db: Db, accountId: number, number: string, email: string): Promise<number | null> {
+  const w = parseWaybill(number);
+  const e = email.trim().toLowerCase();
+  if (!w || !e) return null;
+  const [s] = await db
+    .select({ id: shipments.id })
+    .from(shipments)
+    .where(and(
+      eq(shipments.accountId, accountId), eq(shipments.waybillYear, w.year), eq(shipments.waybillSeq, w.seq),
+      sql`${shipments.contact}->>'email' = ${e}`,
+    ));
+  return s?.id ?? null;
 }

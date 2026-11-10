@@ -4,7 +4,8 @@
 // into Fernway's GHL sandbox. Each form is the same component with its own fields and route.
 import { useEffect, useRef, useState } from "react";
 import type { TrackView } from "@fernway/delivery";
-import { GRoute, GScan } from "@/ui/glyphs";
+import Link from "next/link";
+import { GCheck, GCopy, GRoute, GScan } from "@/ui/glyphs";
 import { Receipt } from "@/ui/receipt";
 
 type Key = "firstName" | "lastName" | "email" | "phone" | "companyName" | "website" | "message";
@@ -52,8 +53,24 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
   const [errors, setErrors] = useState<Partial<Record<Key | "form", string>>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<{ token: string; view: TrackView } | null>(null);
+  const [copied, setCopied] = useState(false);
   const key = useRef<string>("");
-  useEffect(() => { key.current = crypto.randomUUID(); }, []);
+  const home = useRef<string>("");
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { key.current = crypto.randomUUID(); home.current = window.location.pathname; }, []);
+
+  const receiptUrl = () => (sent ? `${window.location.origin}/track/${sent.token}` : "");
+  async function copy() {
+    try { await navigator.clipboard.writeText(receiptUrl()); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* the link is still in the address bar */ }
+  }
+  // A fresh form: new values, a new key (so it is a new lead), and the form's own address back.
+  function another() {
+    setV(Object.fromEntries(fields.map((f) => [f.key, ""])) as Record<Key, string>);
+    setSent(null);
+    setCopied(false);
+    key.current = crypto.randomUUID();
+    window.history.replaceState(null, "", home.current);
+  }
 
   async function send(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,11 +96,8 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
       const t = await fetch(`/api/track/${token}`, { cache: "no-store" }).then((x) => x.json());
       setSent({ token, view: t.view });
       window.history.replaceState(null, "", `/track/${token}`);
-      // On a phone the receipt is under the form: bring it into view so the visitor sees their lead start moving.
-      requestAnimationFrame(() => {
-        const side = document.querySelector(".fm-side");
-        if (side && side.getBoundingClientRect().top > window.innerHeight * 0.6) side.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      // Say it plainly, at once: sent, its number, where its receipt lives. Closing it shows the lead travelling.
+      requestAnimationFrame(() => dialog.current?.showModal());
     } catch {
       setErrors({ form: "Couldn't reach Fernway. Check your connection and send it again; it won't make a second lead." });
     } finally {
@@ -91,10 +105,33 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
     }
   }
 
+  // After the dialog, bring the receipt into view on a phone, where it sits under the form.
+  function watch() {
+    dialog.current?.close();
+    const side = document.querySelector(".fm-side");
+    if (side && side.getBoundingClientRect().top > window.innerHeight * 0.6) side.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const name = [v.firstName, v.lastName].filter(Boolean).join(" ");
   const steps = ["Picked up", "Checked", "Handed to GHL", ...(v.message !== undefined ? ["Message added as a note"] : []), "Signed for"];
   return (
     <div className="fm-grid">
+      {sent ? (
+        <div className="fm-done">
+          <div className="wb-stamp rc-stamp wb-stamp-ok fm-done-stamp"><GCheck size={16} />Sent</div>
+          <p className="wb-label">Your waybill</p>
+          <p className="fm-done-no">{sent.view.number}</p>
+          <p className="fm-done-text">Your details went into Fernway&rsquo;s demo GoHighLevel account. Watch the receipt beside this, or come back to it any time in the next 30 days:</p>
+          <ul className="fm-done-ways">
+            <li><GRoute size={15} /><span>At this page&rsquo;s address, which is now your receipt&rsquo;s.</span></li>
+            <li><GScan size={15} /><span>On <Link href="/track">Track a lead</Link>, with this number and your email.</span></li>
+          </ul>
+          <div className="fm-done-do">
+            <button type="button" className="wb-ghost fm-btn" onClick={copy}><GCopy size={16} />{copied ? "Link copied" : "Copy receipt link"}</button>
+            <button type="button" className="wb-ghost fm-btn" onClick={another}><GRoute size={16} />Send another</button>
+          </div>
+        </div>
+      ) : (
       <form className="fm" onSubmit={send} noValidate>
         {/* Hidden from people; a bot that fills it in is turned away. */}
         <label className="fm-trap" aria-hidden="true">Fax<input name="fax" tabIndex={-1} autoComplete="off" /></label>
@@ -106,14 +143,14 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
                 {f.pre && <i>{f.pre}</i>}
                 {f.type === "textarea" ? (
                   <textarea
-                    name={f.key} required={f.required} placeholder={f.placeholder} maxLength={f.max} disabled={!!sent} rows={5}
+                    name={f.key} required={f.required} placeholder={f.placeholder} maxLength={f.max} rows={5}
                     value={v[f.key]} aria-invalid={!!errors[f.key]}
                     onChange={(e) => { setV({ ...v, [f.key]: e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
                   />
                 ) : (
                   <input
                     type={f.type} name={f.key} required={f.required} placeholder={f.placeholder} autoComplete={f.autoComplete}
-                    maxLength={f.max} disabled={!!sent} inputMode={f.type === "tel" ? "tel" : f.type === "email" ? "email" : undefined}
+                    maxLength={f.max} inputMode={f.type === "tel" ? "tel" : f.type === "email" ? "email" : undefined}
                     value={v[f.key]} aria-invalid={!!errors[f.key]}
                     onChange={(e) => { setV({ ...v, [f.key]: f.clean ? f.clean(e.target.value) : e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
                   />
@@ -130,10 +167,22 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
         </div>
         <p className="fm-note">Fernway is a portfolio product. What you send goes to its demo GoHighLevel account and is deleted after 30 days.</p>
         {errors.form && <p className="fm-error fm-error-form">{errors.form}</p>}
-        {sent
-          ? <p className="fm-sent"><GRoute size={16} />Sent. Your receipt stays at this page&rsquo;s address for 30 days.</p>
-          : <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : spec.send}</button>}
+        <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : spec.send}</button>
       </form>
+      )}
+
+      <dialog ref={dialog} className="fm-dialog" aria-labelledby="fm-dialog-h" onClose={() => setCopied(false)}>
+        {sent && (<>
+          <div className="wb-stamp rc-stamp wb-stamp-ok fm-done-stamp"><GCheck size={16} />Picked up</div>
+          <h2 id="fm-dialog-h">Your lead is on its way.</h2>
+          <p className="fm-dialog-no">Waybill <b>{sent.view.number}</b></p>
+          <p>Keep this number. With your email it opens your lead&rsquo;s receipt on <b>Track a lead</b> for 30 days, and the receipt link works on its own too.</p>
+          <div className="fm-dialog-do">
+            <button type="button" className="wb-go fm-btn" onClick={watch} autoFocus><GScan size={16} />Watch it travel</button>
+            <button type="button" className="wb-ghost fm-btn" onClick={copy}><GCopy size={16} />{copied ? "Link copied" : "Copy receipt link"}</button>
+          </div>
+        </>)}
+      </dialog>
 
       <div className="fm-side">
         {sent ? <Receipt initial={sent.view} token={sent.token} /> : (

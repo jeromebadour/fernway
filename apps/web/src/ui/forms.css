@@ -30,7 +30,26 @@
 .fm-note { margin: 26px 0 0; padding-top: 18px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.55; color: var(--muted); }
 .fm-send { margin-top: 22px; border: 0; cursor: pointer; font-family: var(--font-body); }
 .fm-send:disabled { opacity: 0.6; cursor: progress; }
-.fm-sent { display: flex; align-items: center; gap: 10px; margin: 22px 0 0; font-size: 15.5px; color: var(--ok); }
+/* After sending: the form gives way to what was sent and where to find it again */
+.fm-done { padding: 28px 30px 30px; border: 1px solid rgba(134,194,143,0.35); background: rgba(134,194,143,0.04); }
+.wb .fm-done-stamp { margin: 0 0 22px; transform: rotate(-3deg); }
+.fm-done-no { margin: 0; font: 500 34px/1 var(--font-mono); letter-spacing: 0.06em; color: var(--paper); }
+.fm-done-text { margin: 20px 0 0; font-size: 15.5px; line-height: 1.6; color: #cfd8e3; }
+.fm-done-ways { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.fm-done-ways li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.fm-done-ways svg { color: var(--input); margin-top: 3px; }
+.fm-done-ways a { color: var(--paper); border-bottom: 1px solid rgba(122,168,224,0.5); }
+.fm-done-do, .fm-dialog-do { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.fm-btn { cursor: pointer; background: none; font-family: var(--font-body); }
+.wb-go.fm-btn { border: 0; background: var(--go); }
+.fm-dialog { width: min(520px, calc(100vw - 32px)); padding: 30px 32px 32px; border: 1px solid rgba(190,210,232,0.2); color: var(--paper);
+  background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); box-shadow: 0 40px 80px rgba(0,0,0,0.6); font-family: var(--font-body); }
+.fm-dialog::backdrop { background: rgba(4,7,12,0.72); backdrop-filter: blur(3px); }
+.fm-dialog h2 { margin: 0; font: 600 30px/1.15 var(--font-body); letter-spacing: -0.02em; }
+.fm-dialog p { margin: 14px 0 0; font-size: 15.5px; line-height: 1.6; color: #cfd8e3; }
+.fm-dialog p b { color: var(--paper); font-weight: 600; }
+.fm-dialog-no { font-size: 16px !important; }
+.fm-dialog-no b { font: 500 20px var(--font-mono); letter-spacing: 0.05em; }
 .fm-preview { opacity: 0.92; }
 .fm-stamp-wait { color: var(--faint); }
 .fm-ghost { color: var(--faint); font-weight: 500; }
@@ -42,7 +61,15 @@
   .wb .fm-h1 { font-size: 48px; }
 }
 @media (max-width: 1000px) { .fm-grid { grid-template-columns: 1fr; } }
+.tr-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 520px); gap: 64px; align-items: start; }
+.tr-num { font: 500 18px var(--font-mono) !important; letter-spacing: 0.06em; }
+@media (max-width: 1000px) { .tr-grid { grid-template-columns: 1fr; gap: 8px; } }
 @media (max-width: 760px) {
+  .fm-done { padding: 22px 18px; }
+  .fm-done-no { font-size: 28px; }
+  .fm-dialog { padding: 24px 20px; }
+  .fm-dialog h2 { font-size: 25px; }
+  .fm-btn { flex: 1 1 100%; justify-content: center; }
   .wb .fm-page { padding-top: 40px; }
   .wb .fm-h1 { font-size: 36px; line-height: 1.08; }
   .fm-fields { grid-template-columns: 1fr; }

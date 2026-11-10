@@ -33,3 +33,5 @@ export const GGrid = (p: P) => (<S {...p}><rect x="3" y="2" width="14" height="1
 export const GMenu = (p: P) => (<S {...p}><path d="M3 5h14M3 10h14M3 15h9" /></S>);
 export const GHold = (p: P) => (<S {...p}><rect x="3" y="3" width="14" height="14" /><path d="M8 7v6M12 7v6" /></S>);
 export const GClock = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M10 5v5h4" /></S>);
+export const GCopy = (p: P) => (<S {...p}><rect x="6" y="6" width="11" height="11" /><path d="M3 13V3h10" /></S>);
+export const GFind = (p: P) => (<S {...p}><rect x="2" y="2" width="11" height="11" /><path d="M13 13l5 5" /><path d="M5 7.5h5" /></S>);
