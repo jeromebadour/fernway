@@ -1,4 +1,4 @@
-import { signIn, signUp } from "@fernway/delivery";
+import { openSession, signUp } from "@fernway/delivery";
 import { answer, appUrl, gate, ip } from "@/lib/account-api";
 import { delivery } from "@/lib/connect";
 import { letter, sendMail } from "@/lib/mail";
@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     foot: "The link works once, for 48 hours. If you didn't start a trial, ignore this email and nothing happens.",
   }));
   if (!sent.ok) console.error(`sign-up: confirm email not sent: ${sent.why}`);
-  const s = await signIn(db, email, String(g.body.password), deviceOf(request.headers.get("user-agent")));
-  return answer(201, { ok: true, next: "/account?done=welcome", emailSent: sent.ok }, s ? sessionCookie(s.token) : undefined);
+  const token = await openSession(db, r.userId, deviceOf(request.headers.get("user-agent")));
+  return answer(201, { ok: true, next: "/account?done=welcome", emailSent: sent.ok }, sessionCookie(token));
 }

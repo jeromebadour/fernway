@@ -70,16 +70,23 @@ export async function signUp(db: Db, input: unknown): Promise<{ ok: true; userId
   return { ok: true, ...made, confirmToken: await newLink(db, made.userId, "confirm") };
 }
 
-/** Opens a session for the right email and password; null for anything else, the same null whatever was wrong. */
-export async function signIn(db: Db, emailIn: string, passwordIn: string, device = ""): Promise<{ token: string; userId: number } | null> {
+/** Opens a session for the right email and password; null for anything else, the same null whatever was wrong. With
+ *  two-step sign-in on, no session yet: the caller asks for the app's code, then opens one with `openSession`. */
+export async function signIn(db: Db, emailIn: string, passwordIn: string, device = ""): Promise<{ token: string; userId: number } | { twoStep: true; userId: number } | null> {
   const e = email.safeParse(emailIn);
   const [u] = e.success ? await db.select().from(users).where(eq(users.email, e.data)) : [];
   // Without such a person, a hash is still checked, so a wrong email takes as long as a wrong password.
   const ok = await passwordMatches(passwordIn, u?.passwordHash ?? DUMMY);
   if (!u || !ok) return null;
+  if (u.totpEnabledAt) return { twoStep: true, userId: u.id };
+  return { token: await openSession(db, u.id, device), userId: u.id };
+}
+
+/** A new session for a person who has proved who they are; its secret is returned once, only its hash kept. */
+export async function openSession(db: Db, userId: number, device = ""): Promise<string> {
   const token = secret();
-  await db.insert(sessions).values({ userId: u.id, tokenHash: sha(token), device: device.slice(0, 120), expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) });
-  return { token, userId: u.id };
+  await db.insert(sessions).values({ userId, tokenHash: sha(token), device: device.slice(0, 120), expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) });
+  return token;
 }
 const DUMMY = "scrypt$32768$8$1$AAAAAAAAAAAAAAAAAAAAAA==$" + Buffer.alloc(64).toString("base64");
 

@@ -89,4 +89,13 @@ describe("retention and the message note", () => {
     expect(await purgeExpired(deps, accountId)).toEqual({ removed: 1, waiting: 0 });
     expect(ghl.deleted).toEqual(["contacts/c_1/notes/n_1"]);
   });
+  it("keeps the move to Customer after a payment, however old: it goes only with its account", async () => {
+    const { deps } = testDeps(app.db, fakeConnection());
+    const r = await ingestLead(deps, accountId, { idempotencyKey: `stripe-customer-${++n}x`, source: "stripe", route: "trial", contact: { email: "paid@b.example" } });
+    if (!r.ok) throw new Error(r.problems.join());
+    await deliverTry(deps, r.waybill.id, 1);
+    await owner.db.update(shipments).set({ createdAt: sql`now() - make_interval(days => 90)` }).where(eq(shipments.id, r.waybill.id));
+    expect(await purgeExpired(deps, accountId)).toEqual({ removed: 0, waiting: 0 });
+    expect(ghl.deleted).toEqual([]);
+  });
 });

@@ -30,7 +30,7 @@ export default async function AccountLayout({ children }: { children: ReactNode 
         </div>
       </header>
       <div className="ac-body">
-        <AccountNav />
+        <AccountNav role={m.role} />
         <main className="ac-main"><Suspense><Notice /></Suspense>{children}</main>
       </div>
     </div>

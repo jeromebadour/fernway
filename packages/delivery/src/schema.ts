@@ -57,6 +57,28 @@ export const users = pgTable("users", {
   timeZone: text("time_zone").notNull().default("UTC"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).notNull().defaultNow(),
+  totpSealed: text("totp_sealed"),
+  totpPendingSealed: text("totp_pending_sealed"),
+  totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
+  totpLastStep: bigint("totp_last_step", { mode: "number" }),
+  dateStyle: text("date_style").$type<DateStyle>().notNull().default("day-month"),
+  clock: text("clock").$type<Clock>().notNull().default("24h"),
+  emailHeld: boolean("email_held").notNull().default(true),
+  emailReturned: boolean("email_returned").notNull().default(true),
+  emailWeekly: boolean("email_weekly").notNull().default(false),
+});
+
+export const dateStyles = ["day-month", "month-day", "iso"] as const;
+export type DateStyle = (typeof dateStyles)[number];
+export const clocks = ["24h", "12h"] as const;
+export type Clock = (typeof clocks)[number];
+
+export const recoveryCodes = pgTable("recovery_codes", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
 });
 
 export const memberships = pgTable("memberships", {
@@ -66,7 +88,7 @@ export const memberships = pgTable("memberships", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.userId, t.accountId] })]);
 
-export const sessionEnds = ["signed_out", "signed_out_elsewhere", "password_changed", "expired", "account_deleted"] as const;
+export const sessionEnds = ["signed_out", "signed_out_elsewhere", "signed_out_from_device", "password_changed", "two_step_changed", "expired", "account_deleted"] as const;
 export const sessions = pgTable("sessions", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -107,6 +129,7 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  madeBy: bigint("made_by", { mode: "number" }),
 });
 
 export const routes = pgTable("routes", {

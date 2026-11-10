@@ -3,7 +3,7 @@
 // address at once, so a reload or a shared link never repeats it. Endings that leave you signed out stay until closed.
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GCheck, GClose, GMail, GSignOut } from "./glyphs";
+import { GCheck, GClose, GLock, GMail, GSignOut } from "./glyphs";
 
 const notices: Record<string, { title: string; line: string; G: (p: { size?: number }) => React.ReactNode; stays?: boolean }> = {
   welcome: { title: "Your account is ready", line: "Your 14-day trial has started. A link to confirm your email is on its way.", G: GCheck },
@@ -11,6 +11,8 @@ const notices: Record<string, { title: string; line: string; G: (p: { size?: num
   "signed-out": { title: "Signed out", line: "This device is signed out. Your account and its leads are as you left them.", G: GSignOut, stays: true },
   "password-changed": { title: "Password changed", line: "Every device was signed out. Sign in with the new password.", G: GCheck, stays: true },
   "plan-started": { title: "Payment taken", line: "Stripe took the first payment. The plan below shows it as soon as Stripe confirms, in a few seconds.", G: GCheck },
+  "account-deleted": { title: "Account deleted", line: "It was removed from GHL, from Stripe and from Fernway, in that order. Nothing of it is kept.", G: GCheck, stays: true },
+  "recovery-used": { title: "Signed in with a recovery code", line: "That code is spent now. Make a new set below if only a few are left.", G: GLock },
   "signed-out-elsewhere": { title: "Signed out elsewhere", line: "This session ended on another device. Sign in again to carry on.", G: GSignOut, stays: true },
 };
 

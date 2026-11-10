@@ -1,6 +1,7 @@
 import "server-only";
 import { accountsOn } from "./accounts-on";
-import { sameOrigin } from "./session";
+import type { Person } from "@fernway/delivery";
+import { currentPerson, sameOrigin } from "./session";
 
 // Shared by every account API route: switched on, from this site, a JSON body; else the answer that turns it away.
 export const answer = (status: number, json: object, cookie?: string) => {
@@ -19,3 +20,12 @@ export async function gate(request: Request): Promise<{ body: Record<string, unk
 
 export const ip = (request: Request) => request.headers.get("x-real-ip") ?? "unknown";
 export const appUrl = () => (process.env.APP_URL ?? "https://fernway.jeromebadour.com").replace(/\/$/, "");
+
+/** For routes that change the signed-in person's own things: switched on, from this site, signed in. */
+export async function signedIn(request: Request): Promise<{ body: Record<string, unknown>; p: Person } | { refused: Response }> {
+  const g = await gate(request);
+  if ("refused" in g) return g;
+  const p = await currentPerson();
+  if (!p) return { refused: answer(401, { ok: false, problems: ["form: you were signed out; sign in again"] }) };
+  return { body: g.body, p };
+}

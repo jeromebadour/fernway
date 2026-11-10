@@ -45,7 +45,12 @@ export type GhlClient = {
   /** Deletes a contact, opportunity or note ("contacts/<id>", "opportunities/<id>", "contacts/<id>/notes/<id>").
    *  True once GHL no longer has it (deleted now, or already gone: 404). */
   remove(conn: GhlConnection, path: string): Promise<{ gone: boolean; status: number | null }>;
+  /** A contact as GHL holds it now; null when GHL has no such contact (404). Throws when GHL can't be reached. */
+  getContact(conn: GhlConnection, contactId: string): Promise<GhlContact | null>;
 };
+
+export type GhlContact = { id: string; firstName: string | null; lastName: string | null; email: string | null; phone: string | null;
+  companyName: string | null; website: string | null; tags: string[]; dateAdded: string | null; source: string | null };
 
 const EXCERPT = 300;
 
@@ -123,6 +128,22 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   }
 
   return {
+    async getContact(conn, contactId) {
+      const res = await doFetch(`${base}/contacts/${encodeURIComponent(contactId)}`, {
+        headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const text = await res.text();
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`GHL answered ${res.status}: ${text.slice(0, 200)}`);
+      const c = (JSON.parse(text) as { contact?: Record<string, unknown> }).contact ?? {};
+      const str = (v: unknown) => (typeof v === "string" && v !== "" ? v : null);
+      return {
+        id: String(c.id ?? contactId), firstName: str(c.firstName), lastName: str(c.lastName), email: str(c.email), phone: str(c.phone),
+        companyName: str(c.companyName), website: str(c.website), tags: Array.isArray(c.tags) ? c.tags.map(String) : [],
+        dateAdded: str(c.dateAdded), source: str(c.source),
+      };
+    },
     addNote(conn, contactId, body) {
       return call(conn, `/contacts/${encodeURIComponent(contactId)}/notes`, { body }, (j) => {
         const v = j as { note?: { id?: string }; id?: string };

@@ -67,6 +67,10 @@ export function standInGhl(failure: Failure | null, tryNumber: number, resent: b
     async listCalendars() {
       return [];
     },
+    // The stand-in keeps no contacts to read back.
+    async getContact() {
+      return null;
+    },
     async freeSlots() {
       return [];
     },

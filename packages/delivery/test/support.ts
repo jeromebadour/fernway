@@ -99,6 +99,13 @@ export function fakeGhl() {
       freeSlotAsks.push(Object.fromEntries(u.searchParams));
       return HttpResponse.json({ ...freeSlotDays, traceId: "t_1" });
     }),
+    // A contact as GHL holds it now: gone once deleted, unknown ids 404.
+    http.get(`${GHL_BASE}/contacts/:id`, ({ params }) => {
+      const id = String(params.id);
+      const email = [...contacts.entries()].find(([, v]) => v === id)?.[0];
+      if (!email || deleted.includes(`contacts/${id}`)) return HttpResponse.json({ message: "Contact not found" }, { status: 404 });
+      return HttpResponse.json({ contact: { id, email: email.includes("@") ? email : null, firstName: "Lena", lastName: "Hartmann", tags: ["trial"], dateAdded: "2026-11-10T08:00:00.000Z", source: "Fernway" } });
+    }),
     http.delete(`${GHL_BASE}/calendars/events/:id`, ({ params }) => {
       const status = deleteAnswers.shift() ?? 200;
       if (status === 200) deleted.push(`calendars/events/${params.id}`);

@@ -3,13 +3,14 @@
 // company offered from a work address, Caps Lock flagged, the password shown on demand and measured as you type.
 // Posts to the account API; each problem lands under its own field, and the form says what it is doing meanwhile.
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CodeCells } from "./code-cells";
 import { CapsOn, Field } from "./field";
 import { companyFromEmail, emailTypo } from "./field-help";
-import { GClock, GEye, GEyeOff, GSignIn, GSignUp } from "./glyphs";
+import { GClock, GEye, GEyeOff, GLock, GNote, GSignIn, GSignUp } from "./glyphs";
 
 type Mode = "up" | "in";
-const strength = (p: string) => {
+export const strength = (p: string) => {
   if (!p) return null;
   if (p.length < 10) return { n: 1, word: `${10 - p.length} more to go` };
   const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(p)).length;
@@ -35,6 +36,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const [v, setV] = useState({ name: "", company: "", email: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Problems>({});
+  const [ticket, setTicket] = useState<{ value: string; until: number } | null>(null);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +48,8 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       const res = await fetch(`/api/account/${mode === "up" ? "sign-up" : "sign-in"}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
-      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; next?: string; problems?: string[] };
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; next?: string; twoStep?: boolean; ticket?: string; problems?: string[] };
+      if (json.ok && json.twoStep && json.ticket) { setTicket({ value: json.ticket, until: Date.now() + 5 * 60_000 }); setBusy(false); return; }
       if (json.ok && json.next) { window.location.assign(json.next); return; }
       setErrors(byField(json.problems ?? ["form: something went wrong; try again"]));
     } catch {
@@ -73,6 +76,8 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       </button>
     </Field>
   );
+
+  if (ticket) return <SecondStep ticket={ticket.value} until={ticket.until} email={v.email} again={() => { setTicket(null); setV({ ...v, password: "" }); }} />;
 
   return (
     <form className="fm au-form" onSubmit={send} noValidate>
@@ -113,6 +118,64 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       ) : (
         <button type="submit" className="wb-go wb-go-lg fm-btn fm-send" disabled={busy}><GSignIn size={18} />Sign in</button>
       )}
+    </form>
+  );
+}
+
+// The second step: the app's 6 digits (sent on the sixth), or a recovery code. The ticket from the password step lasts
+// five minutes, shown running down; when it runs out the form says so and goes back to the password.
+function SecondStep({ ticket, until, email, again }: { ticket: string; until: number; email: string; again: () => void }) {
+  const [code, setCode] = useState("");
+  const [recovery, setRecovery] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [left, setLeft] = useState(() => Math.max(0, Math.round((until - Date.now()) / 1000)));
+  useEffect(() => {
+    const t = setInterval(() => setLeft(Math.max(0, Math.round((until - Date.now()) / 1000))), 1000);
+    return () => clearInterval(t);
+  }, [until]);
+
+  async function send(given: string) {
+    setBusy(true);
+    setProblem(null);
+    const res = await fetch("/api/account/sign-in/code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, code: given }) })
+      .then((r) => r.json()).catch(() => null) as { ok?: boolean; next?: string; expired?: boolean; problems?: string[] } | null;
+    if (res?.ok && res.next) { window.location.assign(res.next); return; }
+    if (res?.expired) { again(); return; }
+    setProblem((res?.problems?.[0] ?? "code: Fernway could not be reached; try again").replace(/^[a-z]+: /, ""));
+    setCode("");
+    setBusy(false);
+  }
+  const out = left === 0;
+  const fmtRecovery = (v: string) => { const c = v.toLowerCase().replace(/[^a-z2-7]/g, "").slice(0, 10); return c.length > 5 ? `${c.slice(0, 5)}-${c.slice(5)}` : c; };
+
+  return (
+    <form className="fm au-form au-two" noValidate onSubmit={(e) => { e.preventDefault(); void send(useRecovery ? recovery : code); }}>
+      <p className="au-two-who"><GLock size={16} />Second step for <b>{email}</b></p>
+      {!useRecovery ? (
+        <div className="fm-field">
+          <span className="fm-label">The 6 digits your authenticator app shows for Fernway</span>
+          <CodeCells value={code} onChange={setCode} onFull={(c) => void send(c)} bad={!!problem} disabled={busy || out} label="Code from the app" />
+        </div>
+      ) : (
+        <Field kind="password" label="A recovery code" bad={!!problem} hint="One of the ten codes saved when two-step was turned on. Each works once.">
+          <input value={recovery} onChange={(e) => setRecovery(fmtRecovery(e.target.value))} placeholder="k4m2q-7xa3d" autoComplete="off" spellCheck={false} autoFocus />
+        </Field>
+      )}
+      {problem && <p className="fm-error fm-error-form" role="alert">{problem}</p>}
+      <p className={out ? "au-ticket au-ticket-out" : "au-ticket"} aria-live="polite">
+        <GClock size={14} />{out ? "Five minutes have passed." : `This step stays open for ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}
+      </p>
+      {busy && <p className="au-busy" role="status"><GClock size={15} />Checking the code</p>}
+      <div className="au-two-do">
+        {out
+          ? <button type="button" className="wb-go wb-go-lg fm-btn" onClick={again}><GSignIn size={18} />Sign in again</button>
+          : <button type="submit" className="wb-go wb-go-lg fm-btn fm-send" disabled={busy || (useRecovery ? recovery.length !== 11 : code.length !== 6)}><GSignIn size={18} />Sign in</button>}
+        <button type="button" className="au-switch" onClick={() => { setUseRecovery(!useRecovery); setProblem(null); }}>
+          {useRecovery ? <><GLock size={15} />Use the app instead</> : <><GNote size={15} />Use a recovery code</>}
+        </button>
+      </div>
     </form>
   );
 }

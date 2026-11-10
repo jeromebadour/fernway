@@ -13,16 +13,16 @@ const sections = [
   { href: "/account/record", label: "Your record", G: GRecord },
 ];
 
-export function AccountNav() {
+export function AccountNav({ role }: { role: "owner" | "admin" | "member" }) {
   const here = usePathname();
   return (
     <nav className="ac-nav" aria-label="Account">
       <ul>
-        {sections.map(({ href, label, G }) => (
+        {sections.filter((x) => x.href !== "/account/keys" || role !== "member").map(({ href, label, G }) => (
           <li key={href}><Link href={href} aria-current={here === href ? "page" : undefined}><G size={16} />{label}</Link></li>
         ))}
       </ul>
-      <Link className="ac-delete" href="/account/delete" aria-current={here === "/account/delete" ? "page" : undefined}><GTrash size={16} />Delete account</Link>
+      {role === "owner" && <Link className="ac-delete" href="/account/delete" aria-current={here === "/account/delete" ? "page" : undefined}><GTrash size={16} />Delete account</Link>}
     </nav>
   );
 }

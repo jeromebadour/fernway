@@ -25,6 +25,8 @@ function slotsBetween(from, to) {
   return out;
 }
 
+// What each contact was last upserted with.
+const held = new Map();
 const send = (res, status, body) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
 
 createServer(async (req, res) => {
@@ -38,8 +40,16 @@ createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/contacts/upsert") {
     const key = json.email ?? json.phone;
     if (!contacts.has(key)) contacts.set(key, `c_${contacts.size + 1}`);
+    held.set(contacts.get(key), json);
     return send(res, 200, { contact: { id: contacts.get(key) } });
   }
+  // A contact as it was last upserted (Your record reads it); gone once deleted.
+  const one = url.pathname.match(/^\/contacts\/([^/]+)$/);
+  if (req.method === "GET" && one) {
+    const c = held.get(one[1]);
+    return c ? send(res, 200, { contact: { id: one[1], ...c, dateAdded: new Date().toISOString() } }) : send(res, 404, { message: "Contact not found" });
+  }
+  if (req.method === "DELETE" && one) held.delete(one[1]);
   if (req.method === "POST" && /^\/contacts\/[^/]+\/notes$/.test(url.pathname)) return send(res, 201, { note: { id: `n_${++n}` } });
   if (req.method === "POST" && url.pathname === "/opportunities/upsert") return send(res, 200, { opportunity: { id: `o_${++n}` } });
   if (req.method === "POST" && url.pathname === "/calendars/events/appointments") {
