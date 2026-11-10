@@ -32,8 +32,9 @@ createServer(async (req, res) => {
   let body = "";
   for await (const chunk of req) body += chunk;
   const json = body ? JSON.parse(body) : {};
-  calls.push({ method: req.method, path: url.pathname });
+  // Asking what it was asked is not a GHL call: it isn't counted.
   if (url.pathname === "/__calls") return send(res, 200, calls);
+  calls.push({ method: req.method, path: url.pathname });
   if (req.method === "POST" && url.pathname === "/contacts/upsert") {
     const key = json.email ?? json.phone;
     if (!contacts.has(key)) contacts.set(key, `c_${contacts.size + 1}`);
