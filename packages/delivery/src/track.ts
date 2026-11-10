@@ -52,7 +52,7 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
     pickedUpAt: s.shipment.createdAt.toISOString(),
     route: s.routeLabel,
     consignee: { firstName: c.firstName ?? null, lastName: c.lastName ?? null, company: c.companyName ?? null, email: maskEmail(c.email) },
-    holdReason: s.shipment.holdReason,
+    holdReason: readable(s.shipment.holdReason),
     meeting: s.shipment.bookingStart ? s.shipment.bookingStart.toISOString() : null,
     scans: rows.map((r) => ({
       kind: r.kind,
