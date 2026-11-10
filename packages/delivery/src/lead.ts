@@ -18,6 +18,8 @@ export const leadInput = z
     idempotencyKey: z.string().trim().min(8).max(200),
     source: z.enum(sources),
     route: z.string().regex(/^[a-z0-9-]{1,40}$/),
+    // The time picked on a booking route (ISO with its offset), checked against the route's calendar at the door.
+    slot: z.iso.datetime({ offset: true }).optional(),
     contact: z
       .object({
         firstName: trimmed(80).optional(),
@@ -34,7 +36,7 @@ export const leadInput = z
   .strict();
 
 export type LeadInput = z.input<typeof leadInput>;
-export type CheckedLead = { idempotencyKey: string; source: (typeof sources)[number]; route: string; contact: LeadContact };
+export type CheckedLead = { idempotencyKey: string; source: (typeof sources)[number]; route: string; slot?: string; contact: LeadContact };
 
 export type CheckResult = { ok: true; lead: CheckedLead } | { ok: false; problems: string[] };
 

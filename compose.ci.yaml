@@ -1,8 +1,20 @@
-# CI only, on top of compose.yaml: the tests reach the database as its owner.
+# CI only, on top of compose.yaml: the tests reach the database as its owner, and the web app and the worker talk to a
+# fake GHL (scripts/fake-ghl.mjs) instead of the real one. Never used on the box.
 services:
   db:
     ports:
       - "127.0.0.1:5432:5432"
+  fake-ghl:
+    image: node:22-bookworm-slim
+    command: ["node", "/fake/fake-ghl.mjs"]
+    volumes:
+      - ./scripts/fake-ghl.mjs:/fake/fake-ghl.mjs:ro
+    ports:
+      - "127.0.0.1:4010:4010"
   web:
     environment:
       APP_URL: http://localhost:3103
+      FERNWAY_GHL_API: http://fake-ghl:4010
+  worker:
+    environment:
+      FERNWAY_GHL_API: http://fake-ghl:4010

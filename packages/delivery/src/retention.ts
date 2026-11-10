@@ -14,7 +14,7 @@ export type PurgeResult = { removed: number; waiting: number };
 export async function purgeExpired(deps: Deps, accountId: number, keepDays = KEEP_DAYS): Promise<PurgeResult> {
   const cutoff = sql`now() - make_interval(days => ${keepDays})`;
   const old = await deps.db
-    .select({ id: shipments.id, contactId: shipments.ghlContactId, opportunityId: shipments.ghlOpportunityId, noteId: shipments.ghlNoteId })
+    .select({ id: shipments.id, contactId: shipments.ghlContactId, opportunityId: shipments.ghlOpportunityId, noteId: shipments.ghlNoteId, appointmentId: shipments.ghlAppointmentId })
     .from(shipments)
     .where(and(eq(shipments.accountId, accountId), lt(shipments.createdAt, cutoff)))
     .limit(200);
@@ -24,8 +24,10 @@ export async function purgeExpired(deps: Deps, accountId: number, keepDays = KEE
   let removed = 0;
   let waiting = 0;
   for (const s of old) {
-    if (s.contactId || s.opportunityId) {
+    if (s.contactId || s.opportunityId || s.appointmentId) {
       if (!conn) { waiting += 1; continue; }
+      // The meeting is this lead's alone; past or not, it leaves GHL's calendar with the lead.
+      if (s.appointmentId && !(await deps.ghl.remove(conn, `calendars/events/${s.appointmentId}`)).gone) { waiting += 1; continue; }
       // GHL gives a returning contact the same contact and opportunity, so a newer lead may still be using them.
       const stillUsed = async (col: typeof shipments.ghlContactId | typeof shipments.ghlOpportunityId, id: string) =>
         (await deps.db.select({ id: shipments.id }).from(shipments).where(and(

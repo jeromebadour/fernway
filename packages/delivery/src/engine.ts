@@ -46,10 +46,12 @@ export async function ingestLead(deps: Deps, accountId: number, input: unknown):
   const { lead } = checked;
 
   const [route] = await deps.db
-    .select({ id: routes.id })
+    .select({ id: routes.id, calendarId: routes.calendarId })
     .from(routes)
     .where(and(eq(routes.accountId, accountId), eq(routes.key, lead.route)));
   if (!route) return { ok: false, problems: [`route: no route called "${lead.route}"`] };
+  if (route.calendarId && !lead.slot) return { ok: false, problems: ["slot: a time for the meeting"] };
+  if (!route.calendarId && lead.slot) return { ok: false, problems: [`slot: route "${lead.route}" books no meetings`] };
 
   const result = await deps.db.transaction(async (tx) => {
     const [created] = await tx
@@ -62,6 +64,7 @@ export async function ingestLead(deps: Deps, accountId: number, input: unknown):
         idempotencyKey: lead.idempotencyKey,
         source: lead.source,
         contact: lead.contact,
+        bookingStart: lead.slot ? new Date(lead.slot) : null,
         state: "picked_up",
         nextTryAt: sql`now()`,
       })
@@ -135,6 +138,18 @@ export async function deliverTry(deps: Deps, shipmentId: number, tryNumber: numb
     await deps.db.transaction(async (tx) => {
       await tx.update(shipments).set({ ghlNoteId: a.id, updatedAt: sql`now()` }).where(eq(shipments.id, shipmentId));
       await tx.insert(scans).values(scan(shipmentId, "handed", tryNumber, "note", a, "message added as a note"));
+    });
+  }
+
+  if (route!.calendarId && claimed.bookingStart && !claimed.ghlAppointmentId) {
+    const who = [claimed.contact.firstName, claimed.contact.lastName].filter(Boolean).join(" ") || claimed.contact.email || "a visitor";
+    const a = await deps.ghl.bookAppointment(conn, {
+      calendarId: route!.calendarId, contactId, startTime: claimed.bookingStart.toISOString(), title: `${route!.label} · ${who}`,
+    });
+    if (!a.ok) return failed(deps, conn, shipmentId, tryNumber, "appointment", a);
+    await deps.db.transaction(async (tx) => {
+      await tx.update(shipments).set({ ghlAppointmentId: a.id, updatedAt: sql`now()` }).where(eq(shipments.id, shipmentId));
+      await tx.insert(scans).values(scan(shipmentId, "handed", tryNumber, "appointment", a, `meeting booked for ${claimed.bookingStart!.toISOString()}`));
     });
   }
 

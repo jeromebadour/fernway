@@ -4,10 +4,14 @@
 //   account <name>                              make an account, print its id
 //   connect-link <account>                      a signed Connect GHL link for that account, valid 30 minutes
 //   pipelines <account>                         the connected sub-account's pipelines and stages
+//   calendars <account>                         the connected sub-account's calendars, with their ids
 //   route <account> <key> <label> [<pipeline> <stage>] [tags,...]   add or change a route ("-" for no pipeline:
-//                                                                    the lead becomes a contact only, with the tags)
+//                                                                    the lead becomes a contact only, with the tags;
+//                                                                    "calendar=<id>" anywhere makes it a booking route)
 //   send-test <account> <route> <email>         send one test lead through the real queue
 //   waybill <number>                            a shipment and every scan, e.g. "FW 26 00002"
+//   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
+//                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
 import { formatWaybill, parseWaybill } from "@fernway/core";
 import {
   accounts,
@@ -15,11 +19,13 @@ import {
   createDb,
   createGhlClient,
   createQueue,
+  ghlConnections,
   ingestLead,
   keyFrom,
   oauthConfigFromEnv,
   routes,
   scans,
+  seal,
   shipments,
   signValue,
 } from "@fernway/delivery";
@@ -60,7 +66,7 @@ try {
     }
     case "pipelines": {
       const conn = (await connectionFor(db, oauth, accountArg(args[0]))) ?? fail("that account has no GHL connection yet");
-      const list = await createGhlClient().listPipelines(conn);
+      const list = await createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }).listPipelines(conn);
       if (!list.length) console.log("no pipelines in this sub-account yet: make one in GHL (Opportunities, Pipelines)");
       for (const p of list) {
         console.log(`${p.name}  pipeline ${p.id}`);
@@ -68,8 +74,28 @@ try {
       }
       break;
     }
+    case "fake-connect": {
+      if (!process.env.FERNWAY_GHL_API) fail("only with the fake GHL (FERNWAY_GHL_API): this box talks to the real one");
+      const accountId = accountArg(args[0]);
+      const values = {
+        accountId, locationId: `loc_fake_${accountId}`, scopes: "fake", status: "connected" as const, lastError: null,
+        accessTokenEnc: seal(key, "fake-access"), refreshTokenEnc: seal(key, "fake-refresh"), expiresAt: new Date(Date.now() + 365 * 86_400_000),
+      };
+      await db.insert(ghlConnections).values(values).onConflictDoUpdate({ target: ghlConnections.accountId, set: values });
+      console.log(`account ${accountId}: tied to the fake GHL at ${process.env.FERNWAY_GHL_API}`);
+      break;
+    }
+    case "calendars": {
+      const conn = (await connectionFor(db, oauth, accountArg(args[0]))) ?? fail("that account has no GHL connection yet");
+      const list = await createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }).listCalendars(conn);
+      if (!list.length) console.log("no calendars in this sub-account yet: make one in GHL (Settings, Calendars)");
+      for (const c of list) console.log(`${c.name}  calendar ${c.id}${c.minutes ? `  ${c.minutes} min` : ""}`);
+      break;
+    }
     case "route": {
-      const [acc, rkey, label, ...rest] = args;
+      const calendarArg = args.find((a) => a.startsWith("calendar="));
+      const [acc, rkey, label, ...rest] = args.filter((a) => a !== calendarArg);
+      const calendarId = calendarArg ? calendarArg.slice("calendar=".length) : null;
       const accountId = accountArg(acc);
       if (!rkey || !label) fail("route <account> <key> <label> [<pipeline> <stage> | -] [tags]");
       const [pipelineId, stageId, tags] = rest[0] === "-" ? [undefined, undefined, rest[1]] : rest;
@@ -80,12 +106,13 @@ try {
         label: label!,
         pipelineId: pipelineId ?? null,
         stageId: stageId ?? null,
+        calendarId,
         tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
       };
       const [existing] = await db.select().from(routes).where(and(eq(routes.accountId, accountId), eq(routes.key, rkey!)));
       if (existing) await db.update(routes).set(values).where(eq(routes.id, existing.id));
       else await db.insert(routes).values(values);
-      console.log(`route ${rkey} (${label}): ${pipelineId ? `pipeline ${pipelineId}, stage ${stageId}` : "contact only"}, tags ${values.tags.join(", ") || "none"}`);
+      console.log(`route ${rkey} (${label}): ${pipelineId ? `pipeline ${pipelineId}, stage ${stageId}` : "contact only"}, tags ${values.tags.join(", ") || "none"}${calendarId ? `, books on calendar ${calendarId}` : ""}`);
       break;
     }
     case "send-test": {
@@ -95,7 +122,7 @@ try {
       const redis = new Redis(need("REDIS_URL"), { maxRetriesPerRequest: null });
       const { queue, schedule } = createQueue(redis);
       const r = await ingestLead(
-        { db, ghl: createGhlClient(), connectionFor: (id) => connectionFor(db, oauth, id), schedule },
+        { db, ghl: createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }), connectionFor: (id) => connectionFor(db, oauth, id), schedule },
         accountId,
         {
           idempotencyKey: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

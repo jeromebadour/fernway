@@ -5,8 +5,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { TrackView } from "@fernway/delivery";
 import Link from "next/link";
-import { GCheck, GCopy, GRoute, GScan } from "@/ui/glyphs";
+import { GCheck, GClock, GCopy, GRoute, GScan } from "@/ui/glyphs";
 import { Receipt } from "@/ui/receipt";
+import { meetingText, SlotPicker } from "@/ui/slot-picker";
 
 type Key = "firstName" | "lastName" | "email" | "phone" | "companyName" | "website" | "message";
 type Field = { key: Key; label: string; hint: string; type: "text" | "email" | "tel" | "url" | "textarea"; required?: boolean; placeholder: string;
@@ -28,7 +29,9 @@ export const fieldSet: Record<Key, Field> = Object.fromEntries(([
 ] as Field[]).map((f) => [f.key, f])) as Record<Key, Field>;
 
 export type LeadFormSpec = {
-  form: "trial" | "contact";
+  form: "trial" | "contact" | "demo";
+  /** A booking form: the visitor picks a meeting time from the route's calendar. */
+  booking?: boolean;
   fields: (Key | [Key, Partial<Field>])[];
   from: string;
   route: string;
@@ -50,10 +53,12 @@ function byField(problems: string[], fields: Field[]) {
 export function LeadForm({ spec }: { spec: LeadFormSpec }) {
   const fields = spec.fields.map((k) => (Array.isArray(k) ? { ...fieldSet[k[0]], ...k[1] } : fieldSet[k]));
   const [v, setV] = useState<Record<Key, string>>(() => Object.fromEntries(fields.map((f) => [f.key, ""])) as Record<Key, string>);
-  const [errors, setErrors] = useState<Partial<Record<Key | "form", string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<Key | "form" | "slot", string>>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<{ token: string; view: TrackView } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [slot, setSlot] = useState("");
+  const [slotsReload, setSlotsReload] = useState(0);
   const key = useRef<string>("");
   const home = useRef<string>("");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -68,6 +73,8 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
     setV(Object.fromEntries(fields.map((f) => [f.key, ""])) as Record<Key, string>);
     setSent(null);
     setCopied(false);
+    setSlot("");
+    setSlotsReload((n) => n + 1);
     key.current = crypto.randomUUID();
     window.history.replaceState(null, "", home.current);
   }
@@ -75,8 +82,12 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
   async function send(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const missing = fields.filter((f) => f.required && !v[f.key].trim());
-    if (missing.length) {
-      setErrors(Object.fromEntries(missing.map((f) => [f.key, `Needs ${f.called ?? `your ${f.label.toLowerCase()}`}.`])));
+    const noSlot = spec.booking && !slot;
+    if (missing.length || noSlot) {
+      setErrors({
+        ...Object.fromEntries(missing.map((f) => [f.key, `Needs ${f.called ?? `your ${f.label.toLowerCase()}`}.`])),
+        ...(noSlot ? { slot: "Needs a time for the meeting." } : {}),
+      });
       return;
     }
     setSending(true);
@@ -88,10 +99,15 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
     try {
       const r = await fetch("/api/leads/site", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ form: spec.form, key: key.current, trap, contact }),
+        body: JSON.stringify({ form: spec.form, key: key.current, trap, contact, ...(spec.booking ? { slot } : {}) }),
       });
       const j = await r.json();
-      if (!j.ok) { setErrors(byField(j.problems ?? ["something went wrong; send it again"], fields)); return; }
+      if (!j.ok) {
+        // The time went while they typed: say so at the picker, and show the times as they are now.
+        if (j.taken) { setSlot(""); setSlotsReload((n) => n + 1); setErrors({ slot: "That time was just taken. Pick another." }); return; }
+        setErrors(byField(j.problems ?? ["something went wrong; send it again"], fields));
+        return;
+      }
       const token = String(j.track).replace("/track/", "");
       const t = await fetch(`/api/track/${token}`, { cache: "no-store" }).then((x) => x.json());
       setSent({ token, view: t.view });
@@ -113,7 +129,8 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
   }
 
   const name = [v.firstName, v.lastName].filter(Boolean).join(" ");
-  const steps = ["Picked up", "Checked", "Handed to GHL", ...(v.message !== undefined ? ["Message added as a note"] : []), "Signed for"];
+  const steps = ["Picked up", "Checked", "Handed to GHL", ...(v.message !== undefined ? ["Message added as a note"] : []),
+    ...(spec.booking ? ["Demo booked in GHL's calendar"] : []), "Signed for"];
   return (
     <div className="fm-grid">
       {sent ? (
@@ -121,6 +138,7 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
           <div className="wb-stamp rc-stamp wb-stamp-ok fm-done-stamp"><GCheck size={16} />Sent</div>
           <p className="wb-label">Your waybill</p>
           <p className="fm-done-no">{sent.view.number}</p>
+          {sent.view.meeting && <p className="fm-done-meet"><GClock size={16} />Demo: <b>{meetingText(sent.view.meeting)}</b></p>}
           <p className="fm-done-text">Your details went into Fernway&rsquo;s demo GoHighLevel account. Watch the receipt beside this, or come back to it any time in the next 30 days:</p>
           <ul className="fm-done-ways">
             <li><GRoute size={15} /><span>At this page&rsquo;s address, which is now your receipt&rsquo;s.</span></li>
@@ -165,6 +183,13 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
             </label>
           ))}
         </div>
+        {spec.booking && (
+          <div className="fm-field fm-slot">
+            <span className="fm-label">Pick a time</span>
+            <SlotPicker key={slotsReload} value={slot} onPick={(iso) => { setSlot(iso); setErrors({ ...errors, slot: undefined }); }} bad={!!errors.slot} />
+            {errors.slot && <span className="fm-error">{errors.slot}</span>}
+          </div>
+        )}
         <p className="fm-note">Fernway is a portfolio product. What you send goes to its demo GoHighLevel account and is deleted after 30 days.</p>
         {errors.form && <p className="fm-error fm-error-form">{errors.form}</p>}
         <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : spec.send}</button>
@@ -176,6 +201,7 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
           <div className="wb-stamp rc-stamp wb-stamp-ok fm-done-stamp"><GCheck size={16} />Picked up</div>
           <h2 id="fm-dialog-h">Your lead is on its way.</h2>
           <p className="fm-dialog-no">Waybill <b>{sent.view.number}</b></p>
+          {sent.view.meeting && <p className="fm-dialog-no">Demo <b className="fm-dialog-meet">{meetingText(sent.view.meeting)}</b></p>}
           <p>Keep this number. With your email it opens your lead&rsquo;s receipt on <b>Track a lead</b> for 30 days, and the receipt link works on its own too.</p>
           <div className="fm-dialog-do">
             <button type="button" className="wb-go fm-btn" onClick={watch} autoFocus><GScan size={16} />Watch it travel</button>
@@ -204,6 +230,9 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
                 <p className="wb-org">{v.companyName || "Your company"}</p>
               </div>
             </div>
+            {spec.booking && (
+              <p className="fm-meet"><GClock size={15} />{slot ? <>Demo <b>{meetingText(slot)}</b></> : <span className="fm-ghost">Pick a time</span>}</p>
+            )}
             <ol className="wb-scans fm-ghost-scans">
               {steps.map((w) => (
                 <li key={w}><span className="wb-t">··:··:··</span><span className="wb-node"><GScan size={14} /></span><span className="wb-what">{w}</span></li>

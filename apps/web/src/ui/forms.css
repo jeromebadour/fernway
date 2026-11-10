@@ -30,6 +30,38 @@
 .fm-note { margin: 26px 0 0; padding-top: 18px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.55; color: var(--muted); }
 .fm-send { margin-top: 22px; border: 0; cursor: pointer; font-family: var(--font-body); }
 .fm-send:disabled { opacity: 0.6; cursor: progress; }
+/* Picking a meeting time */
+.fm-slot { margin-top: 22px; }
+.sp { display: grid; gap: 14px; padding: 16px; border: 1.5px solid rgba(190,210,232,0.22); background: #070c13; }
+.sp-bad { border-color: var(--hazard); }
+.sp-days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.sp-day { flex: none; display: grid; gap: 4px; min-width: 92px; padding: 9px 12px; text-align: left; cursor: pointer;
+  background: var(--kraft); border: 1.5px solid var(--line); color: var(--paper); font-family: var(--font-body); }
+.sp-day b { font-weight: 600; font-size: 14.5px; }
+.sp-day em { font: 500 11.5px var(--font-mono); font-style: normal; color: var(--muted); }
+.sp-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.sp-time { height: 42px; cursor: pointer; background: var(--kraft); border: 1.5px solid var(--line); color: var(--paper);
+  font: 500 15px var(--font-mono); }
+.sp-day:hover, .sp-time:hover { border-color: rgba(122,168,224,0.6); }
+.sp-on { border-color: var(--go) !important; background: rgba(92,200,184,0.12); }
+.sp-on em { color: var(--go); }
+.sp-zone { margin: 0; font-size: 13px; color: var(--faint); }
+.sp-state { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0; padding: 16px; font-size: 15px; color: var(--muted);
+  border: 1.5px dashed rgba(190,210,232,0.22); }
+.sp-state svg { color: var(--input); }
+.sp-state-hz { color: #e9d4a6; border-color: rgba(227,176,79,0.45); }
+.sp-state-hz svg { color: var(--hazard); }
+.sp-retry { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 10px; cursor: pointer; background: none;
+  border: 1.5px solid var(--line); color: var(--paper); font: 500 14px var(--font-body); }
+.fm-meet { display: flex; align-items: center; gap: 10px; margin: 16px 0 0; padding: 10px 12px; font-size: 14.5px; color: #cfd8e3;
+  border: 1px solid rgba(122,168,224,0.35); background: rgba(122,168,224,0.06); }
+.fm-meet svg { color: var(--input); flex: none; }
+.fm-meet b { color: var(--paper); font-weight: 600; }
+.fm-done-meet { display: flex; align-items: center; gap: 10px; margin: 16px 0 0; font-size: 16px; color: #cfd8e3; }
+.fm-done-meet svg { color: var(--input); }
+.fm-done-meet b { color: var(--paper); }
+.fm-dialog-meet { font: 600 16px var(--font-body) !important; letter-spacing: 0 !important; }
+
 /* After sending: the form gives way to what was sent and where to find it again */
 .fm-done { padding: 28px 30px 30px; border: 1px solid rgba(134,194,143,0.35); background: rgba(134,194,143,0.04); }
 .wb .fm-done-stamp { margin: 0 0 22px; transform: rotate(-3deg); }

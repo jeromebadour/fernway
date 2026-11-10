@@ -41,7 +41,7 @@ const { queue, schedule } = createQueue(redis);
 const oauth = oauthConfigFromEnv(process.env, keyFrom(need("FERNWAY_TOKEN_KEY")));
 const deps: Deps = {
   db,
-  ghl: createGhlClient(),
+  ghl: createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }),
   // The account's GHL sub-account (OAuth); an account that never connected holds its leads with that reason.
   connectionFor: (accountId) => connectionFor(db, oauth, accountId),
   schedule,

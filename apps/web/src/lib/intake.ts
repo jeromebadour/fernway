@@ -17,7 +17,7 @@ export function intake() {
     const { schedule } = createQueue(new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null }));
     g.fernwayIntake = {
       accountId,
-      deps: { db, ghl: createGhlClient(), connectionFor: (id) => connectionFor(db, cfg, id), schedule },
+      deps: { db, ghl: createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }), connectionFor: (id) => connectionFor(db, cfg, id), schedule },
     };
   }
   return g.fernwayIntake;

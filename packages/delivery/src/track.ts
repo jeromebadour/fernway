@@ -26,6 +26,8 @@ export type TrackView = {
   route: string;
   consignee: { firstName: string | null; lastName: string | null; company: string | null; email: string | null };
   holdReason: string | null;
+  /** The meeting time picked on a booking route (ISO), or null. */
+  meeting: string | null;
   scans: { kind: ScanKind; step: string | null; at: string; try: number | null; status: number | null; note: string | null }[];
 };
 
@@ -45,6 +47,7 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
     route: s.routeLabel,
     consignee: { firstName: c.firstName ?? null, lastName: c.lastName ?? null, company: c.companyName ?? null, email: maskEmail(c.email) },
     holdReason: s.shipment.holdReason,
+    meeting: s.shipment.bookingStart ? s.shipment.bookingStart.toISOString() : null,
     scans: rows.map((r) => ({
       kind: r.kind,
       step: r.step,

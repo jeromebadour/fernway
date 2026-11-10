@@ -168,6 +168,38 @@ jobs:
           test "$(find "{\"number\":\"FW 26 99999\",\"email\":\"lena@northpine.example\"}")" = 404
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/track)" = 200
 
+      - name: Book a demo, against the fake GHL, all the way to signed for
+        # The account is tied to the fake GHL (scripts/fake-ghl.mjs, CI only). The page reads real free times from it,
+        # a booking travels contact, appointment, opportunity, and a second visitor can't take the same time.
+        run: |
+          B=http://127.0.0.1:3103
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          $W fake-connect 1 | grep -q "tied to the fake GHL"
+          $W calendars 1 | grep -q "Fernway demo  calendar cal_demo"
+          $W route 1 demo Demo pipe_sales stage_booked demo calendar=cal_demo | grep -q "books on calendar cal_demo"
+          slot=$(curl -s $B/api/slots | python3 -c 'import json,sys; j=json.load(sys.stdin); assert j["ok"] and j["slots"], j; print(j["slots"][3])')
+          book() { curl -s -H 'content-type: application/json' -H "x-real-ip: $1" \
+            -d "{\"form\":\"demo\",\"key\":\"$(cat /proc/sys/kernel/random/uuid)\",\"slot\":\"$slot\",\"contact\":{\"firstName\":\"Mara\",\"email\":\"$2\",\"companyName\":\"Harborline\"}}" $B/api/leads/site; }
+          first=$(book 10.0.0.40 mara@harborline.example); echo "$first"
+          track=$(echo "$first" | python3 -c 'import json,sys; print(json.load(sys.stdin)["track"])')
+          for i in $(seq 1 20); do
+            state=$(curl -s "$B/api$track" | python3 -c 'import json,sys; print(json.load(sys.stdin)["view"]["state"])')
+            [ "$state" = signed ] && break; sleep 1
+          done
+          test "$state" = signed
+          curl -s "$B/api$track" | python3 -c '
+          import json,sys; v=json.load(sys.stdin)["view"]
+          steps=[s["kind"]+":"+(s["step"] or "") for s in v["scans"]]
+          assert steps==["picked_up:","checked:","handed:contact","handed:appointment","signed:opportunity"], steps
+          assert v["meeting"], v'
+          second=$(book 10.0.0.41 kofi@harborline.example); echo "$second"
+          echo "$second" | grep -q '"taken":true'
+          curl -s $B/api/slots | python3 -c "import json,sys; assert '$slot' not in json.load(sys.stdin)['slots']"
+          curl -s 127.0.0.1:4010/__calls | python3 -c '
+          import json,sys; c=json.load(sys.stdin)
+          assert sum(1 for x in c if x["path"]=="/calendars/events/appointments")==1, "one appointment only"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/demo)" = 200
+
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
         # scratch database next to the live one, every table compared. (Account 1 exists by now, so the dump isn't empty.)

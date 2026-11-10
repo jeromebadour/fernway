@@ -33,6 +33,13 @@ export type GhlClient = {
     conn: GhlConnection,
     o: { contactId: string; pipelineId: string; stageId: string; name: string },
   ): Promise<GhlAnswer & { sent: object }>;
+  listCalendars(conn: GhlConnection): Promise<{ id: string; name: string; minutes: number | null }[]>;
+  /** Free start times (ISO, with offset) between two moments; GHL allows at most 31 days. */
+  freeSlots(conn: GhlConnection, calendarId: string, from: Date, to: Date): Promise<string[]>;
+  bookAppointment(
+    conn: GhlConnection,
+    a: { calendarId: string; contactId: string; startTime: string; title: string },
+  ): Promise<GhlAnswer & { sent: object }>;
   /** Adds the lead's message to the contact as a note (GHL's contacts have no free-text field). */
   addNote(conn: GhlConnection, contactId: string, body: string): Promise<GhlAnswer & { sent: object }>;
   /** Deletes a contact, opportunity or note ("contacts/<id>", "opportunities/<id>", "contacts/<id>/notes/<id>").
@@ -102,6 +109,16 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
     return { ok: false as const, next: sorted, status, excerpt, sent: body };
   }
 
+  async function get(conn: GhlConnection, path: string): Promise<unknown> {
+    const res = await doFetch(`${base}${path}`, {
+      headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(`GHL answered ${res.status}: ${text.slice(0, 200)}`);
+    return JSON.parse(text);
+  }
+
   return {
     addNote(conn, contactId, body) {
       return call(conn, `/contacts/${encodeURIComponent(contactId)}/notes`, { body }, (j) => {
@@ -123,6 +140,30 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
         status = null;
       }
       return { gone: status !== null && ((status >= 200 && status < 300) || status === 404), status };
+    },
+    async listCalendars(conn) {
+      const json = (await get(conn, `/calendars/?locationId=${encodeURIComponent(conn.locationId)}`)) as {
+        calendars?: { id: string; name: string; slotDuration?: number; slotDurationUnit?: string }[];
+      };
+      return (json.calendars ?? []).map((c) => ({
+        id: c.id, name: c.name, minutes: c.slotDuration ? (c.slotDurationUnit === "hours" ? c.slotDuration * 60 : c.slotDuration) : null,
+      }));
+    },
+    async freeSlots(conn, calendarId, from, to) {
+      const q = new URLSearchParams({ startDate: String(from.getTime()), endDate: String(to.getTime()), timezone: "UTC" });
+      const json = (await get(conn, `/calendars/${encodeURIComponent(calendarId)}/free-slots?${q}`)) as Record<string, { slots?: string[] } | unknown>;
+      // Keyed by date ("2026-11-10": { slots: [...] }); anything else GHL adds (a traceId) is not a day.
+      return Object.entries(json)
+        .filter(([k, v]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && v && typeof v === "object" && Array.isArray((v as { slots?: unknown }).slots))
+        .flatMap(([, v]) => (v as { slots: string[] }).slots)
+        .sort((a, b) => Date.parse(a) - Date.parse(b));
+    },
+    bookAppointment(conn, a) {
+      const body = {
+        locationId: conn.locationId, calendarId: a.calendarId, contactId: a.contactId, startTime: a.startTime, title: a.title,
+        appointmentStatus: "confirmed", meetingLocationType: "custom", address: "Video call, link sent by email",
+      };
+      return call(conn, "/calendars/events/appointments", body, (j) => (j as { id?: string })?.id);
     },
     async listPipelines(conn) {
       const res = await doFetch(`${base}/opportunities/pipelines?locationId=${encodeURIComponent(conn.locationId)}`, {

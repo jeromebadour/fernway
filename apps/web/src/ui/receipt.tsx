@@ -4,7 +4,8 @@
 // returned it stops. Times are the visitor's own clock.
 import { useEffect, useState } from "react";
 import type { TrackView } from "@fernway/delivery";
-import { GCheck, GHand, GHold, GManifest, GResend, GRoute, GScan } from "./glyphs";
+import { GCheck, GClock, GHand, GHold, GManifest, GResend, GRoute, GScan } from "./glyphs";
+import { meetingText } from "./slot-picker";
 
 const scanText: Record<string, { what: string; G: typeof GScan; tone: string }> = {
   picked_up: { what: "Picked up", G: GScan, tone: "in" },
@@ -66,6 +67,7 @@ export function Receipt({ initial, token }: { initial: TrackView; token: string 
         <GRoute size={22} />
         <div><p className="wb-label">To</p><p>GoHighLevel<span>Fernway&rsquo;s sandbox · {v.route}</span></p></div>
       </div>
+      {v.meeting && <p className="fm-meet"><GClock size={15} />Demo <b>{meetingText(v.meeting)}</b></p>}
       <div className="wb-consignee">
         <span className="wb-ava">{initials.toUpperCase()}</span>
         <div>
@@ -74,10 +76,15 @@ export function Receipt({ initial, token }: { initial: TrackView; token: string 
         </div>
       </div>
       <ol className="wb-scans">
-        {v.scans.map((sc, i) => {
+        {v.scans.map((scan, i) => {
+          let sc = scan;
           const t = sc.kind === "handed" && sc.step === "note"
             ? { what: "Message added as a note", G: GManifest, tone: "in" }
-            : scanText[sc.kind] ?? { what: sc.kind, G: GScan, tone: "in" };
+            : sc.kind === "handed" && sc.step === "appointment"
+              ? { what: "Demo booked in GHL's calendar", G: GClock, tone: "in" }
+              : scanText[sc.kind] ?? { what: sc.kind, G: GScan, tone: "in" };
+          // The meeting's time reads in the visitor's own zone, not as the stored ISO.
+          if (sc.kind === "handed" && sc.step === "appointment" && v.meeting) sc = { ...sc, note: meetingText(v.meeting) };
           const detail = [sc.try ? `try ${sc.try}` : null, sc.status ? `GHL ${sc.status}` : null, sc.note].filter(Boolean).join(" · ");
           return (
             <li key={`${sc.kind}-${i}`} className={`tone-${t.tone}`}>

@@ -15,6 +15,7 @@ export const routes = pgTable("routes", {
   label: text("label").notNull(),
   pipelineId: text("pipeline_id"),
   stageId: text("stage_id"),
+  calendarId: text("calendar_id"),
   tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -40,12 +41,14 @@ export const shipments = pgTable("shipments", {
   ghlContactId: text("ghl_contact_id"),
   ghlOpportunityId: text("ghl_opportunity_id"),
   ghlNoteId: text("ghl_note_id"),
+  bookingStart: timestamp("booking_start", { withTimezone: true }),
+  ghlAppointmentId: text("ghl_appointment_id"),
   holdReason: text("hold_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type Step = "contact" | "note" | "opportunity";
+export type Step = "contact" | "note" | "appointment" | "opportunity";
 export const scanKinds = ["picked_up", "checked", "handed", "signed", "retry_scheduled", "held", "returned", "resent"] as const;
 export type ScanKind = (typeof scanKinds)[number];
 

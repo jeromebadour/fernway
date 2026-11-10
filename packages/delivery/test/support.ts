@@ -44,12 +44,15 @@ export async function freshDatabase(label: string) {
 /** The fake GHL. Each path answers from its own script, then 200 forever; it remembers every request. */
 export const GHL_BASE = "http://ghl.fake";
 type Scripted = { status: number; body?: unknown; delayMs?: number };
-type Path = "contact" | "note" | "opportunity";
+type Path = "contact" | "note" | "appointment" | "opportunity";
 
 export function fakeGhl() {
-  const script: Record<string, Scripted[]> = { contact: [], note: [], opportunity: [] };
+  const script: Record<string, Scripted[]> = { contact: [], note: [], appointment: [], opportunity: [] };
+  const appointments: Record<string, unknown>[] = [];
   const requests: { path: Path; body: Record<string, unknown>; auth: string | null }[] = [];
   const notes: { contactId: string; body: string; id: string }[] = [];
+  const freeSlotAsks: Record<string, string>[] = [];
+  let freeSlotDays: Record<string, { slots: string[] }> = {};
   const deleted: string[] = [];
   const deleteAnswers: number[] = [];
   // Contacts are matched like GHL's upsert with duplicates off: by email, else by phone.
@@ -62,6 +65,11 @@ export function fakeGhl() {
     const next = script[path]!.shift();
     if (next?.delayMs) await delay(next.delayMs);
     if (next && next.status !== 200) return HttpResponse.json(next.body ?? { message: "scripted failure" }, { status: next.status });
+    if (path === "appointment") {
+      const id = `a_${appointments.length + 1}`;
+      appointments.push({ ...body, id });
+      return HttpResponse.json({ id, ...body });
+    }
     if (path === "note") {
       const id = `n_${notes.length + 1}`;
       notes.push({ contactId: contactId!, body: String(body.body), id });
@@ -83,6 +91,17 @@ export function fakeGhl() {
     http.post(`${GHL_BASE}/contacts/upsert`, ({ request }) => answer("contact", request)),
     http.post(`${GHL_BASE}/opportunities/upsert`, ({ request }) => answer("opportunity", request)),
     http.post(`${GHL_BASE}/contacts/:id/notes`, ({ request, params }) => answer("note", request, String(params.id))),
+    http.post(`${GHL_BASE}/calendars/events/appointments`, ({ request }) => answer("appointment", request)),
+    http.get(`${GHL_BASE}/calendars/:id/free-slots`, ({ request }) => {
+      const u = new URL(request.url);
+      freeSlotAsks.push(Object.fromEntries(u.searchParams));
+      return HttpResponse.json({ ...freeSlotDays, traceId: "t_1" });
+    }),
+    http.delete(`${GHL_BASE}/calendars/events/:id`, ({ params }) => {
+      const status = deleteAnswers.shift() ?? 200;
+      if (status === 200) deleted.push(`calendars/events/${params.id}`);
+      return HttpResponse.json({ succeeded: status === 200 }, { status });
+    }),
     http.delete(`${GHL_BASE}/contacts/:id/notes/:note`, ({ params }) => {
       const status = deleteAnswers.shift() ?? 200;
       if (status === 200) deleted.push(`contacts/${params.id}/notes/${params.note}`);
@@ -99,6 +118,11 @@ export function fakeGhl() {
     server,
     requests,
     notes,
+    appointments,
+    freeSlotAsks,
+    setFreeSlots(days: Record<string, { slots: string[] }>) {
+      freeSlotDays = days;
+    },
     deleted,
     deleteAnswers,
     contacts,
@@ -109,6 +133,10 @@ export function fakeGhl() {
     reset() {
       script.contact = [];
       script.note = [];
+      script.appointment = [];
+      appointments.length = 0;
+      freeSlotAsks.length = 0;
+      freeSlotDays = {};
       script.opportunity = [];
       notes.length = 0;
       requests.length = 0;
@@ -157,6 +185,7 @@ export async function seedAccount(db: Db) {
   await db.insert(routes).values([
     { accountId: account!.id, key: "trial", label: "Trial", pipelineId: "pipe_sales", stageId: "stage_trial", tags: ["trial"] },
     { accountId: account!.id, key: "contact-only", label: "Newsletter", tags: ["newsletter"] },
+    { accountId: account!.id, key: "demo", label: "Demo", pipelineId: "pipe_sales", stageId: "stage_booked", calendarId: "cal_demo", tags: ["demo"] },
   ]);
   return account!.id;
 }
