@@ -8,7 +8,9 @@
   position: relative; overflow-x: clip; background: var(--bg); color: var(--paper); font-family: var(--font-body);
 }
 /* The first screen: the hero and the Works with strip, over the depot floor. */
-.wb-first { position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+/* The first screen: it fills the window, up to the height its content needs (about 975 px), then stops, so zooming out
+   or a very tall window never leaves an empty band of background before the sections (Kami at 25%, 2026-11-10). */
+.wb-first { position: relative; min-height: min(100vh, 1000px); display: flex; flex-direction: column; overflow: hidden; }
 .wb *, .wb *::before, .wb *::after { box-sizing: border-box; }
 .wb a { color: inherit; text-decoration: none; cursor: pointer; }
 .wb svg { flex: none; }
