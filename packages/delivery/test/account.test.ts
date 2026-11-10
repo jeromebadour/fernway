@@ -91,11 +91,14 @@ describe("two-step sign-in", () => {
     await confirmTwoStep(app.db, KEY, p.userId, p.sessionId, codeFor(s));
     expect(await signIn(app.db, p.email, "northpine-2026!")).toEqual({ twoStep: true, userId: p.userId });
     expect(await signIn(app.db, p.email, "wrong-password-1")).toBeNull();
-    // The step used to turn it on is spent; the next step's code works once.
-    expect(await secondStep(app.db, KEY, p.userId, codeFor(s))).toBeNull();
-    expect(await secondStep(app.db, KEY, p.userId, codeFor(s, 1))).toBe("code");
-    expect(await secondStep(app.db, KEY, p.userId, codeFor(s, 1))).toBeNull();
-    expect(await secondStep(app.db, KEY, p.userId, codeFor(s, 3))).toBeNull();
+    // Steps are counted from the one spent turning it on, not from the clock: a 30-second boundary may pass mid-test.
+    const [u] = await app.db.select({ last: users.totpLastStep }).from(users).where(eq(users.id, p.userId));
+    const spent = u!.last!;
+    // The step used to turn it on is spent; the next step's code works once; one far ahead never does.
+    expect(await secondStep(app.db, KEY, p.userId, totpCode(s, spent))).toBeNull();
+    expect(await secondStep(app.db, KEY, p.userId, totpCode(s, spent + 1))).toBe("code");
+    expect(await secondStep(app.db, KEY, p.userId, totpCode(s, spent + 1))).toBeNull();
+    expect(await secondStep(app.db, KEY, p.userId, totpCode(s, spent + 3))).toBeNull();
     expect(await secondStep(app.db, KEY, p.userId, "12345")).toBeNull();
   });
 

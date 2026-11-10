@@ -28,3 +28,8 @@
 
 html { background: var(--bg); color-scheme: dark; }
 body { margin: 0; }
+
+/* Everything you can press shows the hand, everywhere, without each part having to ask for it; a control that can't
+   be pressed right now says so. Parts may still set their own (a busy button shows progress). */
+button, [role="button"], [role="switch"], [role="radio"], [role="tab"], summary, select, label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { cursor: pointer; }
+button:disabled, select:disabled, [aria-disabled="true"] { cursor: not-allowed; }
