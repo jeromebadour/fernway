@@ -10,6 +10,14 @@ export const jobId = (shipmentId: number, tryNumber: number) => `s${shipmentId}-
 export function createQueue(connection: ConnectionOptions, prefix = "fernway") {
   const queue = new Queue<TryJob>(QUEUE, { connection, prefix });
   const schedule = async (shipmentId: number, tryNumber: number, delayMs: number) => {
+    // The queue keeps finished jobs for a while, and adding a job whose id it still holds does nothing. A try that
+    // already ran or failed can rightly come again (a resend starts at try 1; the sweep re-queues a stalled try), so
+    // its old job is cleared first. A try still waiting or running keeps its job: the same try is never queued twice.
+    const old = await queue.getJob(jobId(shipmentId, tryNumber));
+    if (old) {
+      const state = await old.getState();
+      if (state === "completed" || state === "failed") await old.remove();
+    }
     await queue.add("try", { shipmentId, try: tryNumber }, {
       jobId: jobId(shipmentId, tryNumber),
       delay: delayMs,

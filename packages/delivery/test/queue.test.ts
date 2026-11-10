@@ -3,7 +3,7 @@
 import { Redis } from "ioredis";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { deliverTry, ingestLead, type Deps } from "../src/engine.js";
+import { deliverTry, ingestLead, resend, type Deps } from "../src/engine.js";
 import { createGhlClient } from "../src/ghl.js";
 import { createDeliveryWorker, createQueue } from "../src/queue.js";
 import { shipments } from "../src/schema.js";
@@ -67,4 +67,44 @@ it("retries through the queue on its own until GHL takes the lead", async () => 
   expect(state).toBe("signed");
   expect(s!.tries).toBe(3);
   expect(ghl.contacts.size).toBe(1);
+});
+
+it("runs a resend through the real queue, though its first try's job already ran", async () => {
+  const owner = createDb(database.url, 1);
+  const accountId = await seedAccount(owner.db);
+  await owner.pool.end();
+
+  const { queue, schedule } = createQueue(connection, prefix);
+  const deps: Deps = {
+    db: handle.db,
+    ghl: createGhlClient({ baseUrl: GHL_BASE, timeoutMs: 500 }),
+    connectionFor: async () => fakeConnection(),
+    schedule,
+  };
+  const worker = createDeliveryWorker(connection, (job) => deliverTry(deps, job.shipmentId, job.try), { prefix });
+  const stateOf = async (id: number) => (await handle.db.select().from(shipments).where(eq(shipments.id, id)))[0]!.state;
+  const until = async (id: number, want: string) => {
+    for (let i = 0; i < 100 && (await stateOf(id)) !== want; i++) await new Promise((res) => setTimeout(res, 50));
+    return stateOf(id);
+  };
+
+  // GHL refuses the data: held at try 1, whose job is now finished and kept by the queue.
+  ghl.fail("contact", { status: 422, body: { message: "phone is invalid" } });
+  const r = await ingestLead(deps, accountId, {
+    idempotencyKey: "queue-test-resend-0001", source: "api", route: "trial", contact: { email: "wren@roofing.example" },
+  });
+  if (!r.ok) throw new Error(r.problems.join("; "));
+  expect(await until(r.waybill.id, "held")).toBe("held");
+
+  // The owner resends it: try 1 again, under the same job id. It must run, not be ignored as a duplicate.
+  expect(await resend(deps, r.waybill.id)).toBe(true);
+  expect(await until(r.waybill.id, "signed")).toBe("signed");
+
+  // A try still waiting is never queued twice.
+  await schedule(r.waybill.id, 7, 60_000);
+  await schedule(r.waybill.id, 7, 60_000);
+  expect((await queue.getJobs(["delayed"])).filter((j) => j.id === `s${r.waybill.id}-t7`)).toHaveLength(1);
+
+  await worker.close();
+  await queue.close();
 });
