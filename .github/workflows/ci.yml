@@ -204,6 +204,7 @@ jobs:
         # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
         # so it proves none of Break it's calls ever leave Fernway.
         run: |
+          set -x
           B=http://127.0.0.1:3103
           W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
           $W account "Break it demo" | grep -q "^account 2"
