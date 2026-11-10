@@ -6,6 +6,7 @@ import { delivery } from "@/lib/connect";
 import { requirePerson } from "@/lib/session";
 import { GCard, GCheck, GClock, GDown, GHold, GManifest, GOut, GRoute, GScan } from "@/ui/glyphs";
 import { perLead, rates } from "@/ui/rates";
+import { ConfirmFirst } from "../confirm-first";
 import { AwaitPlan, OpenPortal, StartPlan } from "./actions";
 
 export const metadata: Metadata = { title: "Plan and billing · Fernway" };
@@ -102,6 +103,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
 
       <section className="bl-sec" aria-labelledby="bl-plans-h">
         <h2 id="bl-plans-h" className="bl-h2"><GRoute size={18} />Plans</h2>
+        {owner && live && !paying && !m.emailConfirmed && <div className="bl-cf"><ConfirmFirst what="Starting a plan" /></div>}
         <div className="wb-rates bl-rates">
           {planKeys.map((k: PlanKey) => {
             const r = rates.find((x) => x.plan === PLANS[k].name)!;
@@ -116,7 +118,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
                   <div><dt>Per lead</dt><dd>{perLead(r.price, r.leads)}</dd></div>
                 </dl>
                 <p className="wb-rate-note">{r.note} · Team: {r.team}</p>
-                {owner && live && !mine && (paying ? <OpenPortal ghost label={`Switch to ${r.plan}`} /> : <StartPlan plan={k} name={r.plan} pick={pick} />)}
+                {owner && live && !mine && (paying ? <OpenPortal ghost label={`Switch to ${r.plan}`} /> : m.emailConfirmed && <StartPlan plan={k} name={r.plan} pick={pick} />)}
               </article>
             );
           })}
