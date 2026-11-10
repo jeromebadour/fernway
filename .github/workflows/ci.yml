@@ -130,7 +130,8 @@ jobs:
           track=$(echo "$out" | python3 -c 'import json,sys; j=json.load(sys.stdin); assert j["ok"]; print(j["track"])')
           # The same form sent again is the same waybill.
           again=$(lead 10.0.0.1 "{\"form\":\"trial\",\"key\":\"$key\",\"contact\":{\"email\":\"lena@northpine.example\"}}")
-          test "$(echo "$again" | python3 -c 'import json,sys; print(json.load(sys.stdin)["track"])')" = "$track"
+          num() { python3 -c 'import json,sys; print(json.load(sys.stdin)["number"])'; }
+          test "$(echo "$again" | num)" = "$(echo "$out" | num)"
           for i in $(seq 1 20); do
             state=$(curl -s "$B/api$track" | python3 -c 'import json,sys; print(json.load(sys.stdin)["view"]["state"])')
             [ "$state" = held ] && break; sleep 1
