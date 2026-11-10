@@ -1,0 +1,53 @@
+name: Merge
+
+# Every change reaches main through a pull request, opened and merged as jeromebadour with his own token (the
+# repository secret FERNWAY_MERGE_TOKEN). A pushed branch gets its pull request at once. The pull request merges, by
+# rebase, only after CI passed on its latest commit. The ruleset on main enforces the same thing on GitHub's side:
+# a pull request, both CI checks green, the branch up to date, no force pushes, no bypass.
+on:
+  push:
+    branches-ignore: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  open:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Open the pull request
+        env:
+          GH_TOKEN: ${{ secrets.FERNWAY_MERGE_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          open=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number -q '.[0].number')
+          if [ -n "$open" ]; then echo "pull request #$open is already open"; exit 0; fi
+          title=$(printf '%s\n' "$MESSAGE" | head -n 1)
+          body=$(printf '%s\n' "$MESSAGE" | tail -n +3)
+          gh pr create -R "$REPO" --base main --head "$BRANCH" --title "$title" --body "${body:-$title}"
+
+  merge:
+    # Only a CI run that passed, on a branch, for the commit the pull request now ends with.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch != 'main'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Merge when green
+        env:
+          GH_TOKEN: ${{ secrets.FERNWAY_MERGE_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number,headRefOid -q '.[0] | "\(.number) \(.headRefOid)"')
+          if [ -z "$pr" ]; then echo "no open pull request for $BRANCH"; exit 0; fi
+          set -- $pr
+          if [ "$2" != "$SHA" ]; then echo "CI passed on $SHA, but #$1 now ends at $2; its own run decides"; exit 0; fi
+          gh pr merge -R "$REPO" "$1" --rebase --delete-branch --match-head-commit "$SHA"

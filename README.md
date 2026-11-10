@@ -24,4 +24,7 @@ npm ci
 npm run typecheck && npm run lint && npm run test:unit
 ```
 
+Every change reaches `main` through a pull request; CI must pass before it can merge (a ruleset on `main`, no
+bypass). The server then deploys only commits CI passed on `main`.
+
 Built by [Jerome Badour](https://jeromebadour.com). All rights reserved (see `LICENSE`).
