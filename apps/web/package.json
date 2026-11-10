@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "prebuild": "node scripts/changelog.mjs",
     "dev": "next dev -p 3103",
     "build": "next build",
     "start": "next start -p 3103",

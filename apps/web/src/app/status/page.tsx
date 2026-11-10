@@ -107,7 +107,7 @@ export default async function Status() {
                   {view.ghl.p95Ms !== null && <div className="st-tile"><p className="wb-label">Slow answer</p><p className="st-big">{view.ghl.p95Ms}<em>ms</em></p><p className="st-sub">95 in 100 calls were faster</p></div>}
                   <div className="st-tile st-tile-ok"><p className="wb-label">Answered 2xx</p><p className="st-big">{Math.round((view.ghl.answered2xx / view.ghl.calls) * 100)}<em>%</em></p><p className="st-sub">{view.ghl.answered2xx} of {view.ghl.calls}</p></div>
                 </div>
-                <table className="st-table st-calls">
+                {view.recent.length > 0 && <table className="st-table st-calls">
                   <thead><tr><th className="st-num">#</th><th>When</th><th>Step</th><th>GHL</th><th>Answer time</th></tr></thead>
                   <tbody>
                     {view.recent.map((r, i) => (
@@ -120,7 +120,7 @@ export default async function Status() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table>}
               </>
             ) : (
               <p className="st-none">No calls to GHL in the last 24 hours.</p>

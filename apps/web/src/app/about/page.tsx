@@ -5,6 +5,7 @@ import "@/ui/forms.css";
 import "@/ui/legal.css";
 import "./about.css";
 import { GCheck, GHand, GHold, GManifest, GRoute } from "@/ui/glyphs";
+import { BuilderCard } from "@/ui/builder";
 import { SiteFooter, SiteHeader } from "@/ui/site";
 
 export const metadata: Metadata = { title: "About · Fernway" };
@@ -45,13 +46,7 @@ export default function About() {
 
           <aside className="ab-by">
             <p className="wb-label">Built and run by</p>
-            <div className="wb-consignee ab-who">
-              <span className="wb-ava">JB</span>
-              <div>
-                <p className="wb-name">Jerome Badour <span className="wb-role">Developer</span></p>
-                <p className="wb-org">Independent, full-stack: web apps, APIs, servers and integrations</p>
-              </div>
-            </div>
+            <BuilderCard className="ab-who" />
             <p className="ab-text">Fernway is one of the projects on <a href="https://jeromebadour.com">jeromebadour.com</a>. Its code is public on <a href="https://github.com/jeromebadour/fernway">GitHub</a>, with the tests that prove each promise on this site.</p>
             <p className="wb-label ab-label">Built with</p>
             <ul className="ab-chips">{built.map((b) => <li key={b}>{b}</li>)}</ul>

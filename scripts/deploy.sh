@@ -67,6 +67,8 @@ print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub
   log="$logs/$(date -u +%Y%m%d-%H%M)-$short.log"
   echo "== building and starting (a few minutes; log: $log)"
   cd "$app" || stop "no $app"
+  # The changelog page is built from the git history, which never enters the image (apps/web/scripts/changelog.mjs).
+  as_app log --format='%H%x1f%cI%x1f%s%x1f%b%x1e' > "$app/apps/web/changelog.txt" || stop "could not read the git history for the changelog"
   APP_COMMIT=$short docker compose --env-file "$env" up -d --build 2>&1 | tee "$log"
   [ "${PIPESTATUS[0]}" = 0 ] || stop "build or start failed (see $log); the running version was not replaced if the build failed"
 

@@ -322,3 +322,18 @@
   .wb-thumb .wb-go { width: 100%; justify-content: center; height: 52px; font-size: 16.5px; }
 }
 .wb-clock .wb-link { margin-top: 16px; }
+/* The builder card (ui/builder.tsx): the whole card is a link to Jerome Badour's site. */
+.bd-card { flex-wrap: wrap; padding: 14px 16px; margin-left: -16px; margin-right: -16px; border: 1px solid transparent; }
+.bd-card:hover { border-color: rgba(92,200,184,0.35); background: rgba(92,200,184,0.04); }
+.bd-who { display: grid; gap: 4px; flex: 1; min-width: 200px; }
+.bd-who .wb-name, .bd-who .wb-org { display: block; }
+.bd-who .wb-org { margin: 0; }
+.bd-go { display: inline-flex; align-items: center; gap: 7px; font: 500 13px var(--font-mono); color: var(--go); }
+.bd-photo { width: 40px; height: 40px; object-fit: cover; }
+/* The pager (ui/pager.tsx). */
+.pg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 28px; }
+.pg a { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font: 500 14px var(--font-mono); color: var(--paper); border: 1px solid var(--line); }
+.pg a:hover { border-color: rgba(92,200,184,0.45); }
+.pg a[aria-current="page"] { color: var(--go-ink) !important; background: var(--go); border-color: var(--go); }
+.pg-step svg { color: var(--input); }
+.pg-step:first-child svg { transform: scaleX(-1); }

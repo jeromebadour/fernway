@@ -71,3 +71,9 @@ export async function statusView(db: Db, demoAccountId: number): Promise<StatusV
     runs,
   };
 }
+
+/** Every recorded deploy, newest first: which commit went live, and when. */
+export async function deploys(db: Db): Promise<{ commit: string; at: string }[]> {
+  const rows = await db.select().from(opsRuns).where(and(eq(opsRuns.kind, "deploy"), eq(opsRuns.ok, true))).orderBy(desc(opsRuns.at), desc(opsRuns.id));
+  return rows.map((r) => ({ commit: r.detail, at: r.at.toISOString() }));
+}

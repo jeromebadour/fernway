@@ -76,9 +76,13 @@ jobs:
       PGDATABASE: fernway
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the whole history, for the changelog page
 
       - name: Build and start the stack
         run: |
+          # The changelog page is built from the git history, which never enters the image (see apps/web/scripts).
+          git log --format='%H%x1f%cI%x1f%s%x1f%b%x1e' > apps/web/changelog.txt
           $COMPOSE up -d --build
           for i in $(seq 1 90); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && exit 0; sleep 2; done
           echo "the stack did not become healthy"; curl -s http://127.0.0.1:3103/api/health; echo
@@ -284,7 +288,9 @@ jobs:
           curl -s $B/terms | grep -q "What Fernway is"
           curl -s $B/about | grep -q "What is real"
           curl -s $B/delivery | grep -q "What happens when GHL says no"
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /api/slots; do
+          # The changelog is this repo's real history: the commit under test is its newest entry.
+          curl -s $B/changelog | grep -qF "$(git log -1 --format=%h)"
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 

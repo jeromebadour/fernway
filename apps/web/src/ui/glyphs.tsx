@@ -44,3 +44,5 @@ export const GBrackets = (p: P) => (<S {...p}><path d="M7 3H4v14h3M13 3h3v14h-3"
 export const GJump = (p: P) => (<S {...p}><path d="M4 3v8h11" /><path d="M12 8l3 3-3 3" /></S>);
 // How delivery works: a test that proves a promise (a ticked box with its line of code).
 export const GProof = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M5.5 10l2.5 2.5 5-5" /><path d="M5 15.5h10" /></S>);
+// A link out to another site (the builder's own site, GitHub).
+export const GOut = (p: P) => (<S {...p}><path d="M9 4H3v13h13v-6" /><path d="M11 2h7v7" /><path d="M18 2l-8 8" /></S>);

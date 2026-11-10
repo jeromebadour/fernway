@@ -18,3 +18,5 @@ npm-debug.log*
 
 # local Redis snapshots
 dump.rdb
+apps/web/changelog.txt
+apps/web/src/ui/changelog.json

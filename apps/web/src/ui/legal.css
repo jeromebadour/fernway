@@ -23,7 +23,8 @@
 .lg-clause { display: grid; grid-template-columns: 44px 1fr; gap: 0; margin: 0 0 14px; font-size: 16px; line-height: 1.65; color: #cfd8e3; }
 .lg-no { font: 500 13px/1.9 var(--font-mono); color: var(--faint); }
 .lg-clause b { color: var(--paper); font-weight: 600; }
-.lg-clause a, .ab a { color: var(--paper); border-bottom: 1px solid rgba(122,168,224,0.55); }
+/* Links in running text only: the buttons and the builder card keep their own look. */
+.lg-clause a, .ab .ab-text a { color: var(--paper); border-bottom: 1px solid rgba(122,168,224,0.55); }
 @media (max-width: 1000px) {
   .lg-grid { grid-template-columns: 1fr; gap: 32px; }
   .lg-toc { position: static; }
