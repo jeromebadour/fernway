@@ -16,6 +16,7 @@ tested) when Fernway launches.
 | `packages/core` | shared rules: waybill numbers, the delivery promise (8 tries over 24 h) |
 | `db` | Postgres migrations, applied on every deploy |
 | `ops`, `scripts` | Nginx config and the deploy script for the server |
+| `.github/workflows` | CI (types, lint, tests, then the real images and compose) and the merge gate for pull requests |
 
 ## Run the checks
 
