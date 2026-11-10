@@ -5,6 +5,7 @@ import "./site.css";
 import "./forms.css";
 import "./docs.css";
 import { GBrackets, GDown, GJump, GManifest, GPlay } from "./glyphs";
+import { BuilderCard } from "./builder";
 import { SiteFooter, SiteHeader } from "./site";
 
 const pages = [
@@ -30,6 +31,7 @@ export function DocsFrame({ current, sections, children }: { current: string; se
             ))}
           </ul>
           <a className="dc-spec" href="/api/v1/openapi.json"><GDown size={14} />OpenAPI 3.1 file</a>
+          <div className="dc-by"><p className="wb-label">Built by</p><BuilderCard /></div>
         </nav>
         <main className="dc-main">{children}</main>
       </div>

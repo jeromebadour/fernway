@@ -1,11 +1,12 @@
 import Link from "next/link";
 import "@/ui/site.css";
+import { BuilderCard, JEROME } from "@/ui/builder";
 import { RetryClock } from "@/ui/retry-clock";
 import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
 import { perLead, rates } from "@/ui/rates";
 import {
   GRoute, GScan, GManifest, GPrice, GKey, GCheck, GResend, GHand,
-  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GShield,
+  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GShield, GOut,
 } from "@/ui/glyphs";
 
 const scans = [
@@ -240,6 +241,21 @@ export default function Landing() {
         <div className="wb-rates-foot">
           <Link className="wb-go" href="/trial"><GRoute size={16} />Start a 14-day trial</Link>
           <Link className="wb-link" href="/pricing"><GPrice size={16} />Every rate, and what a lost lead costs you</Link>
+        </div>
+      </section>
+
+      <section className="wb-sec wb-sec-alt wb-maker" aria-labelledby="maker-h">
+        <div className="wb-maker-grid">
+          <div>
+            <p className="wb-eyebrow"><GManifest size={16} />Who built it</p>
+            <h2 id="maker-h">One developer, end to end.</h2>
+            <p className="wb-sec-lede">Fernway is a portfolio product by Jerome Badour: the delivery engine, the GoHighLevel connection, the server it runs on and every page. Its code is public, with the tests that prove each promise.</p>
+            <div className="wb-maker-do">
+              <a className="wb-go" href={JEROME.site}><GOut size={16} />Jerome&rsquo;s work</a>
+              <a className="wb-ghost" href={`${JEROME.github}/fernway`}><GOut size={16} />The code on GitHub</a>
+            </div>
+          </div>
+          <div className="wb-maker-card"><p className="wb-label">Built and run by</p><BuilderCard large /></div>
         </div>
       </section>
 

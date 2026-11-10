@@ -206,6 +206,9 @@
 .wb-foot-cols a:hover { color: var(--paper); }
 .wb-foot-bottom { display: flex; justify-content: space-between; align-items: center; height: 64px; border-top: 1px solid var(--line);
   font-size: 14px; color: var(--muted); }
+.wb-by { display: inline-flex; align-items: center; gap: 9px; }
+.wb-by img { width: 28px; height: 28px; object-fit: cover; border: 1px solid rgba(92,200,184,0.4); }
+.wb-by svg { color: var(--go); }
 .wb-by b { color: var(--paper); font-weight: 600; border-bottom: 1px solid rgba(92,200,184,0.6); }
 
 /* Bits that exist only on small screens */
@@ -329,7 +332,9 @@
 .bd-who .wb-name, .bd-who .wb-org { display: block; }
 .bd-who .wb-org { margin: 0; }
 .bd-go { display: inline-flex; align-items: center; gap: 7px; font: 500 13px var(--font-mono); color: var(--go); }
-.bd-photo { width: 40px; height: 40px; object-fit: cover; }
+.bd-photo { width: 48px; height: 48px; flex: none; object-fit: cover; border: 1px solid rgba(92,200,184,0.4); }
+.bd-large .bd-photo { width: 76px; height: 76px; }
+.bd-large .wb-name { font-size: 19px; }
 /* The pager (ui/pager.tsx). */
 .pg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 28px; }
 .pg a { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font: 500 14px var(--font-mono); color: var(--paper); border: 1px solid var(--line); }
@@ -337,3 +342,9 @@
 .pg a[aria-current="page"] { color: var(--go-ink) !important; background: var(--go); border-color: var(--go); }
 .pg-step svg { color: var(--input); }
 .pg-step:first-child svg { transform: scaleX(-1); }
+/* The landing's builder band. */
+.wb-maker-grid { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 64px; align-items: center; }
+.wb .wb-maker h2 { margin: 0; }
+.wb-maker-do { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.wb-maker-card { padding: 24px 26px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); }
+@media (max-width: 1000px) { .wb-maker-grid { grid-template-columns: 1fr; gap: 32px; } }

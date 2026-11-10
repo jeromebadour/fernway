@@ -5,6 +5,7 @@ import "@/ui/forms.css";
 import "./delivery.css";
 import data from "@/ui/delivery-proofs.json";
 import { GHand, GJump, GManifest, GMark, GProof, GScan, GShield } from "@/ui/glyphs";
+import { BuilderCard } from "@/ui/builder";
 import { RetryClock } from "@/ui/retry-clock";
 import { SiteFooter, SiteHeader } from "@/ui/site";
 
@@ -66,6 +67,7 @@ export default function Delivery() {
             <Link className="wb-go" href="/break-it"><GScan size={16} />Break it yourself</Link>
             <Link className="wb-ghost" href="/docs"><GManifest size={16} />Docs</Link>
           </div>
+          <div className="dv-by"><p className="wb-label">Built and tested by</p><BuilderCard /></div>
         </div>
       </section>
       <SiteFooter />

@@ -56,3 +56,4 @@
   .dv-no { font-size: 34px; }
   .wb .dv-side h2 { font-size: 22px; }
 }
+.dv-by { margin-top: 36px; max-width: 520px; padding: 20px 22px; background: var(--kraft); border: 1px solid rgba(190,210,232,0.12); }

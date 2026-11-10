@@ -10,8 +10,9 @@ const txt = resolve(web, "changelog.txt");
 const out = resolve(web, "src/ui/changelog.json");
 
 if (!existsSync(txt)) {
-  if (!existsSync(out)) writeFileSync(out, "[]\n");
-  console.log(`changelog: no history file, ${existsSync(out) ? "kept" : "wrote"} ${out}`);
+  const had = existsSync(out);
+  if (!had) writeFileSync(out, "[]\n");
+  console.log(`changelog: no history file, ${had ? "kept" : "wrote an empty"} ${out}`);
   process.exit(0);
 }
 

@@ -1,6 +1,8 @@
 // The public site's shared frame: the top bar, the footer and the phone's pinned trial button (styles in site.css).
+import Image from "next/image";
 import Link from "next/link";
-import { GDepot, GFind, GKey, GManifest, GMark, GMenu, GPrice, GRoute, GScan } from "./glyphs";
+import { JEROME } from "./builder";
+import { GDepot, GFind, GKey, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan } from "./glyphs";
 
 const nav = [
   { href: "/#how", label: "Product", G: GDepot },
@@ -38,13 +40,15 @@ export function SiteFooter() {
         </div>
         <nav className="wb-foot-cols" aria-label="Footer">
           <div><p>Product</p><Link href="/#how">How a lead travels</Link><Link href="/delivery">How delivery works</Link><Link href="/demo">Book a demo</Link><Link href="/track">Track a lead</Link><Link href="/pricing">Pricing</Link><Link href="/break-it">Live demo</Link><Link href="/status">Status</Link></div>
-          <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link><Link href="/docs/wordpress">WordPress</Link><Link href="/docs/laravel">Laravel</Link></div>
+          <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link></div>
           <div><p>Fernway</p><Link href="/contact">Contact sales</Link><Link href="/about">About</Link><Link href="/changelog">Changelog</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div>
         </nav>
       </div>
       <div className="wb-foot-bottom">
         <span>Fernway is a portfolio product. © 2026</span>
-        <a href="https://jeromebadour.com" className="wb-by">Built by <b>Jerome Badour</b></a>
+        <a href={JEROME.site} className="wb-by">
+          {JEROME.photo && <Image src={JEROME.photo} alt="" width={28} height={28} unoptimized />}Built by <b>{JEROME.name}</b><GOut size={13} />
+        </a>
       </div>
     </footer>
   );

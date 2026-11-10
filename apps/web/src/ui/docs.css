@@ -112,3 +112,11 @@
   .dc-states dd { grid-column: 2; }
   .dc-fields td:nth-child(2) { white-space: normal; }
 }
+/* The builder card at the foot of the rail: a compact version, no tagline. */
+.dc-by { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.dc-by .bd-card { margin: 8px -12px 0; padding: 10px 12px; }
+.dc-by .wb-org, .dc-by .wb-role, .dc-by .bd-go { display: none; }
+.dc-by .wb-name { font-size: 15px; }
+.dc-by .bd-who { min-width: 0; }
+.dc-rail .dc-by a { display: flex !important; }
+@media (max-width: 900px) { .dc-by { display: none; } }

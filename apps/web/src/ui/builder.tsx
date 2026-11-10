@@ -7,14 +7,14 @@ export const JEROME = {
   name: "Jerome Badour",
   site: "https://jeromebadour.com",
   github: "https://github.com/jeromebadour",
-  // His photo, once Kami gives it (roadmap): until then his initials.
-  photo: null as string | null,
+  photo: "/jerome-badour.webp" as string | null,
 };
 
-export function BuilderCard({ className = "" }: { className?: string }) {
+export function BuilderCard({ className = "", large = false }: { className?: string; large?: boolean }) {
+  const px = large ? 76 : 48;
   return (
-    <a className={`wb-consignee bd-card ${className}`} href={JEROME.site}>
-      {JEROME.photo ? <Image className="bd-photo" src={JEROME.photo} alt="" width={40} height={40} /> : <span className="wb-ava">JB</span>}
+    <a className={`wb-consignee bd-card${large ? " bd-large" : ""} ${className}`} href={JEROME.site}>
+      {JEROME.photo ? <Image className="bd-photo" src={JEROME.photo} alt="" width={px} height={px} unoptimized /> : <span className="wb-ava">JB</span>}
       <span className="bd-who">
         <span className="wb-name">{JEROME.name} <span className="wb-role">Developer</span></span>
         <span className="wb-org">Independent, full-stack: web apps, APIs, servers and integrations</span>
