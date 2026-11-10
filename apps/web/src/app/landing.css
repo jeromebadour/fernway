@@ -3,9 +3,11 @@
   /* Content lives in one centred column (--wrap) whatever the screen width; only backgrounds and rules reach the edges.
      --edge is the side padding that keeps that column centred, never less than the gutter. */
   --gutter: 64px; --wrap: 1312px; --indent: 32px;
-  position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--paper);
-  font-family: var(--font-body);
+  --edge: max(var(--gutter), calc((100% - var(--wrap)) / 2));
+  position: relative; overflow-x: clip; background: var(--bg); color: var(--paper); font-family: var(--font-body);
 }
+/* The first screen: the hero and the Works with strip, over the depot floor. */
+.wb-first { position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .wb *, .wb *::before, .wb *::after { box-sizing: border-box; }
 .wb a { color: inherit; text-decoration: none; cursor: pointer; }
 .wb svg { flex: none; }
@@ -110,6 +112,98 @@
    tall, so on a tall monitor the bottom strip stays with the content and the rest is background. */
 @media (min-width: 761px) { .wb-main { max-height: 850px; } }
 
+/* Below the first screen: one centred column, sections divided by rules that reach the edges. */
+.wb-sec { position: relative; padding: 112px var(--edge) 120px; border-top: 1px solid var(--line); }
+.wb-sec-alt { background: #070c13; }
+.wb-sec-head { max-width: 760px; margin-bottom: 56px; }
+.wb-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; color: var(--go);
+  font: 600 15px/1 var(--font-label); letter-spacing: 0.22em; text-transform: uppercase; }
+.wb-eyebrow-re { color: var(--re); }
+.wb h2 { margin: 0; font: 600 48px/1.08 var(--font-body); letter-spacing: -0.03em; color: var(--paper); }
+.wb-sec-lede { margin: 20px 0 0; font-size: 18px; line-height: 1.6; color: #cfd8e3; max-width: 640px; }
+
+/* How a lead travels: the four stations on one route line */
+.wb-line { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; position: relative; }
+.wb-line::before { content: ""; position: absolute; left: 0; right: 0; top: 46px; height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(190,210,232,0.28) 0 10px, transparent 10px 18px); }
+.wb-line li { position: relative; padding: 0 36px 0 0; }
+.wb-stop { display: flex; align-items: flex-end; gap: 14px; height: 60px; }
+.wb-stop-no { font: 500 13px/1 var(--font-mono); color: var(--muted); padding-bottom: 22px; }
+.wb-stop-node { position: relative; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; margin-bottom: -2px;
+  background: var(--bg); border: 2px solid currentColor; }
+.wb-line .tone-in { color: var(--input); }
+.wb-line .tone-ok { color: var(--ok); }
+.wb-line h3 { margin: 26px 0 0; font: 600 22px/1.2 var(--font-body); letter-spacing: -0.01em; color: var(--paper); }
+.wb-line p { margin: 12px 0 0; font-size: 15.5px; line-height: 1.6; color: var(--muted); }
+.wb-line code { display: inline-block; margin-top: 18px; padding: 6px 9px; font: 500 12.5px/1 var(--font-mono); color: currentColor;
+  border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 40%, transparent); }
+.wb-proof { display: flex; gap: 12px; align-items: flex-start; margin: 64px 0 0; padding: 18px 22px; max-width: 820px;
+  border: 1px solid rgba(134,194,143,0.35); background: rgba(134,194,143,0.05); font-size: 15.5px; line-height: 1.55; color: #cfd8e3; }
+.wb-proof svg { color: var(--ok); margin-top: 3px; }
+.wb-proof b { color: var(--paper); font-family: var(--font-mono); font-weight: 600; font-size: 14.5px; }
+
+/* When GHL says no: the answer table and the retry clock */
+.wb-no-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+.wb-answers { width: 100%; border-collapse: collapse; font-size: 15px; }
+.wb-answers th { text-align: left; padding: 0 16px 12px 0; font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--line); }
+.wb-answers td { padding: 16px 16px 16px 0; vertical-align: top; line-height: 1.5; color: #cfd8e3; border-bottom: 1px dashed var(--line); }
+.wb-answers td:first-child { white-space: nowrap; }
+.wb-code { font: 600 13.5px/1.5 var(--font-mono); color: var(--paper); }
+.wb-does { display: flex; gap: 10px; align-items: flex-start; color: var(--paper); }
+.wb-does svg { margin-top: 3px; }
+.wb-answers .tone-re svg { color: var(--re); }
+.wb-answers .tone-in svg { color: var(--input); }
+.wb-answers .tone-hz svg { color: var(--hazard); }
+.wb-clock { margin: 0; padding: 28px 28px 26px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); }
+.wb-clock figcaption { display: flex; align-items: center; gap: 10px; font: 600 14px/1 var(--font-label); letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--re); }
+.wb-clock-bar { position: relative; height: 92px; margin: 34px 14px 0 10px; border-bottom: 2px solid rgba(165,175,242,0.5); }
+.wb-tick { position: absolute; bottom: -7px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wb-tick i { order: 2; width: 12px; height: 12px; display: block; background: var(--re); font-size: 0; }
+.wb-tick em { order: 1; font: 500 11.5px/1 var(--font-mono); font-style: normal; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); }
+.wb-tick:first-child i { background: var(--input); }
+.wb-clock-scale { position: relative; height: 12px; margin: 14px 14px 0 10px; font: 500 11.5px/1 var(--font-mono); color: var(--faint); }
+.wb-clock-scale span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.wb-clock-scale span:last-child { transform: translateX(-100%); }
+.wb-clock p { margin: 22px 0 0; font-size: 15px; line-height: 1.6; color: var(--muted); }
+.wb-clock b.hz { color: var(--hazard); font-weight: 600; }
+
+/* Rates: carrier rate cards, priced by leads signed for */
+.wb-rates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid rgba(190,210,232,0.16); }
+.wb-rate { padding: 28px 30px 30px; border-right: 1px dashed var(--line); }
+.wb-rate:last-child { border-right: 0; }
+.wb-rate-pick { background: linear-gradient(180deg, rgba(92,200,184,0.08), rgba(92,200,184,0.02)); box-shadow: inset 0 3px 0 var(--go); }
+.wb-rate-plan { display: flex; align-items: center; justify-content: space-between; margin: 0; font: 600 18px/1 var(--font-label);
+  letter-spacing: 0.16em; text-transform: uppercase; }
+.wb-rate-plan span { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: none; color: var(--go);
+  padding: 4px 7px; border: 1px solid rgba(92,200,184,0.5); }
+.wb-rate-price { margin: 22px 0 0; color: var(--muted); font-size: 15px; }
+.wb-rate-price b { margin-right: 8px; font: 700 46px/1 var(--font-mono); letter-spacing: -0.04em; color: var(--paper); }
+.wb-rate dl { display: grid; grid-template-columns: 1fr auto; gap: 0; margin: 26px 0 0; border-top: 1px solid var(--line); }
+.wb-rate dl > div { padding: 14px 0 0; }
+.wb-rate dl > div + div { text-align: right; }
+.wb-rate dt { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.wb-rate dd { margin: 8px 0 0; font: 600 20px/1 var(--font-mono); color: var(--ok); }
+.wb-rate dd em { margin-left: 6px; font: 400 13px var(--font-body); font-style: normal; color: var(--muted); }
+.wb-rate-note { margin: 22px 0 0; font-size: 14.5px; color: var(--muted); }
+.wb-rates-foot { display: flex; align-items: center; gap: 28px; margin-top: 36px; }
+.wb-link { display: inline-flex; align-items: center; gap: 9px; font-weight: 500; font-size: 15.5px; color: var(--paper) !important;
+  border-bottom: 1px solid rgba(122,168,224,0.5); padding-bottom: 3px; }
+.wb-link svg { color: var(--input); }
+
+/* The real footer */
+.wb-foot { border-top: 1px solid var(--line); background: #060a10; padding: 64px var(--edge) 0; }
+.wb-foot-top { display: flex; justify-content: space-between; gap: 48px; padding-bottom: 56px; }
+.wb-foot-brand p { margin: 18px 0 0; max-width: 340px; font-size: 15px; line-height: 1.6; color: var(--muted); }
+.wb-foot-cols { display: grid; grid-template-columns: repeat(3, 180px); gap: 24px; }
+.wb-foot-cols p { margin: 0 0 16px; font: 600 13px/1 var(--font-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--faint); }
+.wb-foot-cols a { display: block; padding: 6px 0; font-size: 15px; color: #cfd8e3; }
+.wb-foot-cols a:hover { color: var(--paper); }
+.wb-foot-bottom { display: flex; justify-content: space-between; align-items: center; height: 64px; border-top: 1px solid var(--line);
+  font-size: 14px; color: var(--muted); }
+.wb-by b { color: var(--paper); font-weight: 600; border-bottom: 1px solid rgba(92,200,184,0.6); }
+
 /* Bits that exist only on small screens */
 .wb-menu, .wb-thumb { display: none; }
 
@@ -120,6 +214,11 @@
   .wb-main { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding-top: 48px; padding-bottom: 36px; }
   .wb-bill { margin-right: 8px; }
   .wb-works li { padding: 0 16px; }
+  .wb-sec { padding-top: 96px; padding-bottom: 100px; }
+  .wb h2 { font-size: 42px; }
+  .wb-line li { padding-right: 28px; }
+  .wb-no-grid { gap: 40px; }
+  .wb-foot-cols { grid-template-columns: repeat(3, 150px); }
 }
 
 /* Laptop heights (650, 730): the first screen still holds headline, lede, both actions and the bill's top */
@@ -175,10 +274,45 @@
   .wb-what { font-size: 14.5px; }
   .wb-stamp-ok { margin: 16px 0 0; font-size: 14px; transform: rotate(-4deg); }
   .wb-bill-back .wb-no { display: none; }
-  .wb-ticker { height: auto; flex-direction: column; align-items: stretch; padding: 18px 20px 96px; }
+  .wb-ticker { height: auto; flex-direction: column; align-items: stretch; padding: 18px 20px 28px; }
   .wb-ticker-tag { height: auto; padding: 0 0 12px; border-right: 0; font-size: 13px; }
   .wb-works { flex-wrap: wrap; white-space: normal; padding: 0; gap: 10px 0; }
   .wb-works li { width: 50%; padding: 0; border-right: 0; font-size: 14px; }
+  .wb-sec { padding: 72px 20px 76px; }
+  .wb-sec-head { margin-bottom: 36px; }
+  .wb-eyebrow { font-size: 13px; letter-spacing: 0.18em; }
+  .wb h2 { font-size: 32px; line-height: 1.12; }
+  .wb-sec-lede { font-size: 16.5px; }
+  .wb-line { grid-template-columns: 1fr; }
+  .wb-line::before { left: 15px; right: auto; top: 0; bottom: 0; width: 2px; height: auto;
+    background: repeating-linear-gradient(180deg, rgba(190,210,232,0.28) 0 10px, transparent 10px 18px); }
+  .wb-line li { padding: 0 0 36px 52px; }
+  .wb-line li:last-child { padding-bottom: 0; }
+  .wb-stop { position: absolute; left: 0; top: 0; height: auto; }
+  .wb-stop-no { display: none; }
+  .wb-line h3 { margin-top: 4px; font-size: 20px; }
+  .wb-line p { font-size: 15px; }
+  .wb-proof { margin-top: 44px; padding: 16px; font-size: 15px; }
+  .wb-no-grid { grid-template-columns: 1fr; gap: 40px; }
+  .wb-answers thead { display: none; }
+  .wb-answers, .wb-answers tbody, .wb-answers tr, .wb-answers td { display: block; }
+  .wb-answers tr { padding: 16px 0; border-bottom: 1px dashed var(--line); }
+  .wb-answers td { padding: 0; border: 0; }
+  .wb-answers td + td { margin-top: 6px; }
+  .wb-answers td:nth-child(2) { color: var(--muted); font-size: 14.5px; }
+  .wb-clock { padding: 22px 18px; }
+  .wb-clock-bar { margin: 30px 8px 0 6px; height: 88px; }
+  .wb-tick em { font-size: 10.5px; }
+  .wb-rates { grid-template-columns: 1fr; }
+  .wb-rate { padding: 24px 20px; border-right: 0; border-bottom: 1px dashed var(--line); }
+  .wb-rate:last-child { border-bottom: 0; }
+  .wb-rate-price b { font-size: 40px; }
+  .wb-rates-foot { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .wb-rates-foot .wb-go { display: none; }
+  .wb-foot { padding: 48px 20px 96px; }
+  .wb-foot-top { flex-direction: column; gap: 36px; padding-bottom: 36px; }
+  .wb-foot-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; }
+  .wb-foot-bottom { flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; height: auto; padding: 20px 0; }
   .wb-thumb { display: flex; position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; padding: 12px 20px 16px;
     background: rgba(10,16,25,0.92); border-top: 1px solid var(--line); backdrop-filter: blur(8px); }
   .wb-thumb .wb-go { width: 100%; justify-content: center; height: 52px; font-size: 16.5px; }
