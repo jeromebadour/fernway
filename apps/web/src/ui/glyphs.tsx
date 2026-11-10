@@ -67,3 +67,4 @@ export const GPhone = (p: P) => (<S {...p}><rect x="5" y="2" width="10" height="
 export const GGlobe = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M2 10h16M10 2c-3 3-3 13 0 16M10 2c3 3 3 13 0 16" /></S>);
 export const GNote = (p: P) => (<S {...p}><path d="M3 3h14v10l-5 5H3z" /><path d="M12 18v-5h5" /><path d="M6 7h8M6 10h5" /></S>);
 export const GCaps = (p: P) => (<S {...p}><path d="M10 3l7 7h-4v4H7v-4H3z" /><path d="M7 17h6" /></S>);
+export const GClose = (p: P) => (<S {...p}><path d="M4 4l12 12M16 4L4 16" /></S>);

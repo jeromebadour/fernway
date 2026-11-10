@@ -3,7 +3,7 @@
 // address at once, so a reload or a shared link never repeats it. Endings that leave you signed out stay until closed.
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GCheck, GMail, GSignOut, GJump } from "./glyphs";
+import { GCheck, GClose, GMail, GSignOut } from "./glyphs";
 
 const notices: Record<string, { title: string; line: string; G: (p: { size?: number }) => React.ReactNode; stays?: boolean }> = {
   welcome: { title: "Your account is ready", line: "Your 14-day trial has started. A link to confirm your email is on its way.", G: GCheck },
@@ -37,7 +37,7 @@ export function Notice() {
     <div className="nt" role="status">
       <n.G size={18} />
       <div><p className="nt-title">{n.title}</p><p className="nt-line">{n.line}</p></div>
-      <button type="button" onClick={() => setKey(null)} aria-label="Close"><GJump size={14} />Close</button>
+      <button type="button" onClick={() => setKey(null)} aria-label="Close"><GClose size={13} />Close</button>
     </div>
   );
 }
