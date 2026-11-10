@@ -190,7 +190,7 @@ export function LeadForm({ spec }: { spec: LeadFormSpec }) {
             {errors.slot && <span className="fm-error">{errors.slot}</span>}
           </div>
         )}
-        <p className="fm-note">Fernway is a portfolio product. What you send goes to its demo GoHighLevel account and is deleted after 30 days.</p>
+        <p className="fm-note">Fernway is a portfolio product. What you send goes to its demo GoHighLevel account and is deleted after 30 days (<Link href="/privacy">Privacy</Link>).</p>
         {errors.form && <p className="fm-error fm-error-form">{errors.form}</p>}
         <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : spec.send}</button>
       </form>

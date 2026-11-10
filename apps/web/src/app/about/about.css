@@ -1,0 +1,19 @@
+/* About: what is real, what is only a demo, who built it. */
+.ab-grid { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 64px; margin-top: 56px; align-items: start; }
+.wb .ab h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; font: 600 26px/1.2 var(--font-body); letter-spacing: -0.01em; }
+.wb .ab h2 svg { color: var(--ok); }
+.wb .ab h2.ab-h-hz { margin-top: 44px; }
+.wb .ab h2.ab-h-hz svg { color: var(--hazard); }
+.ab-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ab-list li { display: flex; gap: 14px; align-items: flex-start; padding: 15px 0; border-bottom: 1px dashed var(--line); font-size: 16px; line-height: 1.6; color: #cfd8e3; }
+.ab-list svg { margin-top: 4px; flex: none; }
+.ab-real svg { color: var(--ok); }
+.ab-demo svg { color: var(--hazard); }
+.ab-by { padding: 26px 28px 28px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); }
+.ab-who { margin-top: 12px; }
+.ab-text { margin: 20px 0 0; font-size: 15.5px; line-height: 1.6; color: #cfd8e3; }
+.ab-label { margin-top: 24px; }
+.ab-chips { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ab-chips li { padding: 6px 10px; font: 500 13px var(--font-mono); color: var(--input); border: 1px solid rgba(122,168,224,0.4); }
+.ab-do { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+@media (max-width: 1000px) { .ab-grid { grid-template-columns: 1fr; gap: 40px; } }

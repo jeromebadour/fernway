@@ -27,6 +27,7 @@
 .fm-hint { font-size: 13.5px; color: var(--faint); }
 .fm-error { font-size: 13.5px; color: var(--hazard); }
 .fm-error-form { margin: 16px 0 0; font-size: 15px; }
+.fm-note a { color: var(--paper); border-bottom: 1px solid rgba(122,168,224,0.55); }
 .fm-note { margin: 26px 0 0; padding-top: 18px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.55; color: var(--muted); }
 .fm-send { margin-top: 22px; border: 0; cursor: pointer; font-family: var(--font-body); }
 .fm-send:disabled { opacity: 0.6; cursor: progress; }

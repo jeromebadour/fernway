@@ -200,6 +200,17 @@ jobs:
           assert sum(1 for x in c if x["path"]=="/calendars/events/appointments")==1, "one appointment only"'
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/demo)" = 200
 
+      - name: The plain pages answer, and the public site sets no cookies
+        # Privacy promises no cookies on the public site: every public page is checked for a Set-Cookie header.
+        run: |
+          B=http://127.0.0.1:3103
+          curl -s $B/privacy | grep -q "How long it is kept"
+          curl -s $B/terms | grep -q "What Fernway is"
+          curl -s $B/about | grep -q "What is real"
+          for p in / /pricing /trial /contact /demo /track /privacy /terms /about /api/slots; do
+            if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
+          done
+
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
         # scratch database next to the live one, every table compared. (Account 1 exists by now, so the dump isn't empty.)
