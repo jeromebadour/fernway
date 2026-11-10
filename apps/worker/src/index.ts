@@ -12,7 +12,11 @@ import {
   createQueue,
   deliverTry,
   keyFrom,
+  mailer,
+  noteLeadAlerts,
+  noteWeeklyAlerts,
   oauthConfigFromEnv,
+  sendDueAlerts,
   purgeExpired,
   shipments,
   sweep,
@@ -25,6 +29,9 @@ const HEARTBEAT_KEY = "fernway:worker:heartbeat";
 const BEAT_MS = 10_000;
 const SWEEP_MS = 60_000;
 const PURGE_MS = 60 * 60_000;
+const ALERTS_MS = 60_000;
+// Every 20 minutes, so each person's Monday 08:00 to 08:59 is seen at least twice (the week's row is made once).
+const WEEKLY_MS = 20 * 60_000;
 
 const need = (name: string) => {
   const v = process.env[name];
@@ -43,7 +50,8 @@ redis.on("error", (err) => console.error(`worker: redis error: ${err.message}`))
 const { pool, db } = createDb(need("DATABASE_URL"));
 const { queue, schedule } = createQueue(redis);
 
-const oauth = oauthConfigFromEnv(process.env, keyFrom(need("FERNWAY_TOKEN_KEY")));
+const tokenKey = keyFrom(need("FERNWAY_TOKEN_KEY"));
+const oauth = oauthConfigFromEnv(process.env, tokenKey);
 const deps: Deps = {
   db,
   ghl: createGhlClient({ baseUrl: process.env.FERNWAY_GHL_API }),
@@ -96,4 +104,23 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
     console.log(`worker: stopped (${signal})`);
     process.exit(0);
   });
+}
+
+// Alert emails: who should hear about a held or returned lead (every minute), whose Monday 08:00 it is (every hour),
+// then what is due is sent. Only with a way to send (RESEND_API_KEY, or the outbox in local work and CI).
+const send = mailer({
+  resendKey: process.env.RESEND_API_KEY,
+  outbox: process.env.FERNWAY_MAIL_OUTBOX === "on"
+    ? async (m) => { await redis.multi().lpush("fernway:outbox", JSON.stringify({ ...m, at: new Date().toISOString() })).ltrim("fernway:outbox", 0, 99).exec(); }
+    : undefined,
+});
+if (send) {
+  const appUrl = (process.env.APP_URL ?? "https://fernway.jeromebadour.com").replace(/\/$/, "");
+  const alertRun = () => noteLeadAlerts(db, [demoAccount, siteAccount])
+    .then(() => sendDueAlerts({ db, send, key: tokenKey, appUrl }))
+    .then((r) => (r.sent || r.failed || r.gaveUp) && console.log(`worker: alerts sent ${r.sent}, to retry ${r.failed}, given up ${r.gaveUp}`))
+    .catch((e) => console.error(`worker: alerts failed: ${e.message}`));
+  setInterval(alertRun, ALERTS_MS);
+  setInterval(() => noteWeeklyAlerts(db).catch((e) => console.error(`worker: weekly summary failed: ${e.message}`)), WEEKLY_MS);
+  console.log(`worker ${commit}: alert emails on`);
 }

@@ -129,6 +129,9 @@ services:
       FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
       # For the stripe-catalog command only (test mode).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      # Alert emails (a lead held or returned, Monday's summary): Resend, or the outbox in local work and CI.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
     <<: *logs
 
 volumes:

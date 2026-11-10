@@ -217,3 +217,19 @@ export const ghlConnections = pgTable("ghl_connections", {
   refreshedAt: timestamp("refreshed_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const alertKinds = ["held", "returned", "weekly"] as const;
+export type AlertKind = (typeof alertKinds)[number];
+export const alerts = pgTable("alerts", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" }).notNull(),
+  kind: text("kind").$type<AlertKind>().notNull(),
+  shipmentId: bigint("shipment_id", { mode: "number" }),
+  week: text("week"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
+  tries: smallint("tries").notNull().default(0),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  givenUpAt: timestamp("given_up_at", { withTimezone: true }),
+  lastError: text("last_error"),
+});

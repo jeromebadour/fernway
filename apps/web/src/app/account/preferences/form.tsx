@@ -26,9 +26,9 @@ export function PrefsForm({ initial, timeZone, email }: { initial: P; timeZone: 
   }
 
   const emails: { k: "emailHeld" | "emailReturned" | "emailWeekly"; title: string; when: string; G: typeof GHold; tone: string }[] = [
-    { k: "emailHeld", title: "A lead is held", when: "GHL refused it and waiting won't help: the email names GHL's reason and links to Fix it and resend.", G: GHold, tone: "hz" },
-    { k: "emailReturned", title: "A lead is returned", when: "All 8 tries over 24 hours went unanswered: the email links to its receipt and to resend.", G: GHold, tone: "hz" },
-    { k: "emailWeekly", title: "Monday's summary", when: "Last week's leads: signed for, held, returned, and GHL's slowest day. Mondays at 08:00 your time.", G: GManifest, tone: "in" },
+    { k: "emailHeld", title: "A lead is held", when: "GHL refused it and waiting won't help: the email gives GHL's reason in words and links to the lead's receipt.", G: GHold, tone: "hz" },
+    { k: "emailReturned", title: "A lead is returned", when: "All 8 tries over 24 hours went unanswered: the email gives GHL's last answer and links to the lead's receipt.", G: GHold, tone: "hz" },
+    { k: "emailWeekly", title: "Monday's summary", when: "Last week's leads, signed for, held and returned, and GHL's slowest day. Mondays at 08:00 your time.", G: GManifest, tone: "in" },
   ];
 
   return (

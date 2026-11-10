@@ -15,3 +15,5 @@ export * from "./status.js";
 export * from "./people.js";
 export * from "./billing.js";
 export * from "./account.js";
+export * from "./mail.js";
+export * from "./alerts.js";
