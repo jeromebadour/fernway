@@ -284,6 +284,7 @@ jobs:
         run: |
           FERNWAY_ACCOUNTS=on FERNWAY_MAIL_OUTBOX=on $COMPOSE up -d --no-build web
           for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && break; sleep 2; done
+          trap 'echo "a check failed at line $LINENO; the last answer was: $(cat /tmp/r.json 2>/dev/null)"' ERR
           B=http://127.0.0.1:3103; J=/tmp/jar.txt; rm -f $J; E="lena$RANDOM@northpine.dental"
           post() { curl -s -o /tmp/r.json -w '%{http_code}' -b $J -c $J -H "origin: $B" -H 'content-type: application/json' -d "$2" $B$1; }
           has() { grep -q "$1" /tmp/r.json || { echo "expected $1 in: $(cat /tmp/r.json)"; exit 1; }; }

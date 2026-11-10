@@ -24,10 +24,15 @@ export async function requirePerson(back = "/account"): Promise<Person> {
 }
 
 /** A form that changes something must come from this site (with SameSite=Lax, a second wall against forged posts). */
+// Compared with the site's own address and with the Host the request really came to (Nginx passes it on the box);
+// never with request.url, which inside the container is the server's own port, not the one the visitor used.
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
-  const app = (process.env.APP_URL ?? "").replace(/\/$/, "");
-  return origin !== null && (origin === app || origin === new URL(request.url).origin);
+  if (!origin) return false;
+  let host: string;
+  try { host = new URL(origin).host; } catch { return false; }
+  const app = process.env.APP_URL ? new URL(process.env.APP_URL).host : null;
+  return host === app || host === request.headers.get("host");
 }
 
 /** Counts one try; true while within `max` an hour for that key (a visitor, an email). */
