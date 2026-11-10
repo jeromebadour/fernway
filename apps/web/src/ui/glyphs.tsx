@@ -35,3 +35,6 @@ export const GHold = (p: P) => (<S {...p}><rect x="3" y="3" width="14" height="1
 export const GClock = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M10 5v5h4" /></S>);
 export const GCopy = (p: P) => (<S {...p}><rect x="6" y="6" width="11" height="11" /><path d="M3 13V3h10" /></S>);
 export const GFind = (p: P) => (<S {...p}><rect x="2" y="2" width="11" height="11" /><path d="M13 13l5 5" /><path d="M5 7.5h5" /></S>);
+export const GDown = (p: P) => (<S {...p}><path d="M3 3h14v6H3z" /><path d="M3 12h6M13 12h4v5H3v-2" /><path d="M10 10l2 4" /></S>);
+export const GSilent = (p: P) => (<S {...p}><path d="M3 10h2M8 10h2M13 10h2" /><path d="M17 6v8" /></S>);
+export const GShield = (p: P) => (<S {...p}><path d="M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5z" /><path d="M7 10l2 2 4-4" /></S>);

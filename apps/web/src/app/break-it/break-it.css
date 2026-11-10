@@ -1,0 +1,35 @@
+/* Break it: the failures as cards, what Fernway will do, and the live receipt. */
+.bk-facts { list-style: none; margin: -12px 0 44px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 1100px; }
+.bk-facts li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; font-size: 14.5px; line-height: 1.55; color: #cfd8e3;
+  border: 1px solid rgba(165,175,242,0.35); background: rgba(165,175,242,0.05); }
+.bk-facts svg { color: var(--re); margin-top: 3px; flex: none; }
+.bk-facts b { color: var(--paper); font-weight: 600; }
+.bk-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 56px; align-items: start; }
+.bk-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.bk-pick { display: grid; gap: 8px; padding: 14px 16px; text-align: left; cursor: pointer; background: var(--kraft); border: 1.5px solid var(--line);
+  color: var(--paper); font-family: var(--font-body); }
+.bk-pick:hover:not(:disabled) { border-color: rgba(165,175,242,0.6); }
+.bk-pick:disabled { cursor: progress; opacity: 0.7; }
+.bk-pick-head { display: flex; align-items: center; gap: 10px; font-size: 15.5px; }
+.bk-pick-head svg { color: var(--re); }
+.bk-ghl { font-size: 14px; line-height: 1.5; color: var(--muted); }
+.bk-on { border-color: var(--re) !important; background: rgba(165,175,242,0.1); }
+.bk-plan { margin-top: 26px; }
+.bk-plan-text { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 14px 16px; font-size: 15.5px; line-height: 1.55; color: var(--paper);
+  border-left: 3px solid var(--go); background: rgba(92,200,184,0.06); }
+.bk-plan-text svg { color: var(--go); margin-top: 3px; flex: none; }
+.bk-do { margin-top: 24px; }
+.bk-note { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; font-size: 15px; line-height: 1.55; color: #cfd8e3; }
+.bk-note svg { color: var(--ok); margin-top: 3px; flex: none; }
+.bk-note b { font-family: var(--font-mono); color: var(--paper); }
+.bk-held { margin-top: 20px; padding: 16px; border: 1px solid rgba(227,176,79,0.45); background: rgba(227,176,79,0.06); }
+.bk-held p { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; font-size: 15px; line-height: 1.55; color: #e9d4a6; }
+.bk-held svg { color: var(--hazard); margin-top: 3px; flex: none; }
+.bk-empty { min-height: 280px; }
+.bk-empty .wb-no { margin-top: 2px; }
+.bk-empty-text { margin: 28px 0 0; font-size: 15.5px; line-height: 1.6; color: var(--muted); max-width: 420px; }
+@media (max-width: 1100px) { .bk-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .bk-facts, .bk-picks { grid-template-columns: 1fr; }
+  .bk-do .fm-btn { width: 100%; justify-content: center; }
+}

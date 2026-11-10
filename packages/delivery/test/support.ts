@@ -64,6 +64,8 @@ export function fakeGhl() {
     requests.push({ path, body, auth: request.headers.get("authorization") });
     const next = script[path]!.shift();
     if (next?.delayMs) await delay(next.delayMs);
+    // Fernway gave up waiting (its timeout): the answer goes nowhere, and must not leak into a later test.
+    if (request.signal.aborted) return HttpResponse.json({ message: "the caller had gone" }, { status: 499 });
     if (next && next.status !== 200) return HttpResponse.json(next.body ?? { message: "scripted failure" }, { status: next.status });
     if (path === "appointment") {
       const id = `a_${appointments.length + 1}`;

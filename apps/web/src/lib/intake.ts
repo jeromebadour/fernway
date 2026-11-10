@@ -27,6 +27,20 @@ export function intake() {
 export const PER_VISITOR_HOUR = 5;
 export const SITE_DAY = 200;
 
+/** The Break it demo's own account (its leads only ever meet the stand-in GHL). */
+export function demoAccount(): number {
+  const id = Number(process.env.FERNWAY_DEMO_ACCOUNT);
+  if (!Number.isInteger(id) || id < 1) throw new Error("FERNWAY_DEMO_ACCOUNT is not set");
+  return id;
+}
+
+/** Break it runs: 10 an hour per visitor, plenty to try every failure. */
+export async function breakItAllowed(ip: string): Promise<boolean> {
+  const key = `fernway:breakit:ip:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
+  const res = (await redis().multi().incr(key).expire(key, 3_700).exec()) ?? [];
+  return Number(res[0]?.[1]) <= 10;
+}
+
 /** Looking a waybill up by number and email: enough tries for typos, too few to guess other people's leads. */
 export async function lookupAllowed(ip: string): Promise<boolean> {
   const key = `fernway:track-find:ip:${ip}:${Math.floor(Date.now() / 3_600_000)}`;

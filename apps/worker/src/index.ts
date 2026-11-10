@@ -1,8 +1,10 @@
 // The delivery worker: runs every try the queue hands it (the engine in @fernway/delivery), puts overdue shipments
 // back on the queue every minute (the safety net), and writes a heartbeat to Redis every 10 s for the health check.
 // Every hour it also removes the public site's leads older than 30 days, from GHL first (retention.ts).
+// Leads of the Break it demo account run against the stand-in GHL (breakit.ts), never a real one, and go after a day.
 import { MAX_TRIES } from "@fernway/core";
 import {
+  breakItTry,
   connectionFor,
   createDb,
   createDeliveryWorker,
@@ -12,9 +14,11 @@ import {
   keyFrom,
   oauthConfigFromEnv,
   purgeExpired,
+  shipments,
   sweep,
   type Deps,
 } from "@fernway/delivery";
+import { eq } from "drizzle-orm";
 import { Redis } from "ioredis";
 
 const HEARTBEAT_KEY = "fernway:worker:heartbeat";
@@ -33,6 +37,7 @@ const need = (name: string) => {
 
 const commit = process.env.APP_COMMIT ?? "dev";
 const siteAccount = Number(need("FERNWAY_SITE_ACCOUNT"));
+const demoAccount = Number(need("FERNWAY_DEMO_ACCOUNT"));
 const redis = new Redis(need("REDIS_URL"), { maxRetriesPerRequest: null });
 redis.on("error", (err) => console.error(`worker: redis error: ${err.message}`));
 const { pool, db } = createDb(need("DATABASE_URL"));
@@ -47,7 +52,13 @@ const deps: Deps = {
   schedule,
 };
 
-const worker = createDeliveryWorker(redis, (job) => deliverTry(deps, job.shipmentId, job.try));
+// A Break it lead (the demo account) never meets a real GHL: its tries go to the stand-in.
+async function runTry(shipmentId: number, tryNumber: number) {
+  const [s] = await db.select({ accountId: shipments.accountId }).from(shipments).where(eq(shipments.id, shipmentId));
+  if (s?.accountId === demoAccount) return breakItTry(deps, shipmentId, tryNumber);
+  return deliverTry(deps, shipmentId, tryNumber);
+}
+const worker = createDeliveryWorker(redis, (job) => runTry(job.shipmentId, job.try));
 worker.on("failed", (job, err) => console.error(`worker: try ${job?.data.try} of shipment ${job?.data.shipmentId} crashed: ${err.message}`));
 
 async function beat() {
@@ -63,7 +74,10 @@ const sweeping = setInterval(() => {
     .catch((e) => console.error(`worker: sweep failed: ${e.message}`));
 }, SWEEP_MS);
 const purge = () =>
-  purgeExpired(deps, siteAccount)
+  purgeExpired({ ...deps, connectionFor: async () => ({ locationId: "breakit", accessToken: async () => "", refresh: async () => {} }), ghl: { ...deps.ghl, remove: async () => ({ gone: true, status: 200 }) } }, demoAccount, 1)
+    .then((r) => r.removed && console.log(`worker: Break it leads past a day: ${r.removed} removed`))
+    .catch((e) => console.error(`worker: Break it retention failed: ${e.message}`))
+    .then(() => purgeExpired(deps, siteAccount))
     .then((r) => (r.removed || r.waiting) && console.log(`worker: site leads past 30 days: ${r.removed} removed, ${r.waiting} kept until GHL can be reached`))
     .catch((e) => console.error(`worker: retention failed: ${e.message}`));
 void purge();

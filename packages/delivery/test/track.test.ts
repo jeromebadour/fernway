@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { signValue } from "../src/crypto.js";
 import { deliverTry, ingestLead } from "../src/engine.js";
-import { findWaybill, maskEmail, readTrackToken, trackToken, trackView } from "../src/track.js";
+import { findWaybill, maskEmail, readable, readTrackToken, trackToken, trackView } from "../src/track.js";
 import { createDb, fakeConnection, fakeGhl, freshDatabase, seedAccount, testDeps } from "./support.js";
 
 const key = randomBytes(32);
@@ -71,5 +71,12 @@ describe("the public tracking receipt", () => {
     expect(await findWaybill(handle.db, accountId, r.waybill.number, "someone@else.example")).toBeNull();
     expect(await findWaybill(handle.db, accountId + 999, r.waybill.number, "mara@harborline.example")).toBeNull();
     expect(await findWaybill(handle.db, accountId, "FW 26", "mara@harborline.example")).toBeNull();
+  });
+
+  it("shows GHL's refusal as words, not JSON", () => {
+    expect(readable('GHL refused the contact (422): {"message":"phone must be a valid number"}')).toBe("GHL refused the contact (422): phone must be a valid number");
+    expect(readable('try 2 of 8 in 30 s')).toBe("try 2 of 8 in 30 s");
+    expect(readable('{"message":"say \\"hi\\"","code":1}')).toBe('say "hi"');
+    expect(readable(null)).toBeNull();
   });
 });

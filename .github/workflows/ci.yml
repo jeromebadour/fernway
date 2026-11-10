@@ -200,6 +200,38 @@ jobs:
           assert sum(1 for x in c if x["path"]=="/calendars/events/appointments")==1, "one appointment only"'
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/demo)" = 200
 
+      - name: Break it, through the real queue, never reaching a GHL
+        # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
+        # so it proves none of Break it's calls ever leave Fernway.
+        run: |
+          B=http://127.0.0.1:3103
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          $W account "Break it demo" | grep -q "^account 2"
+          $W route 2 breakit "Break it" breakit_pipeline breakit_new breakit | grep -q "route breakit"
+          before=$(curl -s 127.0.0.1:4010/__calls | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+          go() { curl -s -H 'content-type: application/json' -H "x-real-ip: $1" -d "{\"failure\":\"$2\",\"key\":\"$3\"}" $B/api/breakit; }
+          state() { curl -s "$B/api/track/$1" | python3 -c 'import json,sys; print(json.load(sys.stdin)["view"]["state"])'; }
+          wait_for() { for i in $(seq 1 30); do [ "$(state $1)" = "$2" ] && return 0; sleep 1; done; echo "$1 never reached $2: $(state $1)"; return 1; }
+          tok() { python3 -c 'import json,sys; print(json.load(sys.stdin)["track"])'; }
+          busy=$(go 10.0.0.50 busy $(cat /proc/sys/kernel/random/uuid) | tok); wait_for $busy signed
+          curl -s "$B/api/track/$busy" | python3 -c '
+          import json,sys; k=[s["kind"] for s in json.load(sys.stdin)["view"]["scans"]]
+          assert k==["picked_up","checked","retry_scheduled","handed","signed"], k'
+          bad=$(go 10.0.0.50 refused $(cat /proc/sys/kernel/random/uuid) | tok); wait_for $bad held
+          curl -s "$B/api/track/$bad" | grep -q "valid number with its country code"
+          if curl -s "$B/api/track/$bad" | grep -q '{\\"message'; then echo "the receipt shows GHL's raw JSON"; exit 1; fi
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d "{\"track\":\"$bad\"}" $B/api/breakit/resend)" = 200
+          wait_for $bad signed
+          k=$(cat /proc/sys/kernel/random/uuid)
+          one=$(go 10.0.0.51 twice $k | python3 -c 'import json,sys; print(json.load(sys.stdin)["number"])')
+          two=$(go 10.0.0.51 twice $k | python3 -c 'import json,sys; j=json.load(sys.stdin); assert j["duplicate"]; print(j["number"])')
+          test "$one" = "$two"
+          # A forged receipt link resends nothing.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d "{\"track\":\"${bad%??}xx\"}" $B/api/breakit/resend)" = 404
+          after=$(curl -s 127.0.0.1:4010/__calls | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+          test "$before" = "$after"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/break-it)" = 200
+
       - name: The plain pages answer, and the public site sets no cookies
         # Privacy promises no cookies on the public site: every public page is checked for a Set-Cookie header.
         run: |
@@ -207,7 +239,7 @@ jobs:
           curl -s $B/privacy | grep -q "How long it is kept"
           curl -s $B/terms | grep -q "What Fernway is"
           curl -s $B/about | grep -q "What is real"
-          for p in / /pricing /trial /contact /demo /track /privacy /terms /about /api/slots; do
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /api/slots; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 

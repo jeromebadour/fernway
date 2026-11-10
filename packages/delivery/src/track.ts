@@ -19,6 +19,12 @@ export function maskEmail(email: string | undefined): string | null {
   return `${name.slice(0, 1)}•••@${domain}`;
 }
 
+/** GHL explains a refusal as JSON ({"message":"..."}); the receipt shows the words, not the braces. */
+export function readable(note: string | null): string | null {
+  if (!note) return note;
+  return note.replace(/\{\s*"message"\s*:\s*"((?:[^"\\]|\\.)*)"[^}]*\}/g, (_, m: string) => m.replace(/\\"/g, '"'));
+}
+
 export type TrackView = {
   number: string;
   state: string;
@@ -55,7 +61,7 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
       try: r.try,
       status: r.answerStatus,
       // GHL's own ids stay out of the public receipt; the reason a lead waits or is held stays in.
-      note: r.kind === "handed" || r.kind === "signed" ? null : r.note,
+      note: r.kind === "handed" || r.kind === "signed" ? null : readable(r.note),
     })),
   };
 }

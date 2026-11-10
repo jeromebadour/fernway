@@ -82,6 +82,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       # The account the public site's own forms deliver into (the GHL sandbox); its leads are kept 30 days.
       FERNWAY_SITE_ACCOUNT: ${FERNWAY_SITE_ACCOUNT:-1}
+      # The Break it demo's own account: its leads only ever meet the stand-in GHL, and go after a day.
+      FERNWAY_DEMO_ACCOUNT: ${FERNWAY_DEMO_ACCOUNT:-2}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
@@ -109,6 +111,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       # The account the public site's own forms deliver into (the GHL sandbox); its leads are kept 30 days.
       FERNWAY_SITE_ACCOUNT: ${FERNWAY_SITE_ACCOUNT:-1}
+      # The Break it demo's own account: its leads only ever meet the stand-in GHL, and go after a day.
+      FERNWAY_DEMO_ACCOUNT: ${FERNWAY_DEMO_ACCOUNT:-2}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
