@@ -44,22 +44,29 @@ export async function freshDatabase(label: string) {
 /** The fake GHL. Each path answers from its own script, then 200 forever; it remembers every request. */
 export const GHL_BASE = "http://ghl.fake";
 type Scripted = { status: number; body?: unknown; delayMs?: number };
+type Path = "contact" | "note" | "opportunity";
 
 export function fakeGhl() {
-  const script: Record<string, Scripted[]> = { contact: [], opportunity: [] };
-  const requests: { path: "contact" | "opportunity"; body: Record<string, unknown>; auth: string | null }[] = [];
+  const script: Record<string, Scripted[]> = { contact: [], note: [], opportunity: [] };
+  const requests: { path: Path; body: Record<string, unknown>; auth: string | null }[] = [];
+  const notes: { contactId: string; body: string; id: string }[] = [];
   const deleted: string[] = [];
   const deleteAnswers: number[] = [];
   // Contacts are matched like GHL's upsert with duplicates off: by email, else by phone.
   const contacts = new Map<string, string>();
   const opportunities = new Map<string, string>();
 
-  const answer = async (path: "contact" | "opportunity", request: Request) => {
+  const answer = async (path: Path, request: Request, contactId?: string) => {
     const body = (await request.json()) as Record<string, unknown>;
     requests.push({ path, body, auth: request.headers.get("authorization") });
     const next = script[path]!.shift();
     if (next?.delayMs) await delay(next.delayMs);
     if (next && next.status !== 200) return HttpResponse.json(next.body ?? { message: "scripted failure" }, { status: next.status });
+    if (path === "note") {
+      const id = `n_${notes.length + 1}`;
+      notes.push({ contactId: contactId!, body: String(body.body), id });
+      return HttpResponse.json({ note: { id, body: body.body } }, { status: 201 });
+    }
     if (path === "contact") {
       const key = String(body.email ?? body.phone);
       const isNew = !contacts.has(key);
@@ -75,6 +82,12 @@ export function fakeGhl() {
   const server = setupServer(
     http.post(`${GHL_BASE}/contacts/upsert`, ({ request }) => answer("contact", request)),
     http.post(`${GHL_BASE}/opportunities/upsert`, ({ request }) => answer("opportunity", request)),
+    http.post(`${GHL_BASE}/contacts/:id/notes`, ({ request, params }) => answer("note", request, String(params.id))),
+    http.delete(`${GHL_BASE}/contacts/:id/notes/:note`, ({ params }) => {
+      const status = deleteAnswers.shift() ?? 200;
+      if (status === 200) deleted.push(`contacts/${params.id}/notes/${params.note}`);
+      return HttpResponse.json({ succeded: status === 200 }, { status });
+    }),
     http.delete(`${GHL_BASE}/:what/:id`, ({ params }) => {
       const status = deleteAnswers.shift() ?? 200;
       if (status === 200) deleted.push(`${params.what}/${params.id}`);
@@ -85,16 +98,19 @@ export function fakeGhl() {
   return {
     server,
     requests,
+    notes,
     deleted,
     deleteAnswers,
     contacts,
     opportunities,
-    fail(path: "contact" | "opportunity", ...answers: Scripted[]) {
+    fail(path: Path, ...answers: Scripted[]) {
       script[path]!.push(...answers);
     },
     reset() {
       script.contact = [];
+      script.note = [];
       script.opportunity = [];
+      notes.length = 0;
       requests.length = 0;
       deleted.length = 0;
       deleteAnswers.length = 0;

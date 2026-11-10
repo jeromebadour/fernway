@@ -26,7 +26,7 @@ export type TrackView = {
   route: string;
   consignee: { firstName: string | null; lastName: string | null; company: string | null; email: string | null };
   holdReason: string | null;
-  scans: { kind: ScanKind; at: string; try: number | null; status: number | null; note: string | null }[];
+  scans: { kind: ScanKind; step: string | null; at: string; try: number | null; status: number | null; note: string | null }[];
 };
 
 export async function trackView(db: Db, shipmentId: number): Promise<TrackView | null> {
@@ -47,6 +47,7 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
     holdReason: s.shipment.holdReason,
     scans: rows.map((r) => ({
       kind: r.kind,
+      step: r.step,
       at: r.at.toISOString(),
       try: r.try,
       status: r.answerStatus,

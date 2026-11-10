@@ -17,6 +17,13 @@
 .fm-input i + input { padding-left: 4px; }
 .fm-input input::placeholder { color: var(--faint); }
 .fm-input input:disabled { color: var(--muted); }
+.fm-area { height: auto; align-items: stretch; }
+.fm-area textarea { flex: 1; min-height: 136px; padding: 12px 14px; border: 0; background: none; color: var(--paper); resize: vertical;
+  font: 400 16px/1.5 var(--font-body); outline: none; }
+.fm-area textarea::placeholder { color: var(--faint); }
+.fm-under { display: flex; justify-content: space-between; gap: 16px; }
+.fm-count { flex: none; font: 500 12.5px var(--font-mono); color: var(--faint); }
+.fm-count-near { color: var(--hazard); }
 .fm-hint { font-size: 13.5px; color: var(--faint); }
 .fm-error { font-size: 13.5px; color: var(--hazard); }
 .fm-error-form { margin: 16px 0 0; font-size: 15px; }

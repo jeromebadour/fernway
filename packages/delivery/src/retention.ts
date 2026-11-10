@@ -1,6 +1,7 @@
 // Leads sent through Fernway's own public forms are kept 30 days (the forms and the Privacy page say so). Then the
 // lead is removed from GHL first (its opportunity, then its contact) and only after that from Fernway, so nothing is
-// left behind in GHL that Fernway has forgotten about. A contact or opportunity a newer lead still uses stays in GHL. If GHL
+// left behind in GHL that Fernway has forgotten about. A contact or opportunity a newer lead still uses stays in GHL
+// (the old lead's own note, its message, is removed from it). If GHL
 // can't be reached, the lead is kept and tried again on the next run; it is never dropped from Fernway alone.
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import type { Deps } from "./engine.js";
@@ -13,7 +14,7 @@ export type PurgeResult = { removed: number; waiting: number };
 export async function purgeExpired(deps: Deps, accountId: number, keepDays = KEEP_DAYS): Promise<PurgeResult> {
   const cutoff = sql`now() - make_interval(days => ${keepDays})`;
   const old = await deps.db
-    .select({ id: shipments.id, contactId: shipments.ghlContactId, opportunityId: shipments.ghlOpportunityId })
+    .select({ id: shipments.id, contactId: shipments.ghlContactId, opportunityId: shipments.ghlOpportunityId, noteId: shipments.ghlNoteId })
     .from(shipments)
     .where(and(eq(shipments.accountId, accountId), lt(shipments.createdAt, cutoff)))
     .limit(200);
@@ -31,9 +32,12 @@ export async function purgeExpired(deps: Deps, accountId: number, keepDays = KEE
           eq(shipments.accountId, accountId), eq(col, id), ne(shipments.id, s.id), gte(shipments.createdAt, cutoff),
         )).limit(1)).length > 0;
       if (s.opportunityId && !(await stillUsed(shipments.ghlOpportunityId, s.opportunityId))
-        && !(await deps.ghl.remove(conn, "opportunities", s.opportunityId)).gone) { waiting += 1; continue; }
-      if (s.contactId && !(await stillUsed(shipments.ghlContactId, s.contactId))
-        && !(await deps.ghl.remove(conn, "contacts", s.contactId)).gone) { waiting += 1; continue; }
+        && !(await deps.ghl.remove(conn, `opportunities/${s.opportunityId}`)).gone) { waiting += 1; continue; }
+      const contactStays = !s.contactId || (await stillUsed(shipments.ghlContactId, s.contactId));
+      // The message is this lead's alone: it goes even when a newer lead keeps the contact.
+      if (contactStays && s.contactId && s.noteId
+        && !(await deps.ghl.remove(conn, `contacts/${s.contactId}/notes/${s.noteId}`)).gone) { waiting += 1; continue; }
+      if (!contactStays && !(await deps.ghl.remove(conn, `contacts/${s.contactId}`)).gone) { waiting += 1; continue; }
     }
     // Its scans go with it (on delete cascade).
     await deps.db.delete(shipments).where(eq(shipments.id, s.id));

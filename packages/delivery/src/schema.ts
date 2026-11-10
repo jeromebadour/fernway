@@ -39,11 +39,13 @@ export const shipments = pgTable("shipments", {
   nextTryAt: timestamp("next_try_at", { withTimezone: true }),
   ghlContactId: text("ghl_contact_id"),
   ghlOpportunityId: text("ghl_opportunity_id"),
+  ghlNoteId: text("ghl_note_id"),
   holdReason: text("hold_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export type Step = "contact" | "note" | "opportunity";
 export const scanKinds = ["picked_up", "checked", "handed", "signed", "retry_scheduled", "held", "returned", "resent"] as const;
 export type ScanKind = (typeof scanKinds)[number];
 
@@ -53,7 +55,7 @@ export const scans = pgTable("scans", {
   kind: text("kind").$type<ScanKind>().notNull(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   try: smallint("try"),
-  step: text("step").$type<"contact" | "opportunity">(),
+  step: text("step").$type<Step>(),
   sent: jsonb("sent"),
   answerStatus: smallint("answer_status"),
   answerExcerpt: text("answer_excerpt"),

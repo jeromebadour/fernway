@@ -77,3 +77,16 @@ describe("30-day retention of the public forms' leads", () => {
     expect(await app.db.select().from(shipments).where(eq(shipments.id, newer))).toHaveLength(1);
   });
 });
+
+describe("retention and the message note", () => {
+  it("removes an old lead's note from a contact a newer lead keeps", async () => {
+    const { deps } = testDeps(app.db, fakeConnection());
+    const r = await ingestLead(deps, accountId, { idempotencyKey: `note-keep-${++n}-x`, source: "form", route: "trial", contact: { email: "msg@b.example", message: "Old question" } });
+    if (!r.ok) throw new Error();
+    await deliverTry(deps, r.waybill.id, 1);
+    await owner.db.update(shipments).set({ createdAt: sql`now() - make_interval(days => 40)` }).where(eq(shipments.id, r.waybill.id));
+    await lead("msg@b.example", 1);
+    expect(await purgeExpired(deps, accountId)).toEqual({ removed: 1, waiting: 0 });
+    expect(ghl.deleted).toEqual(["contacts/c_1/notes/n_1"]);
+  });
+});

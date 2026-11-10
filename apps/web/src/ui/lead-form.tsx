@@ -1,17 +1,18 @@
 "use client";
-// Start a trial: the form on the left, the visitor's own waybill on the right. While they type, the waybill fills in;
-// when they send it, it becomes the live receipt of their lead travelling into Fernway's GHL sandbox.
+// The public site's lead forms (Start a trial, Contact sales): the form on the left, the visitor's own waybill on the
+// right. While they type, the waybill fills in; when they send it, it becomes the live receipt of their lead travelling
+// into Fernway's GHL sandbox. Each form is the same component with its own fields and route.
 import { useEffect, useRef, useState } from "react";
 import type { TrackView } from "@fernway/delivery";
 import { GRoute, GScan } from "@/ui/glyphs";
 import { Receipt } from "@/ui/receipt";
 
-type Key = "firstName" | "lastName" | "email" | "phone" | "companyName" | "website";
-type Field = { key: Key; label: string; hint: string; type: "text" | "email" | "tel" | "url"; required?: boolean; placeholder: string;
-  autoComplete: string; half?: boolean; pre?: string; clean?: (s: string) => string; max: number };
+type Key = "firstName" | "lastName" | "email" | "phone" | "companyName" | "website" | "message";
+type Field = { key: Key; label: string; hint: string; type: "text" | "email" | "tel" | "url" | "textarea"; required?: boolean; placeholder: string;
+  autoComplete: string; half?: boolean; pre?: string; clean?: (s: string) => string; max: number; called?: string };
 
 // Each field helps as you type (BUILD-RULES, Kami 2026-11-10): what it takes, an example, and only what it can hold.
-const fields: Field[] = [
+export const fieldSet: Record<Key, Field> = Object.fromEntries(([
   { key: "firstName", label: "First name", hint: "", type: "text", required: true, placeholder: "e.g. Lena", autoComplete: "given-name", half: true, max: 80 },
   { key: "lastName", label: "Last name", hint: "", type: "text", placeholder: "e.g. Hartmann", autoComplete: "family-name", half: true, max: 80 },
   { key: "email", label: "Work email", hint: "GHL matches your contact by this first", type: "email", required: true, placeholder: "e.g. lena@northpine.com",
@@ -21,11 +22,20 @@ const fields: Field[] = [
   { key: "companyName", label: "Company", hint: "", type: "text", required: true, placeholder: "e.g. Northpine Dental", autoComplete: "organization", max: 120 },
   { key: "website", label: "Website", hint: "Optional. Where your forms live today", type: "url", placeholder: "northpine.com", autoComplete: "url",
     pre: "https://", max: 200, clean: (s) => s.replace(/^https?:\/\//i, "").replace(/\s/g, "") },
-];
-const blank: Record<Key, string> = { firstName: "", lastName: "", email: "", phone: "", companyName: "", website: "" };
+  { key: "message", label: "What would you like to talk about?", hint: "Reaches GHL as a note on your contact", type: "textarea", required: true,
+    placeholder: "e.g. We run 12 dental sites on WordPress and lose leads when GHL is slow.", autoComplete: "off", max: 2000, called: "a message" },
+] as Field[]).map((f) => [f.key, f])) as Record<Key, Field>;
+
+export type LeadFormSpec = {
+  form: "trial" | "contact";
+  fields: (Key | [Key, Partial<Field>])[];
+  from: string;
+  route: string;
+  send: string;
+};
 
 /** "contact.email: a real email address" from the engine, as a message under the email field. */
-function byField(problems: string[]) {
+function byField(problems: string[], fields: Field[]) {
   const out: Partial<Record<Key | "form", string>> = {};
   for (const p of problems) {
     const m = p.match(/^contact\.(\w+): (.*)$/);
@@ -36,8 +46,9 @@ function byField(problems: string[]) {
   return out;
 }
 
-export function TrialForm() {
-  const [v, setV] = useState(blank);
+export function LeadForm({ spec }: { spec: LeadFormSpec }) {
+  const fields = spec.fields.map((k) => (Array.isArray(k) ? { ...fieldSet[k[0]], ...k[1] } : fieldSet[k]));
+  const [v, setV] = useState<Record<Key, string>>(() => Object.fromEntries(fields.map((f) => [f.key, ""])) as Record<Key, string>);
   const [errors, setErrors] = useState<Partial<Record<Key | "form", string>>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<{ token: string; view: TrackView } | null>(null);
@@ -48,24 +59,22 @@ export function TrialForm() {
     e.preventDefault();
     const missing = fields.filter((f) => f.required && !v[f.key].trim());
     if (missing.length) {
-      setErrors(Object.fromEntries(missing.map((f) => [f.key, `Needs your ${f.label.toLowerCase()}.`])));
+      setErrors(Object.fromEntries(missing.map((f) => [f.key, `Needs ${f.called ?? `your ${f.label.toLowerCase()}`}.`])));
       return;
     }
     setSending(true);
     setErrors({});
     const trap = (new FormData(e.currentTarget).get("fax") as string) ?? "";
-    const contact = {
-      ...v,
-      phone: v.phone.trim() ? `+${v.phone.replace(/\D/g, "")}` : "",
-      website: v.website.trim() ? `https://${v.website.trim()}` : "",
-    };
+    const contact: Record<string, string> = { ...v };
+    if (v.phone !== undefined) contact.phone = v.phone.trim() ? `+${v.phone.replace(/\D/g, "")}` : "";
+    if (v.website !== undefined) contact.website = v.website.trim() ? `https://${v.website.trim()}` : "";
     try {
       const r = await fetch("/api/leads/site", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ form: "trial", key: key.current, trap, contact }),
+        body: JSON.stringify({ form: spec.form, key: key.current, trap, contact }),
       });
       const j = await r.json();
-      if (!j.ok) { setErrors(byField(j.problems ?? ["something went wrong; send it again"])); return; }
+      if (!j.ok) { setErrors(byField(j.problems ?? ["something went wrong; send it again"], fields)); return; }
       const token = String(j.track).replace("/track/", "");
       const t = await fetch(`/api/track/${token}`, { cache: "no-store" }).then((x) => x.json());
       setSent({ token, view: t.view });
@@ -83,6 +92,7 @@ export function TrialForm() {
   }
 
   const name = [v.firstName, v.lastName].filter(Boolean).join(" ");
+  const steps = ["Picked up", "Checked", "Handed to GHL", ...(v.message !== undefined ? ["Message added as a note"] : []), "Signed for"];
   return (
     <div className="fm-grid">
       <form className="fm" onSubmit={send} noValidate>
@@ -92,16 +102,29 @@ export function TrialForm() {
           {fields.map((f) => (
             <label key={f.key} className={f.half ? "fm-field fm-half" : "fm-field"}>
               <span className="fm-label">{f.label}{!f.required && <em>Optional</em>}</span>
-              <span className={`fm-input${errors[f.key] ? " fm-bad" : ""}`}>
+              <span className={`fm-input${f.type === "textarea" ? " fm-area" : ""}${errors[f.key] ? " fm-bad" : ""}`}>
                 {f.pre && <i>{f.pre}</i>}
-                <input
-                  type={f.type} name={f.key} required={f.required} placeholder={f.placeholder} autoComplete={f.autoComplete}
-                  maxLength={f.max} disabled={!!sent} inputMode={f.type === "tel" ? "tel" : f.type === "email" ? "email" : undefined}
-                  value={v[f.key]} aria-invalid={!!errors[f.key]}
-                  onChange={(e) => { setV({ ...v, [f.key]: f.clean ? f.clean(e.target.value) : e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
-                />
+                {f.type === "textarea" ? (
+                  <textarea
+                    name={f.key} required={f.required} placeholder={f.placeholder} maxLength={f.max} disabled={!!sent} rows={5}
+                    value={v[f.key]} aria-invalid={!!errors[f.key]}
+                    onChange={(e) => { setV({ ...v, [f.key]: e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
+                  />
+                ) : (
+                  <input
+                    type={f.type} name={f.key} required={f.required} placeholder={f.placeholder} autoComplete={f.autoComplete}
+                    maxLength={f.max} disabled={!!sent} inputMode={f.type === "tel" ? "tel" : f.type === "email" ? "email" : undefined}
+                    value={v[f.key]} aria-invalid={!!errors[f.key]}
+                    onChange={(e) => { setV({ ...v, [f.key]: f.clean ? f.clean(e.target.value) : e.target.value }); setErrors({ ...errors, [f.key]: undefined }); }}
+                  />
+                )}
               </span>
-              {errors[f.key] ? <span className="fm-error">{errors[f.key]}</span> : f.hint && <span className="fm-hint">{f.hint}</span>}
+              <span className="fm-under">
+                {errors[f.key] ? <span className="fm-error">{errors[f.key]}</span> : f.hint ? <span className="fm-hint">{f.hint}</span> : <span />}
+                {f.type === "textarea" && (
+                  <span className={`fm-count${v[f.key].length > f.max * 0.9 ? " fm-count-near" : ""}`}>{v[f.key].length.toLocaleString("en-US")} / {f.max.toLocaleString("en-US")}</span>
+                )}
+              </span>
             </label>
           ))}
         </div>
@@ -109,7 +132,7 @@ export function TrialForm() {
         {errors.form && <p className="fm-error fm-error-form">{errors.form}</p>}
         {sent
           ? <p className="fm-sent"><GRoute size={16} />Sent. Your receipt stays at this page&rsquo;s address for 30 days.</p>
-          : <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : "Send it and track it"}</button>}
+          : <button className="wb-go wb-go-lg fm-send" type="submit" disabled={sending}><GRoute />{sending ? "Sending…" : spec.send}</button>}
       </form>
 
       <div className="fm-side">
@@ -121,19 +144,19 @@ export function TrialForm() {
               <div className="wb-stamp rc-stamp fm-stamp-wait">Not sent yet</div>
             </div>
             <div className="wb-route">
-              <div><p className="wb-label">From</p><p>Website<span>Fernway&rsquo;s trial form</span></p></div>
+              <div><p className="wb-label">From</p><p>Website<span>{spec.from}</span></p></div>
               <GRoute size={22} />
-              <div><p className="wb-label">To</p><p>GoHighLevel<span>Fernway&rsquo;s sandbox · Trial</span></p></div>
+              <div><p className="wb-label">To</p><p>GoHighLevel<span>Fernway&rsquo;s sandbox · {spec.route}</span></p></div>
             </div>
             <div className="wb-consignee">
-              <span className="wb-ava">{((v.firstName[0] ?? "") + (v.lastName[0] ?? "")).toUpperCase() || "··"}</span>
+              <span className="wb-ava">{((v.firstName?.[0] ?? "") + (v.lastName?.[0] ?? "")).toUpperCase() || "··"}</span>
               <div>
                 <p className="wb-name">{name || <span className="fm-ghost">Your name</span>}</p>
                 <p className="wb-org">{v.companyName || "Your company"}</p>
               </div>
             </div>
             <ol className="wb-scans fm-ghost-scans">
-              {["Picked up", "Checked", "Handed to GHL", "Signed for"].map((w) => (
+              {steps.map((w) => (
                 <li key={w}><span className="wb-t">··:··:··</span><span className="wb-node"><GScan size={14} /></span><span className="wb-what">{w}</span></li>
               ))}
             </ol>

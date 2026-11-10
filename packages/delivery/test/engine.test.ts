@@ -252,3 +252,42 @@ describe("the receipt can't be rewritten", () => {
     await app.end();
   });
 });
+
+describe("a lead's message reaches GHL as a note", () => {
+  it("adds the message once, between the contact and the opportunity, and never again on a retry", async () => {
+    const { ghl: g, deps, scheduled, accountId } = await noteSetup();
+    g.fail("opportunity", { status: 503 });
+    const r = await ingestLead(deps, accountId, {
+      idempotencyKey: "note-0001-xxxx", source: "form", route: "trial",
+      contact: { email: "ask@b.example", message: "Can Fernway take our booking widget's leads?" },
+    });
+    if (!r.ok) throw new Error();
+    expect(await deliverTry(deps, r.waybill.id, 1)).toBe("waiting");
+    expect(g.notes).toEqual([{ contactId: "c_1", body: "Can Fernway take our booking widget's leads?", id: "n_1" }]);
+    expect(await deliverTry(deps, r.waybill.id, 2)).toBe("signed");
+    expect(g.notes).toHaveLength(1);
+    expect(g.requests.map((q) => q.path)).toEqual(["contact", "note", "opportunity", "opportunity"]);
+    expect(scheduled).toHaveLength(2);
+  });
+
+  it("holds the lead with GHL's reason when the note is refused, and a lead without a message adds none", async () => {
+    const { ghl: g, deps, accountId } = await noteSetup();
+    g.fail("note", { status: 422, body: { message: "body too long" } });
+    const r = await ingestLead(deps, accountId, {
+      idempotencyKey: "note-0002-xxxx", source: "form", route: "trial", contact: { email: "long@b.example", message: "x" },
+    });
+    if (!r.ok) throw new Error();
+    expect(await deliverTry(deps, r.waybill.id, 1)).toBe("held");
+    const [s] = await handle.db.select().from(shipments).where(eq(shipments.id, r.waybill.id));
+    expect(s!.holdReason).toContain("GHL refused the note (422)");
+    const plain = await ingestLead(deps, accountId, { idempotencyKey: "note-0003-xxxx", source: "form", route: "trial", contact: { email: "p@b.example" } });
+    if (!plain.ok) throw new Error();
+    expect(await deliverTry(deps, plain.waybill.id, 1)).toBe("signed");
+    expect(g.notes).toHaveLength(0);
+  });
+});
+
+async function noteSetup() {
+  const { deps, scheduled } = testDeps(handle.db, fakeConnection());
+  return { ghl, deps, scheduled, accountId };
+}

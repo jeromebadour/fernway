@@ -4,7 +4,8 @@
 //   account <name>                              make an account, print its id
 //   connect-link <account>                      a signed Connect GHL link for that account, valid 30 minutes
 //   pipelines <account>                         the connected sub-account's pipelines and stages
-//   route <account> <key> <label> [<pipeline> <stage>] [tags,...]   add or change a route
+//   route <account> <key> <label> [<pipeline> <stage>] [tags,...]   add or change a route ("-" for no pipeline:
+//                                                                    the lead becomes a contact only, with the tags)
 //   send-test <account> <route> <email>         send one test lead through the real queue
 //   waybill <number>                            a shipment and every scan, e.g. "FW 26 00002"
 import { formatWaybill, parseWaybill } from "@fernway/core";
@@ -68,9 +69,11 @@ try {
       break;
     }
     case "route": {
-      const [acc, rkey, label, pipelineId, stageId, tags] = args;
+      const [acc, rkey, label, ...rest] = args;
       const accountId = accountArg(acc);
-      if (!rkey || !label) fail("route <account> <key> <label> [<pipeline> <stage>] [tags]");
+      if (!rkey || !label) fail("route <account> <key> <label> [<pipeline> <stage> | -] [tags]");
+      const [pipelineId, stageId, tags] = rest[0] === "-" ? [undefined, undefined, rest[1]] : rest;
+      if (pipelineId && !stageId) fail("a pipeline needs its stage too; use - for a contact-only route");
       const values = {
         accountId,
         key: rkey!,

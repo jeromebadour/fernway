@@ -6,7 +6,7 @@ import { intake, withinLimits } from "@/lib/intake";
 export const dynamic = "force-dynamic";
 
 // The public site's forms. Each form maps to one route on Fernway's own account; the lead then travels like any other.
-const forms = { trial: "trial" } as const;
+const forms = { trial: "trial", contact: "contact" } as const;
 
 const body = z.object({
   form: z.enum(Object.keys(forms) as [keyof typeof forms]),

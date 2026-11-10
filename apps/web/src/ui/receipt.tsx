@@ -62,7 +62,7 @@ export function Receipt({ initial, token }: { initial: TrackView; token: string 
         <div className={`wb-stamp rc-stamp ${s.cls}`}><s.G size={15} />{s.text}</div>
       </div>
       <div className="wb-route">
-        <div><p className="wb-label">From</p><p>Website<span>Fernway&rsquo;s trial form</span></p></div>
+        <div><p className="wb-label">From</p><p>Website<span>Fernway&rsquo;s {v.route.toLowerCase()} form</span></p></div>
         <GRoute size={22} />
         <div><p className="wb-label">To</p><p>GoHighLevel<span>Fernway&rsquo;s sandbox · {v.route}</span></p></div>
       </div>
@@ -75,7 +75,9 @@ export function Receipt({ initial, token }: { initial: TrackView; token: string 
       </div>
       <ol className="wb-scans">
         {v.scans.map((sc, i) => {
-          const t = scanText[sc.kind] ?? { what: sc.kind, G: GScan, tone: "in" };
+          const t = sc.kind === "handed" && sc.step === "note"
+            ? { what: "Message added as a note", G: GManifest, tone: "in" }
+            : scanText[sc.kind] ?? { what: sc.kind, G: GScan, tone: "in" };
           const detail = [sc.try ? `try ${sc.try}` : null, sc.status ? `GHL ${sc.status}` : null, sc.note].filter(Boolean).join(" · ");
           return (
             <li key={`${sc.kind}-${i}`} className={`tone-${t.tone}`}>

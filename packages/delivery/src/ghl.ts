@@ -33,8 +33,11 @@ export type GhlClient = {
     conn: GhlConnection,
     o: { contactId: string; pipelineId: string; stageId: string; name: string },
   ): Promise<GhlAnswer & { sent: object }>;
-  /** Deletes a contact or an opportunity. True once GHL no longer has it (deleted now, or already gone: 404). */
-  remove(conn: GhlConnection, what: "contacts" | "opportunities", id: string): Promise<{ gone: boolean; status: number | null }>;
+  /** Adds the lead's message to the contact as a note (GHL's contacts have no free-text field). */
+  addNote(conn: GhlConnection, contactId: string, body: string): Promise<GhlAnswer & { sent: object }>;
+  /** Deletes a contact, opportunity or note ("contacts/<id>", "opportunities/<id>", "contacts/<id>/notes/<id>").
+   *  True once GHL no longer has it (deleted now, or already gone: 404). */
+  remove(conn: GhlConnection, path: string): Promise<{ gone: boolean; status: number | null }>;
 };
 
 const EXCERPT = 300;
@@ -100,10 +103,16 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   }
 
   return {
-    async remove(conn, what, id) {
+    addNote(conn, contactId, body) {
+      return call(conn, `/contacts/${encodeURIComponent(contactId)}/notes`, { body }, (j) => {
+        const v = j as { note?: { id?: string }; id?: string };
+        return v?.note?.id ?? v?.id;
+      });
+    },
+    async remove(conn, path) {
       let status: number | null = null;
       try {
-        const res = await doFetch(`${base}/${what}/${encodeURIComponent(id)}`, {
+        const res = await doFetch(`${base}/${path.split("/").map(encodeURIComponent).join("/")}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },
           signal: AbortSignal.timeout(timeoutMs),

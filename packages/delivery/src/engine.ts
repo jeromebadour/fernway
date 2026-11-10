@@ -1,5 +1,6 @@
 // The delivery engine. A lead becomes a shipment (picked up, checked), then travels to GHL in tries: the contact is
-// upserted ("handed to GHL"), then the opportunity in the route's pipeline and stage ("signed for"). A failure GHL may
+// upserted ("handed to GHL"), its message (if any) is added as a note, then the opportunity goes in the route's
+// pipeline and stage ("signed for"). A failure GHL may
 // get over (429, 5xx, no answer, an expired token) waits and tries again on the schedule in @fernway/core; one it
 // won't (a 4xx about the data) is held at once with the reason. After the eighth try the waybill is returned.
 //
@@ -13,7 +14,7 @@ import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "./db.js";
 import type { GhlAnswer, GhlClient, GhlConnection } from "./ghl.js";
 import { checkLead } from "./lead.js";
-import { routes, scans, shipments, type LeadContact, type ScanKind } from "./schema.js";
+import { routes, scans, shipments, type LeadContact, type ScanKind, type Step } from "./schema.js";
 
 export type Deps = {
   db: Db;
@@ -128,6 +129,15 @@ export async function deliverTry(deps: Deps, shipmentId: number, tryNumber: numb
     });
   }
 
+  if (claimed.contact.message && !claimed.ghlNoteId) {
+    const a = await deps.ghl.addNote(conn, contactId, claimed.contact.message);
+    if (!a.ok) return failed(deps, conn, shipmentId, tryNumber, "note", a);
+    await deps.db.transaction(async (tx) => {
+      await tx.update(shipments).set({ ghlNoteId: a.id, updatedAt: sql`now()` }).where(eq(shipments.id, shipmentId));
+      await tx.insert(scans).values(scan(shipmentId, "handed", tryNumber, "note", a, "message added as a note"));
+    });
+  }
+
   if (route!.pipelineId && route!.stageId && !claimed.ghlOpportunityId) {
     const name = [claimed.contact.firstName, claimed.contact.lastName].filter(Boolean).join(" ") ||
       claimed.contact.companyName || claimed.contact.email || claimed.contact.phone || "Lead";
@@ -157,7 +167,7 @@ export async function deliverTry(deps: Deps, shipmentId: number, tryNumber: numb
 
 type Failure = Extract<GhlAnswer, { ok: false }> & { sent: object };
 
-async function failed(deps: Deps, conn: GhlConnection, shipmentId: number, tryNumber: number, step: "contact" | "opportunity", a: Failure): Promise<TryOutcome> {
+async function failed(deps: Deps, conn: GhlConnection, shipmentId: number, tryNumber: number, step: Step, a: Failure): Promise<TryOutcome> {
   if (a.next === "hold") {
     return hold(deps, shipmentId, tryNumber, `GHL refused the ${step} (${a.status ?? "no answer"}): ${a.excerpt.slice(0, 160)}`, { step, a });
   }
@@ -189,7 +199,7 @@ async function failed(deps: Deps, conn: GhlConnection, shipmentId: number, tryNu
   return "waiting";
 }
 
-async function hold(deps: Deps, shipmentId: number, tryNumber: number, reason: string, from: { step: "contact" | "opportunity"; a: Failure } | null): Promise<TryOutcome> {
+async function hold(deps: Deps, shipmentId: number, tryNumber: number, reason: string, from: { step: Step; a: Failure } | null): Promise<TryOutcome> {
   await deps.db.transaction(async (tx) => {
     await tx.update(shipments).set({ state: "held", holdReason: reason, updatedAt: sql`now()` }).where(eq(shipments.id, shipmentId));
     await tx.insert(scans).values(
@@ -199,7 +209,7 @@ async function hold(deps: Deps, shipmentId: number, tryNumber: number, reason: s
   return "held";
 }
 
-function scan(shipmentId: number, kind: ScanKind, tryNumber: number, step: "contact" | "opportunity", a: { status: number | null; excerpt: string; sent: object }, note: string) {
+function scan(shipmentId: number, kind: ScanKind, tryNumber: number, step: Step, a: { status: number | null; excerpt: string; sent: object }, note: string) {
   return {
     shipmentId,
     kind,

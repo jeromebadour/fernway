@@ -150,6 +150,11 @@ jobs:
           echo "one visitor, six sends:$codes"
           test "$codes" = " 201 201 201 201 201 429"
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/trial)" = 200
+          # Contact sales: a contact-only route; the message travels with the lead (and reaches GHL as a note).
+          $COMPOSE exec -T worker node apps/worker/dist/cli.js route 1 contact "Contact sales" - contact-sales | grep -q "contact only, tags contact-sales"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.20' \
+            -d "{\"form\":\"contact\",\"key\":\"$(cat /proc/sys/kernel/random/uuid)\",\"contact\":{\"email\":\"ask@b.example\",\"message\":\"Can Fernway hold our leads?\"}}" $B/api/leads/site)" = 201
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/contact)" = 200
 
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
