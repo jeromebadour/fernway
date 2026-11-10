@@ -150,6 +150,11 @@ jobs:
           echo "one visitor, six sends:$codes"
           test "$codes" = " 201 201 201 201 201 429"
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/trial)" = 200
+          # A form whose route isn't set up yet says so in plain words (503), never the engine's own message.
+          nr=$(curl -s -w ' %{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.21' \
+            -d "{\"form\":\"contact\",\"key\":\"$(cat /proc/sys/kernel/random/uuid)\",\"contact\":{\"email\":\"early@b.example\",\"message\":\"Hi\"}}" $B/api/leads/site)
+          echo "$nr" | grep -q "isn't open yet" && echo "$nr" | grep -q " 503$"
+          if echo "$nr" | grep -q "route"; then echo "the visitor saw the engine's route message"; exit 1; fi
           # Contact sales: a contact-only route; the message travels with the lead (and reaches GHL as a note).
           $COMPOSE exec -T worker node apps/worker/dist/cli.js route 1 contact "Contact sales" - contact-sales | grep -q "contact only, tags contact-sales"
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.20' \

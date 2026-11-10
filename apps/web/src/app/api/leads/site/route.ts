@@ -44,7 +44,14 @@ export async function POST(request: Request) {
   // Only the fields this form has; empty ones are left out rather than sent as blanks.
   const filled = Object.fromEntries(Object.entries(contact).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v !== ""));
   const r = await ingestLead(deps, accountId, { idempotencyKey: `site-${form}-${key}`, source: "form", route: forms[form], contact: filled });
-  if (!r.ok) return answer(422, { ok: false, problems: r.problems });
+  if (!r.ok) {
+    // A form whose route isn't set up is our mistake, not the visitor's: say so in plain words, log the real reason.
+    if (r.problems.some((p) => p.startsWith("route:"))) {
+      console.error(`site form ${form}: ${r.problems.join("; ")}`);
+      return answer(503, { ok: false, problems: ["this form isn't open yet; try again later"] });
+    }
+    return answer(422, { ok: false, problems: r.problems });
+  }
   return answer(r.duplicate ? 200 : 201, {
     ok: true,
     number: r.waybill.number,
