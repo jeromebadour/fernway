@@ -34,7 +34,7 @@
 .fm-slot { margin-top: 22px; }
 .sp { display: grid; gap: 14px; padding: 16px; border: 1.5px solid rgba(190,210,232,0.22); background: #070c13; }
 .sp-bad { border-color: var(--hazard); }
-.sp-days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.sp-days { display: flex; flex-wrap: wrap; gap: 8px; }
 .sp-day { flex: none; display: grid; gap: 4px; min-width: 92px; padding: 9px 12px; text-align: left; cursor: pointer;
   background: var(--kraft); border: 1.5px solid var(--line); color: var(--paper); font-family: var(--font-body); }
 .sp-day b { font-weight: 600; font-size: 14.5px; }
