@@ -9,6 +9,10 @@ import { checkHealth } from "@/lib/health";
 import { demoAccount } from "@/lib/intake";
 import { accountsOrNotFound } from "@/lib/accounts-on";
 import { AuthForm } from "@/ui/auth";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { currentPerson, safeNext } from "@/lib/session";
+import { Notice } from "@/ui/notice";
 import { GCheck, GClock, GHold, GScan, GSignIn, GSignUp } from "@/ui/glyphs";
 import { SiteFooter, SiteHeader } from "@/ui/site";
 
@@ -17,8 +21,10 @@ export const dynamic = "force-dynamic";
 
 // Beside the form: Fernway right now, read live from the same numbers as /status. Nothing about any account is shown
 // before signing in.
-export default async function SignIn() {
+export default async function SignIn({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   accountsOrNotFound();
+  const next = safeNext((await searchParams).next);
+  if (await currentPerson()) redirect(next);
   const [health, view] = await Promise.all([checkHealth(), statusView(delivery().db, demoAccount()).catch(() => null)]);
   return (
     <div className="wb">
@@ -26,9 +32,10 @@ export default async function SignIn() {
       <section className="wb-sec fm-page" aria-labelledby="in-h">
         <div className="fm-grid au-in-grid">
           <div>
+            <Suspense><Notice /></Suspense>
             <p className="wb-eyebrow"><GSignIn size={16} />Sign in</p>
             <h1 id="in-h" className="fm-h1">Back to your depot.</h1>
-            <div className="au-wrap au-wrap-in"><AuthForm mode="in" /></div>
+            <div className="au-wrap au-wrap-in"><AuthForm mode="in" next={next} /></div>
             <p className="au-other">New to Fernway? <Link href="/sign-up"><GSignUp size={15} />Start a 14-day trial</Link></p>
           </div>
           <aside className="au-now" aria-labelledby="now-h">

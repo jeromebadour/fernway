@@ -280,6 +280,55 @@ jobs:
           curl -s $B/docs | grep -q "Your first lead, in one request"
           curl -s $B/docs/api | grep -q "idempotencyKey"
 
+      - name: Accounts, end to end (switched on for this step only; production keeps them off)
+        run: |
+          FERNWAY_ACCOUNTS=on FERNWAY_MAIL_OUTBOX=on $COMPOSE up -d --no-build web
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && break; sleep 2; done
+          B=http://127.0.0.1:3103; J=/tmp/jar.txt; rm -f $J; E="lena$RANDOM@northpine.dental"
+          post() { curl -s -o /tmp/r.json -w '%{http_code}' -b $J -c $J -H "origin: $B" -H 'content-type: application/json' -d "$2" $B$1; }
+          has() { grep -q "$1" /tmp/r.json || { echo "expected $1 in: $(cat /tmp/r.json)"; exit 1; }; }
+          link() { $COMPOSE exec -T redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning lindex fernway:outbox 0 \
+            | python3 -c "import json,sys,re; print(re.search(r'https?://[^/ ]+(/(?:confirm|reset)/[A-Za-z0-9_-]+)', json.load(sys.stdin)['text']).group(1))"; }
+          code() { curl -s -o /dev/null -w '%{http_code}' -b $J "$B$1"; }
+          # Sign up: signed in at once, a confirm link sent; the same email again is refused.
+          test "$(post /api/account/sign-up "{\"email\":\"$E\",\"name\":\"Lena Hartmann\",\"company\":\"Northpine Dental\",\"password\":\"northpine-2026!\"}")" = 201
+          grep -q fw_session $J
+          curl -s -b $J $B/account | grep -q "Not confirmed"
+          test "$(post /api/account/sign-up "{\"email\":\"$E\",\"name\":\"X\",\"company\":\"Y\",\"password\":\"northpine-2026!\"}")" = 409
+          # The confirm link works once.
+          C=$(link); test "$(code $C)" = 307
+          curl -s -b $J $B/account | grep -q "Confirmed"
+          curl -s -b $J $B$C | grep -q "This link has done its job"
+          # Profile saves; sign out ends the session.
+          test "$(post /api/account/profile '{"name":"Lena H.","company":"Northpine Dental Group","timeZone":"Europe/Paris"}')" = 200
+          curl -s -b $J $B/account | grep -q "Northpine Dental Group"
+          test "$(post /api/account/sign-out '{}')" = 200
+          test "$(code /account)" = 307
+          # A wrong email and a wrong password get the same answer; the right one signs in.
+          test "$(post /api/account/sign-in "{\"email\":\"$E\",\"password\":\"nope-nope-nope\"}")" = 401; cp /tmp/r.json /tmp/a.json
+          test "$(post /api/account/sign-in '{"email":"ghost@northpine.dental","password":"nope-nope-nope"}')" = 401; cmp /tmp/r.json /tmp/a.json
+          test "$(post /api/account/sign-in "{\"email\":\"$E\",\"password\":\"northpine-2026!\",\"next\":\"//evil.example\"}")" = 200; has '"next":"/account"'
+          # Reset: the same answer for anyone; the link works once and ends every session.
+          test "$(post /api/account/reset-request '{"email":"ghost@northpine.dental"}')" = 200; has '"ok":true'
+          test "$(post /api/account/reset-request "{\"email\":\"$E\"}")" = 200
+          R=$(link); T=${R#/reset/}
+          test "$(post /api/account/reset "{\"token\":\"$T\",\"password\":\"a-new-password-2026\"}")" = 200
+          test "$(code /account)" = 307
+          test "$(post /api/account/sign-in "{\"email\":\"$E\",\"password\":\"northpine-2026!\"}")" = 401
+          test "$(post /api/account/sign-in "{\"email\":\"$E\",\"password\":\"a-new-password-2026\"}")" = 200
+          test "$(post /api/account/reset "{\"token\":\"$T\",\"password\":\"another-password-1\"}")" = 422
+          # A form from another site, or with no origin, changes nothing.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d '{}' $B/api/account/sign-out)" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'origin: https://evil.example' -H 'content-type: application/json' -d '{}' $B/api/account/sign-out)" = 403
+          # Only the account API sets a cookie; no page does.
+          for p in / /trial /pricing /sign-in /sign-up /reset; do
+            if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
+          done
+          # Back to how production runs: accounts off.
+          $COMPOSE up -d --no-build web
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && break; sleep 2; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/sign-in)" = 404
+
       - name: The plain pages answer, and the public site sets no cookies
         # Privacy promises no cookies on the public site: every public page is checked for a Set-Cookie header.
         run: |

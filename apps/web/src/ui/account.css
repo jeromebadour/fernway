@@ -108,3 +108,24 @@
   .ac-label { grid-template-columns: 1fr; }
   .au-now-grid { grid-template-columns: 1fr; }
 }
+
+/* The notice after an ending (ui/notice.tsx). */
+.nt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; max-width: 860px; margin: 0 0 26px; padding: 16px 18px;
+  border: 1px solid rgba(92,200,184,0.4); border-left: 3px solid var(--go); background: rgba(92,200,184,0.06); }
+.nt > svg { color: var(--go); margin-top: 2px; }
+.nt-title { margin: 0; font-weight: 600; font-size: 16px; color: var(--paper); }
+.nt-line { margin: 4px 0 0; font-size: 14.5px; color: #cfd8e3; }
+.nt button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; cursor: pointer; font: 500 13px var(--font-body);
+  color: var(--paper); background: none; border: 1px solid var(--line); }
+.nt button svg { color: var(--muted); }
+.au-busy { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 0; font: 500 14px var(--font-body); color: var(--input); }
+.au-end { max-width: 760px; }
+.au-end-hz { color: var(--hazard) !important; }
+.au-end-do { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.au-sent { max-width: 460px; }
+.au-sent-h { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 22px var(--font-body); color: var(--ok); }
+.au-ready { color: var(--ok); }
+.ac-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ac-wait-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; font: 600 11.5px/1 var(--font-label); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--input); border: 1.5px solid currentColor; }
+.ac-confirm .wb-ghost { background: transparent; height: 50px; }

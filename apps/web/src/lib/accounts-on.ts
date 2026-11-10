@@ -6,3 +6,6 @@ import { notFound } from "next/navigation";
 export function accountsOrNotFound() {
   if (process.env.FERNWAY_ACCOUNTS !== "on") notFound();
 }
+
+/** For the account API: true when accounts are switched on. */
+export const accountsOn = () => process.env.FERNWAY_ACCOUNTS === "on";

@@ -1,11 +1,56 @@
 // Typed view of db/migrations (Drizzle). The SQL migrations are the source of truth; test/schema.test.ts proves this
 // file still matches the real tables, column by column.
-import { bigint, boolean, integer, jsonb, pgTable, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 export const accounts = pgTable("accounts", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+});
+
+export const roles = ["owner", "admin", "member"] as const;
+export type Role = (typeof roles)[number];
+
+export const users = pgTable("users", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  emailConfirmedAt: timestamp("email_confirmed_at", { withTimezone: true }),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const memberships = pgTable("memberships", {
+  userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: bigint("account_id", { mode: "number" }).notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  role: text("role").$type<Role>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.accountId] })]);
+
+export const sessionEnds = ["signed_out", "signed_out_elsewhere", "password_changed", "expired", "account_deleted"] as const;
+export const sessions = pgTable("sessions", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  device: text("device").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  endedWhy: text("ended_why").$type<(typeof sessionEnds)[number]>(),
+});
+
+export const emailLinks = pgTable("email_links", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  purpose: text("purpose").$type<"confirm" | "reset">().notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
 });
 
 /** The box's own runs (each deploy, the nightly backup, its off-box copy, the weekly restore test), written as the owner. */

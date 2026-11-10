@@ -5,6 +5,8 @@ import "@/ui/forms.css";
 import "@/ui/account.css";
 import { accountsOrNotFound } from "@/lib/accounts-on";
 import { AuthForm } from "@/ui/auth";
+import { redirect } from "next/navigation";
+import { currentPerson } from "@/lib/session";
 import { GCheck, GFlow, GKey, GRoute, GSignIn, GSignUp } from "@/ui/glyphs";
 import { SiteFooter, SiteHeader } from "@/ui/site";
 
@@ -20,8 +22,9 @@ const firstRun = [
 
 export const dynamic = "force-dynamic";
 
-export default function SignUp() {
+export default async function SignUp() {
   accountsOrNotFound();
+  if (await currentPerson()) redirect("/account");
   return (
     <div className="wb">
       <SiteHeader />

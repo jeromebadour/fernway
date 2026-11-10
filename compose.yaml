@@ -86,6 +86,11 @@ services:
       FERNWAY_DEMO_ACCOUNT: ${FERNWAY_DEMO_ACCOUNT:-2}
       # The public key printed in the docs. Shown only if it is a live key of the demo account.
       FERNWAY_DOCS_KEY: ${FERNWAY_DOCS_KEY:-}
+      # Accounts (sign up, sign in, the account area) stay off until switched on; email goes through Resend once its
+      # key is set. The outbox is for CI only: it keeps emails in Redis instead of sending them.
+      FERNWAY_ACCOUNTS: ${FERNWAY_ACCOUNTS:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
