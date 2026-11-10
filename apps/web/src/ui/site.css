@@ -1,4 +1,5 @@
-/* The public landing page (world G: A Waybill's layout, B Arrivals' palette and type). Tokens: src/ui/tokens.css. */
+/* The public site (world G: A Waybill's layout, B Arrivals' palette and type): the frame, the landing and the shared
+   sections every public page uses. Tokens: tokens.css. */
 .wb {
   /* Content lives in one centred column (--wrap) whatever the screen width; only backgrounds and rules reach the edges.
      --edge is the side padding that keeps that column centred, never less than the gutter. */
@@ -21,7 +22,8 @@
 .wb-nav { display: flex; gap: 6px; margin-left: 56px; }
 .wb-nav a { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 15px; font-weight: 500; color: var(--muted); }
 .wb-nav a svg { color: var(--faint); }
-.wb-nav a:hover { color: var(--paper); }
+.wb-nav a:hover, .wb-nav a[aria-current="page"] { color: var(--paper); }
+.wb-nav a[aria-current="page"] svg { color: var(--go); }
 .wb-top-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
 
 .wb-go, .wb-ghost { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; height: 40px; padding: 0 16px; }

@@ -1,8 +1,10 @@
 import Link from "next/link";
-import "./landing.css";
+import "@/ui/site.css";
+import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
+import { perLead, rates } from "@/ui/rates";
 import {
-  GRoute, GScan, GManifest, GPrice, GDepot, GKey, GCheck, GResend, GHand, GMark,
-  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GMenu, GHold, GClock,
+  GRoute, GScan, GManifest, GPrice, GKey, GCheck, GResend, GHand,
+  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GClock,
 } from "@/ui/glyphs";
 
 const scans = [
@@ -48,13 +50,7 @@ const clockAt = (min: number) => (min === 0 ? 0 : (Math.log10(min + 1) / Math.lo
 const tryLabel = ["now", "30 s", "2.5 min", "12.5 min", "43 min", "2.7 h", "8.7 h", "23.7 h"];
 const scale = [{ at: 1, label: "1 min" }, { at: 60, label: "1 h" }, { at: 1440, label: "24 h" }];
 
-// Rate cards (a proposal until Kami sets Fernway's prices): priced by leads signed for in GHL.
-const rates = [
-  { plan: "Starter", price: 19, leads: 500, note: "One site, one GHL sub-account" },
-  { plan: "Growth", price: 49, leads: 5000, note: "Every form, booking and payment", pick: true },
-  { plan: "Scale", price: 149, leads: 25000, note: "API, webhooks out, Sheets export" },
-];
-const cents = (price: number, leads: number) => `${((price / leads) * 100).toFixed(2)}¢`;
+
 
 // The tools Fernway really connects to, each with its own Fernway glyph (never their logos).
 const worksWith = [
@@ -97,20 +93,7 @@ export default function Landing() {
         <rect width="1440" height="900" fill="url(#lamp)" />
       </svg>
 
-      <header className="wb-top">
-        <Link className="wb-brand" href="/"><GMark /><span>FERNWAY</span></Link>
-        <nav className="wb-nav">
-          <Link href="/#how"><GDepot size={16} />Product</Link>
-          <Link href="/pricing"><GPrice size={16} />Pricing</Link>
-          <Link href="/docs"><GManifest size={16} />Docs</Link>
-          <Link href="/break-it"><GScan size={16} />Live demo</Link>
-        </nav>
-        <div className="wb-top-right">
-          <Link className="wb-ghost" href="/sign-in"><GKey size={16} />Sign in</Link>
-          <Link className="wb-go" href="/trial"><GRoute size={16} />Start a trial</Link>
-        </div>
-        <button className="wb-menu" type="button" aria-label="Menu"><GMenu size={20} /></button>
-      </header>
+      <SiteHeader />
 
       <main className="wb-main">
         <section className="wb-copy">
@@ -260,13 +243,13 @@ export default function Landing() {
           <p className="wb-sec-lede">Held and returned leads never count. No seats, no setup fee, 14 days free.</p>
         </div>
         <div className="wb-rates">
-          {rates.map(({ plan, price, leads, note, pick }) => (
-            <article key={plan} className={pick ? "wb-rate wb-rate-pick" : "wb-rate"}>
-              <p className="wb-rate-plan">{plan}{pick && <span>Most sites</span>}</p>
+          {rates.map(({ plan, price, leads, note, ...r }) => (
+            <article key={plan} className={"pick" in r ? "wb-rate wb-rate-pick" : "wb-rate"}>
+              <p className="wb-rate-plan">{plan}{"pick" in r && <span>Most sites</span>}</p>
               <p className="wb-rate-price"><b>${price}</b>a month</p>
               <dl>
                 <div><dt>Leads signed for</dt><dd>{leads.toLocaleString("en-US")}<em>a month</em></dd></div>
-                <div><dt>Per lead</dt><dd>{cents(price, leads)}</dd></div>
+                <div><dt>Per lead</dt><dd>{perLead(price, leads)}</dd></div>
               </dl>
               <p className="wb-rate-note">{note}</p>
             </article>
@@ -278,25 +261,9 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="wb-foot">
-        <div className="wb-foot-top">
-          <div className="wb-foot-brand">
-            <Link className="wb-brand" href="/"><GMark /><span>FERNWAY</span></Link>
-            <p>Lead delivery for GoHighLevel. Every lead delivered, and the receipt to prove it.</p>
-          </div>
-          <nav className="wb-foot-cols" aria-label="Footer">
-            <div><p>Product</p><Link href="/#how">How a lead travels</Link><Link href="/pricing">Pricing</Link><Link href="/break-it">Live demo</Link><Link href="/status">Status</Link></div>
-            <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link><Link href="/docs/wordpress">WordPress</Link><Link href="/docs/laravel">Laravel</Link></div>
-            <div><p>Fernway</p><Link href="/about">About</Link><Link href="/changelog">Changelog</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div>
-          </nav>
-        </div>
-        <div className="wb-foot-bottom">
-          <span>Fernway is a portfolio product. © 2026</span>
-          <a href="https://jeromebadour.com" className="wb-by">Built by <b>Jerome Badour</b></a>
-        </div>
-      </footer>
+      <SiteFooter />
 
-      <div className="wb-thumb"><Link className="wb-go" href="/trial"><GRoute size={18} />Start a 14-day trial</Link></div>
+      <Thumb />
     </div>
   );
 }

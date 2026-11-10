@@ -1,0 +1,65 @@
+/* Pricing: the rate cards in full, how leads are counted, the lost-lead calculator. Shared parts are in site.css. */
+.wb .pr-head { border-top: 0; padding-top: 88px; }
+.wb .pr-h1 { margin: 0; font: 600 60px/1.04 var(--font-body); letter-spacing: -0.035em; color: var(--paper); }
+.wb-eyebrow-hz { color: var(--hazard); }
+
+.pr-rates .wb-rate { display: flex; flex-direction: column; }
+.pr-has { list-style: none; margin: 22px 0 0; padding: 20px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 12px; flex: 1; align-content: start; }
+.pr-has li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.5; color: #cfd8e3; }
+.pr-has svg { color: var(--ok); margin-top: 3px; }
+.pr-cta { margin-top: 28px; justify-content: center; align-self: stretch; height: 46px; }
+.pr-small { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+
+.pr-count { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); max-width: 1040px; }
+.pr-count li { display: grid; grid-template-columns: 44px minmax(0, 1.2fr) 170px minmax(0, 1.6fr); align-items: center; gap: 0 16px;
+  padding: 18px 0; border-bottom: 1px dashed var(--line); }
+.pr-count-g { width: 34px; height: 34px; display: grid; place-items: center; border: 1.5px solid currentColor; }
+.pr-count .tone-ok { color: var(--ok); } .pr-count .tone-re { color: var(--re); } .pr-count .tone-in { color: var(--input); }
+.pr-count .tone-hz { color: var(--hazard); } .pr-count .tone-go { color: var(--go); }
+.pr-count-what { font-weight: 600; font-size: 16.5px; color: var(--paper); }
+.pr-count-rule { font: 600 14.5px/1.3 var(--font-mono); color: currentColor; }
+.pr-count-how { font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+.pr-calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); border: 1px solid rgba(190,210,232,0.16); max-width: 1120px; }
+.pr-calc-in { padding: 30px 32px; display: grid; gap: 18px; border-right: 1px dashed var(--line); }
+.pr-calc-note { margin: 0; font: 500 12px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--hazard); }
+.pr-calc-in label { display: grid; grid-template-columns: 1fr 190px; align-items: center; gap: 16px; font-size: 15.5px; color: #cfd8e3; }
+.pr-label small { display: block; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--faint); }
+.pr-field { display: flex; align-items: center; height: 46px; border: 1.5px solid rgba(190,210,232,0.22); background: #070c13; }
+.pr-field:focus-within { border-color: var(--go); }
+.pr-field input::placeholder { color: var(--faint); font-weight: 500; }
+.pr-field input { flex: 1; min-width: 0; height: 100%; padding: 0 12px; border: 0; background: none; color: var(--paper);
+  font: 600 17px var(--font-mono); text-align: right; outline: none; -moz-appearance: textfield; }
+.pr-field input::-webkit-outer-spin-button, .pr-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.pr-field i { padding: 0 12px 0 0; font: 500 15px var(--font-mono); font-style: normal; color: var(--muted); }
+.pr-field i.pr-unit-word { font: 400 13.5px var(--font-body); white-space: nowrap; }
+.pr-field-pre i { padding: 0 0 0 12px; }
+.pr-calc-out { padding: 30px 32px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); display: flex; flex-direction: column; }
+.pr-calc-out ol { list-style: none; margin: 0; padding: 0; }
+.pr-calc-out li { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+.pr-calc-out li span { font-size: 15.5px; color: #cfd8e3; }
+.pr-calc-out li b { font: 700 24px/1 var(--font-mono); color: var(--hazard); text-align: right; }
+.pr-calc-out li em { grid-column: 1 / -1; font: 500 12.5px var(--font-mono); font-style: normal; color: var(--faint); }
+.pr-calc-total b { font-size: 40px !important; }
+.pr-calc-total span { font-weight: 600; color: var(--paper) !important; }
+.pr-calc-missing { margin: auto 0; font-size: 16px; color: var(--hazard); }
+.pr-calc-plan { display: flex; gap: 10px; align-items: flex-start; margin: auto 0 0; padding-top: 22px; font-size: 15px; line-height: 1.55; color: #cfd8e3; }
+.pr-calc-plan svg { color: var(--go); margin-top: 3px; }
+.pr-calc-plan b { color: var(--go); }
+
+@media (max-width: 1400px) {
+  .wb .pr-h1 { font-size: 52px; }
+}
+@media (max-width: 760px) {
+  .wb .pr-head { padding-top: 48px; }
+  .wb .pr-h1 { font-size: 38px; line-height: 1.08; }
+  .pr-cta { display: inline-flex; }
+  .pr-count li { grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: start; }
+  .pr-count-g { grid-row: span 3; }
+  .pr-count-how { font-size: 14.5px; }
+  .pr-calc { grid-template-columns: 1fr; }
+  .pr-calc-in { padding: 22px 18px; border-right: 0; border-bottom: 1px dashed var(--line); }
+  .pr-calc-in label { grid-template-columns: 1fr 160px; font-size: 15px; }
+  .pr-calc-out { padding: 22px 18px; }
+  .pr-calc-total b { font-size: 32px !important; }
+}
