@@ -117,6 +117,39 @@ jobs:
           echo "$loc" | grep -q "^https://marketplace.gohighlevel.com/v2/oauth/chooselocation?.*&state="
           echo "start sends the owner to GHL's chooser with a signed state"
 
+      - name: The trial form sends a real lead and its receipt tracks it
+        # Through the real stack: the form endpoint picks the lead up, the worker tries GHL (not connected in CI, so
+        # the lead is held with that reason), and the signed receipt link shows every scan. Then the protections.
+        run: |
+          B=http://127.0.0.1:3103
+          $COMPOSE exec -T worker node apps/worker/dist/cli.js route 1 trial Trial
+          key=$(cat /proc/sys/kernel/random/uuid)
+          lead() { curl -s -H 'content-type: application/json' -H "x-real-ip: $1" -d "$2" $B/api/leads/site; }
+          out=$(lead 10.0.0.1 "{\"form\":\"trial\",\"key\":\"$key\",\"contact\":{\"firstName\":\"Lena\",\"email\":\"lena@northpine.example\",\"companyName\":\"Northpine Dental\"}}")
+          echo "$out"
+          track=$(echo "$out" | python3 -c 'import json,sys; j=json.load(sys.stdin); assert j["ok"]; print(j["track"])')
+          # The same form sent again is the same waybill.
+          again=$(lead 10.0.0.1 "{\"form\":\"trial\",\"key\":\"$key\",\"contact\":{\"email\":\"lena@northpine.example\"}}")
+          test "$(echo "$again" | python3 -c 'import json,sys; print(json.load(sys.stdin)["track"])')" = "$track"
+          for i in $(seq 1 20); do
+            state=$(curl -s "$B/api$track" | python3 -c 'import json,sys; print(json.load(sys.stdin)["view"]["state"])')
+            [ "$state" = held ] && break; sleep 1
+          done
+          test "$state" = held
+          curl -s "$B$track" | grep -q "GHL is not connected"
+          curl -s "$B$track" | grep -q "l•••@northpine.example"
+          if curl -s "$B$track" | grep -q "lena@northpine"; then echo "the receipt shows the whole email"; exit 1; fi
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$B${track%??}xx")" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d "{\"form\":\"trial\",\"key\":\"$key\",\"trap\":\"x\",\"contact\":{}}" $B/api/leads/site)" = 400
+          codes=""
+          for i in 1 2 3 4 5 6; do
+            codes="$codes $(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -H 'x-real-ip: 10.0.0.9' \
+              -d "{\"form\":\"trial\",\"key\":\"$(cat /proc/sys/kernel/random/uuid)\",\"contact\":{\"email\":\"v$i@b.example\"}}" $B/api/leads/site)"
+          done
+          echo "one visitor, six sends:$codes"
+          test "$codes" = " 201 201 201 201 201 429"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/trial)" = 200
+
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
         # scratch database next to the live one, every table compared. (Account 1 exists by now, so the dump isn't empty.)

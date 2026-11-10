@@ -48,6 +48,8 @@ type Scripted = { status: number; body?: unknown; delayMs?: number };
 export function fakeGhl() {
   const script: Record<string, Scripted[]> = { contact: [], opportunity: [] };
   const requests: { path: "contact" | "opportunity"; body: Record<string, unknown>; auth: string | null }[] = [];
+  const deleted: string[] = [];
+  const deleteAnswers: number[] = [];
   // Contacts are matched like GHL's upsert with duplicates off: by email, else by phone.
   const contacts = new Map<string, string>();
   const opportunities = new Map<string, string>();
@@ -73,11 +75,18 @@ export function fakeGhl() {
   const server = setupServer(
     http.post(`${GHL_BASE}/contacts/upsert`, ({ request }) => answer("contact", request)),
     http.post(`${GHL_BASE}/opportunities/upsert`, ({ request }) => answer("opportunity", request)),
+    http.delete(`${GHL_BASE}/:what/:id`, ({ params }) => {
+      const status = deleteAnswers.shift() ?? 200;
+      if (status === 200) deleted.push(`${params.what}/${params.id}`);
+      return HttpResponse.json({ succeded: status === 200 }, { status });
+    }),
   );
 
   return {
     server,
     requests,
+    deleted,
+    deleteAnswers,
     contacts,
     opportunities,
     fail(path: "contact" | "opportunity", ...answers: Scripted[]) {
@@ -87,6 +96,8 @@ export function fakeGhl() {
       script.contact = [];
       script.opportunity = [];
       requests.length = 0;
+      deleted.length = 0;
+      deleteAnswers.length = 0;
       contacts.clear();
       opportunities.clear();
     },

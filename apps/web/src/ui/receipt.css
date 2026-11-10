@@ -1,0 +1,15 @@
+/* The live receipt: the landing's waybill parts (site.css) plus its own stamps and the "next" row. */
+.rc-bill { margin: 0; width: 100%; }
+.rc-yours { margin-left: 10px; padding: 3px 7px; font: 600 11px/1 var(--font-label); letter-spacing: 0.14em; color: var(--go);
+  border: 1px solid rgba(92,200,184,0.5); vertical-align: 1px; }
+.wb .rc-stamp { position: relative; flex: none; font-size: 14px; padding: 7px 11px; border-width: 2px; transform: rotate(-4deg); margin: 2px 0 0; }
+.wb .rc-stamp.wb-stamp-ok { display: inline-flex; width: auto; box-shadow: none; }
+.rc-stamp-in { color: var(--input); }
+.rc-stamp-re { color: var(--re); }
+.rc-stamp-hz { color: var(--hazard); }
+.wb-scans .tone-re .wb-node { color: var(--re); }
+.wb-scans .tone-hz .wb-node { color: var(--hazard); }
+.rc-next .wb-node { animation: rc-pulse 1.2s ease-in-out infinite; }
+.rc-next .wb-what { color: var(--muted); font-weight: 500; }
+@keyframes rc-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .rc-next .wb-node { animation: none; } }

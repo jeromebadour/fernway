@@ -1,0 +1,43 @@
+/* Public forms: fields that help as you type (BUILD-RULES, Kami 2026-11-10), and the waybill beside them. */
+.wb .fm-page { border-top: 0; padding-top: 80px; }
+.wb .fm-h1 { margin: 0; font: 600 56px/1.04 var(--font-body); letter-spacing: -0.035em; color: var(--paper); }
+.fm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 64px; align-items: start; }
+.fm { position: relative; }
+.fm-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.fm-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 18px; }
+.fm-field { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
+.fm-half { grid-column: auto; }
+.fm-label { display: flex; justify-content: space-between; font-weight: 600; font-size: 15px; color: var(--paper); }
+.fm-label em { font: 500 12px var(--font-mono); font-style: normal; color: var(--faint); }
+.fm-input { display: flex; align-items: center; height: 50px; border: 1.5px solid rgba(190,210,232,0.22); background: #070c13; }
+.fm-input:focus-within { border-color: var(--go); }
+.fm-input.fm-bad { border-color: var(--hazard); }
+.fm-input i { padding-left: 14px; font: 500 15px var(--font-mono); font-style: normal; color: var(--muted); }
+.fm-input input { flex: 1; min-width: 0; height: 100%; padding: 0 14px; border: 0; background: none; color: var(--paper); font: 400 16px var(--font-body); outline: none; }
+.fm-input i + input { padding-left: 4px; }
+.fm-input input::placeholder { color: var(--faint); }
+.fm-input input:disabled { color: var(--muted); }
+.fm-hint { font-size: 13.5px; color: var(--faint); }
+.fm-error { font-size: 13.5px; color: var(--hazard); }
+.fm-error-form { margin: 16px 0 0; font-size: 15px; }
+.fm-note { margin: 26px 0 0; padding-top: 18px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.55; color: var(--muted); }
+.fm-send { margin-top: 22px; border: 0; cursor: pointer; font-family: var(--font-body); }
+.fm-send:disabled { opacity: 0.6; cursor: progress; }
+.fm-sent { display: flex; align-items: center; gap: 10px; margin: 22px 0 0; font-size: 15.5px; color: var(--ok); }
+.fm-preview { opacity: 0.92; }
+.fm-stamp-wait { color: var(--faint); }
+.fm-ghost { color: var(--faint); font-weight: 500; }
+.fm-ghost-scans .wb-node { color: var(--faint); border-style: dashed; }
+.fm-ghost-scans .wb-what { color: var(--faint); font-weight: 500; }
+
+@media (max-width: 1400px) {
+  .fm-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 540px); gap: 48px; }
+  .wb .fm-h1 { font-size: 48px; }
+}
+@media (max-width: 1000px) { .fm-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .wb .fm-page { padding-top: 40px; }
+  .wb .fm-h1 { font-size: 36px; line-height: 1.08; }
+  .fm-fields { grid-template-columns: 1fr; }
+  .fm-send { width: 100%; justify-content: center; }
+}

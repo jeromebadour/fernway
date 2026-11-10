@@ -80,6 +80,8 @@ services:
     environment:
       DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # The account the public site's own forms deliver into (the GHL sandbox); its leads are kept 30 days.
+      FERNWAY_SITE_ACCOUNT: ${FERNWAY_SITE_ACCOUNT:-1}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
@@ -105,6 +107,8 @@ services:
     environment:
       DATABASE_URL: postgres://fernway_app:${FERNWAY_APP_PASSWORD}@db:5432/fernway
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # The account the public site's own forms deliver into (the GHL sandbox); its leads are kept 30 days.
+      FERNWAY_SITE_ACCOUNT: ${FERNWAY_SITE_ACCOUNT:-1}
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}

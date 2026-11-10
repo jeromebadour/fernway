@@ -33,6 +33,8 @@ export type GhlClient = {
     conn: GhlConnection,
     o: { contactId: string; pipelineId: string; stageId: string; name: string },
   ): Promise<GhlAnswer & { sent: object }>;
+  /** Deletes a contact or an opportunity. True once GHL no longer has it (deleted now, or already gone: 404). */
+  remove(conn: GhlConnection, what: "contacts" | "opportunities", id: string): Promise<{ gone: boolean; status: number | null }>;
 };
 
 const EXCERPT = 300;
@@ -98,6 +100,21 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   }
 
   return {
+    async remove(conn, what, id) {
+      let status: number | null = null;
+      try {
+        const res = await doFetch(`${base}/${what}/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+        status = res.status;
+        await res.text();
+      } catch {
+        status = null;
+      }
+      return { gone: status !== null && ((status >= 200 && status < 300) || status === 404), status };
+    },
     async listPipelines(conn) {
       const res = await doFetch(`${base}/opportunities/pipelines?locationId=${encodeURIComponent(conn.locationId)}`, {
         headers: { Authorization: `Bearer ${await conn.accessToken()}`, Version: GHL_VERSION, Accept: "application/json" },

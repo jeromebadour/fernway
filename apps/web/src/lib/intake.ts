@@ -1,0 +1,41 @@
+import "server-only";
+import { connectionFor, createGhlClient, createQueue, type Deps } from "@fernway/delivery";
+import { Redis } from "ioredis";
+import { delivery } from "./connect";
+import { redis } from "./redis";
+
+// The public site's own forms deliver into Fernway's own account (the GHL sandbox), set by FERNWAY_SITE_ACCOUNT.
+// The web app only picks leads up and puts their first try on the queue; the worker delivers them.
+const g = globalThis as unknown as { fernwayIntake?: { deps: Deps; accountId: number } };
+
+export function intake() {
+  if (!g.fernwayIntake) {
+    const accountId = Number(process.env.FERNWAY_SITE_ACCOUNT);
+    if (!Number.isInteger(accountId) || accountId < 1) throw new Error("FERNWAY_SITE_ACCOUNT is not set");
+    const { db, cfg } = delivery();
+    // BullMQ wants its own connection.
+    const { schedule } = createQueue(new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null }));
+    g.fernwayIntake = {
+      accountId,
+      deps: { db, ghl: createGhlClient(), connectionFor: (id) => connectionFor(db, cfg, id), schedule },
+    };
+  }
+  return g.fernwayIntake;
+}
+
+// Demo volume only (the GHL sandbox is not a live CRM): a few sends per visitor an hour, a cap for the whole site a day.
+export const PER_VISITOR_HOUR = 5;
+export const SITE_DAY = 200;
+
+/** Counts one send; true if it is within both limits. */
+export async function withinLimits(ip: string): Promise<{ ok: true } | { ok: false; reason: "visitor" | "site" }> {
+  const r = redis();
+  const hour = `fernway:site-forms:ip:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
+  const day = `fernway:site-forms:day:${new Date().toISOString().slice(0, 10)}`;
+  const res = (await r.multi().incr(hour).expire(hour, 3_700).incr(day).expire(day, 90_000).exec()) ?? [];
+  const mine = Number(res[0]?.[1]);
+  const all = Number(res[2]?.[1]);
+  if (mine > PER_VISITOR_HOUR) return { ok: false, reason: "visitor" };
+  if (all > SITE_DAY) return { ok: false, reason: "site" };
+  return { ok: true };
+}
