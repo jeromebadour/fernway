@@ -1,9 +1,10 @@
 name: Merge
 
 # Every change reaches main through a pull request, opened and merged as jeromebadour with his own token (the
-# repository secret FERNWAY_MERGE_TOKEN). A pushed branch gets its pull request at once. The pull request merges, by
-# rebase, only after CI passed on its latest commit. The ruleset on main enforces the same thing on GitHub's side:
-# a pull request, both CI checks green, the branch up to date, no force pushes, no bypass.
+# repository secret FERNWAY_MERGE_TOKEN). A pushed branch gets its pull request at once. The pull request merges,
+# squashed into one commit that GitHub signs (Verified), only after CI passed on its latest commit. The ruleset on
+# main enforces the same on GitHub's side: a pull request, both CI checks green, the branch up to date, no force
+# pushes, no bypass. Branch commits are signed with Jerome's own key (fernway-signing).
 on:
   push:
     branches-ignore: [main]
@@ -50,4 +51,4 @@ jobs:
           if [ -z "$pr" ]; then echo "no open pull request for $BRANCH"; exit 0; fi
           set -- $pr
           if [ "$2" != "$SHA" ]; then echo "CI passed on $SHA, but #$1 now ends at $2; its own run decides"; exit 0; fi
-          gh pr merge -R "$REPO" "$1" --rebase --delete-branch --match-head-commit "$SHA"
+          gh pr merge -R "$REPO" "$1" --squash --delete-branch --match-head-commit "$SHA"
