@@ -11,6 +11,7 @@ import {
   createGhlClient,
   createQueue,
   deliverTry,
+  forgetOldSignIns,
   keyFrom,
   mailer,
   noteLeadAlerts,
@@ -124,3 +125,10 @@ if (send) {
   setInterval(() => noteWeeklyAlerts(db).catch((e) => console.error(`worker: weekly summary failed: ${e.message}`)), WEEKLY_MS);
   console.log(`worker ${commit}: alert emails on`);
 }
+
+// Old sign-ins and spent email links go after their time (the Privacy Policy says how long), every hour.
+setInterval(() => {
+  forgetOldSignIns(db)
+    .then((r) => (r.sessions || r.links) && console.log(`worker: old sign-ins removed ${r.sessions}, email links ${r.links}`))
+    .catch((e) => console.error(`worker: sign-in clean-up failed: ${e.message}`));
+}, PURGE_MS);

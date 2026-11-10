@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { confirmEmail, personFor, requestReset, resetPassword, resendConfirm, signIn, signOut, signUp, updateProfile } from "../src/people.js";
+import { confirmEmail, forgetOldSignIns, personFor, requestReset, resetPassword, resendConfirm, signIn, signOut, signUp, updateProfile } from "../src/people.js";
 import { accounts, emailLinks, memberships, sessions, users } from "../src/schema.js";
 import { createDb, freshDatabase } from "./support.js";
 
@@ -139,5 +139,28 @@ describe("the profile", () => {
     expect((await personFor(app.db, s!.token))!.accountName).toBe("Northpine Dental Group");
     const bad = await updateProfile(app.db, who, { name: "", timeZone: "Mars/Olympus" });
     expect((bad as { problems: string[] }).problems.join()).toMatch(/name: your name.*timeZone: a real time zone/);
+  });
+});
+
+describe("old sign-ins", () => {
+  it("go 30 days after they ended or ran out; live ones and recent ones stay; spent links go after a day", async () => {
+    const p = person();
+    const r = await signUp(app.db, p);
+    if (!r.ok) throw new Error();
+    const live = await signIn(app.db, p.email, p.password);
+    const old = await signIn(app.db, p.email, p.password);
+    const recent = await signIn(app.db, p.email, p.password);
+    const id = async (t: { token: string }) => (await personFor(app.db, t.token))!.sessionId;
+    const [oldId, recentId, liveId] = [await id(old as { token: string }), await id(recent as { token: string }), await id(live as { token: string })];
+    await owner.db.update(sessions).set({ endedAt: new Date(Date.now() - 31 * 86_400_000), endedWhy: "signed_out" }).where(eq(sessions.id, oldId));
+    await owner.db.update(sessions).set({ endedAt: new Date(Date.now() - 2 * 86_400_000), endedWhy: "signed_out" }).where(eq(sessions.id, recentId));
+    await owner.db.update(emailLinks).set({ usedAt: new Date(Date.now() - 2 * 86_400_000) }).where(eq(emailLinks.userId, r.userId));
+    const gone = await forgetOldSignIns(app.db);
+    expect(gone.sessions).toBeGreaterThanOrEqual(1);
+    expect(gone.links).toBeGreaterThanOrEqual(1);
+    const left = (await app.db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, r.userId))).map((x) => x.id);
+    expect(left).toEqual(expect.arrayContaining([recentId, liveId]));
+    expect(left).not.toContain(oldId);
+    expect(await app.db.select().from(emailLinks).where(eq(emailLinks.userId, r.userId))).toHaveLength(0);
   });
 });

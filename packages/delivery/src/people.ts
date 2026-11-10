@@ -180,3 +180,13 @@ export async function updateProfile(db: Db, who: { userId: number; accountId: nu
   });
   return { ok: true };
 }
+
+/** Ended or run-out sign-ins are kept 30 days (Devices lists them), then deleted; used or run-out email links after a
+ *  day. Returns how many rows went. Run hourly by the worker. */
+export async function forgetOldSignIns(db: Db): Promise<{ sessions: number; links: number }> {
+  const s = await db.delete(sessions)
+    .where(sql`coalesce(${sessions.endedAt}, ${sessions.expiresAt}) < now() - interval '30 days'`).returning({ id: sessions.id });
+  const l = await db.delete(emailLinks)
+    .where(sql`coalesce(${emailLinks.usedAt}, ${emailLinks.expiresAt}) < now() - interval '1 day'`).returning({ id: emailLinks.id });
+  return { sessions: s.length, links: l.length };
+}
