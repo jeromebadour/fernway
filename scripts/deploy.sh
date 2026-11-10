@@ -4,9 +4,9 @@
 #   /srv/fernway/app/scripts/deploy.sh <commit>          deploy it
 #   /srv/fernway/app/scripts/deploy.sh <commit> --check  only say whether it may be deployed
 #
-# It refuses unless: this is the Freelance box, the commit is on main, and CI passed on it (both jobs, read from
-# GitHub). Then it moves the checkout forward to that commit, builds and starts it, waits until every part is healthy
-# (database, queue, web, worker, all on this commit) and checks the public site. The build log goes to
+# It refuses unless: this is the Freelance box, the commit is on main, and CI passed on it (its two jobs, checks and
+# container, read from GitHub by name). Then it moves the checkout forward to that commit, builds and starts it,
+# waits until every part is healthy (database, queue, web, worker, all on this commit) and checks the public site. The build log goes to
 # /srv/fernway/deploy-logs/. The running version is only replaced once the new images have built; a failed build
 # leaves it untouched. Last, it installs the box's tools (ops/: nightly backup, weekly restore test) and their timers.
 #
@@ -40,9 +40,14 @@ main() {
   local ci
   ci=$(curl -fsS "https://api.github.com/repos/$repo/commits/$sha/check-runs" | python3 -c '
 import json, sys
+# CI is the two jobs of the CI workflow, by name; other workflows (the merge gate) report their own runs, skipped
+# on main, and decide nothing here. Each job must have passed on this commit; a re-run counts by its latest result.
 runs = json.load(sys.stdin)["check_runs"]
 for r in runs: print("   " + r["name"] + ": " + r["status"] + " " + (r["conclusion"] or ""))
-ok = len(runs) >= 2 and all(r["status"] == "completed" and r["conclusion"] == "success" for r in runs)
+latest = {}
+for r in sorted(runs, key=lambda r: r.get("started_at") or ""):
+    if r["name"] in ("checks", "container"): latest[r["name"]] = r
+ok = len(latest) == 2 and all(r["status"] == "completed" and r["conclusion"] == "success" for r in latest.values())
 print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub"
   echo "$ci" | grep -v '^PASSED$\|^NOT PASSED$'
   [ "$(echo "$ci" | tail -1)" = PASSED ] || stop "CI has not passed on $short: nothing deployed"
