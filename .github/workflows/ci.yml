@@ -230,7 +230,9 @@ jobs:
           # A forged receipt link resends nothing.
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d "{\"track\":\"${bad%??}xx\"}" $B/api/breakit/resend)" = 404
           after=$(curl -s 127.0.0.1:4010/__calls | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
-          test "$before" = "$after"
+          if [ "$before" != "$after" ]; then
+            echo "Break it reached the fake GHL:"; curl -s 127.0.0.1:4010/__calls | python3 -c "import json,sys; print(json.load(sys.stdin)[$before:])"; exit 1
+          fi
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/break-it)" = 200
 
       - name: The plain pages answer, and the public site sets no cookies
