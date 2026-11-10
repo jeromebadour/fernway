@@ -62,7 +62,8 @@
 .dc-try-note b { font-family: var(--font-mono); font-weight: 600; color: var(--ok); }
 .dc-sec .dc-try-err { margin: 0 0 14px; font-size: 15px; color: var(--hazard); }
 .dc-answer { margin-bottom: 12px; background: #070c13; }
-.dc-answer pre { max-height: 260px; font-size: 12.5px; }
+/* Answers are read, not copied: long values (a receipt link) wrap instead of adding a sideways scrollbar. */
+.dc-answer pre { max-height: 260px; font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dc-ok { color: var(--ok); }
 .dc-no { color: var(--hazard); }
 .wb .dc-main code.dc-ok, .wb .dc-main code.dc-no { background: none; border-color: currentColor; color: inherit; }

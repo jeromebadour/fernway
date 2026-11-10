@@ -1,10 +1,11 @@
 import Link from "next/link";
 import "@/ui/site.css";
+import { RetryClock } from "@/ui/retry-clock";
 import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
 import { perLead, rates } from "@/ui/rates";
 import {
   GRoute, GScan, GManifest, GPrice, GKey, GCheck, GResend, GHand,
-  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GClock,
+  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GShield,
 } from "@/ui/glyphs";
 
 const scans = [
@@ -42,15 +43,6 @@ const answers = [
   { code: "Other 4xx", what: "GHL refused the data itself", does: "Held with GHL's own reason; fix it and resend in one press", tone: "hz", G: GHold },
   { code: "Disconnected", what: "GHL was unplugged from Fernway", does: "Held as \"needs reconnecting\"; every lead waits, none is lost", tone: "hz", G: GHold },
 ];
-
-// The retry clock: when each of the 8 tries goes, as minutes after pickup (packages/core RETRY_WAITS_MS).
-const tries = [0, 0.5, 2.5, 12.5, 42.5, 162.5, 522.5, 1422.5];
-const clockAt = (min: number) => (min === 0 ? 0 : (Math.log10(min + 1) / Math.log10(1441)) * 100);
-// Labelled by time since pickup, the line's own scale (each wait adds to the one before).
-const tryLabel = ["now", "30 s", "2.5 min", "12.5 min", "43 min", "2.7 h", "8.7 h", "23.7 h"];
-const scale = [{ at: 1, label: "1 min" }, { at: 60, label: "1 h" }, { at: 1440, label: "24 h" }];
-
-
 
 // The tools Fernway really connects to, each with its own Fernway glyph (never their logos).
 const worksWith = [
@@ -219,20 +211,10 @@ export default function Landing() {
               ))}
             </tbody>
           </table>
-          <figure className="wb-clock">
-            <figcaption><GClock size={16} />The retry clock: 8 tries over 24 hours</figcaption>
-            <div className="wb-clock-bar" role="img" aria-label="Tries at pickup, then 30 seconds, 2.5, 12.5 and 43 minutes, and 2.7, 8.7 and 23.7 hours after it">
-              {tries.map((m, i) => (
-                <span key={i} className="wb-tick" style={{ left: `${clockAt(m)}%` }}>
-                  <i>{i + 1}</i><em>{tryLabel[i]}</em>
-                </span>
-              ))}
-            </div>
-            <div className="wb-clock-scale">
-              {scale.map(({ at, label }) => <span key={label} style={{ left: `${clockAt(at)}%` }}>{label}</span>)}
-            </div>
+          <RetryClock>
             <p>Early tries come fast, because most refusals are a busy minute. Later ones spread out, in case GHL is down for hours. After the eighth, the waybill is <b className="hz">returned</b> with every answer kept, and one press sends it again.</p>
-          </figure>
+            <Link className="wb-link" href="/delivery"><GShield size={16} />How delivery works, case by case</Link>
+          </RetryClock>
         </div>
       </section>
 

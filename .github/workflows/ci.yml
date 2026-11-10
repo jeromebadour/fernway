@@ -283,7 +283,8 @@ jobs:
           curl -s $B/privacy | grep -q "How long it is kept"
           curl -s $B/terms | grep -q "What Fernway is"
           curl -s $B/about | grep -q "What is real"
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /api/slots; do
+          curl -s $B/delivery | grep -q "What happens when GHL says no"
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /api/slots; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 

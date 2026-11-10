@@ -1,0 +1,58 @@
+/* How delivery works: one case per GHL failure, each a file: what GHL does, what Fernway does, the tests that prove it. */
+.dv-head { max-width: 980px; padding-bottom: 28px; }
+.dv-head .wb-sec-lede { max-width: 760px; }
+.dv-jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+.dv-jump a { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; font-size: 14px; color: var(--paper); border: 1px solid var(--line); }
+.dv-jump a:hover { border-color: rgba(92,200,184,0.45); }
+.dv-jump svg { color: var(--faint); }
+.dv-jump b { font: 600 12px var(--font-mono); color: var(--go); }
+
+.dv-case { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 48px; padding: 48px 0; border-top: 1px dashed var(--line); scroll-margin-top: 88px; }
+.dv-side { position: sticky; top: 96px; align-self: start; }
+.dv-no { display: block; font: 600 46px/1 var(--font-mono); color: var(--go); letter-spacing: -0.02em; }
+.wb .dv-side h2 { margin: 14px 0 0; font: 600 26px/1.2 var(--font-body); letter-spacing: -0.015em; color: var(--paper); }
+
+.dv-body { display: grid; gap: 14px; min-width: 0; max-width: 860px; }
+.dv-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 18px; padding: 18px 20px; background: var(--kraft); border: 1px solid rgba(190,210,232,0.12); }
+.dv-row .wb-label { display: flex; align-items: center; gap: 8px; margin: 3px 0 0; }
+.dv-row p:not(.wb-label) { margin: 0; font-size: 16.5px; line-height: 1.6; color: #cfd8e3; }
+.dv-ghl { border-left: 3px solid var(--input); }
+.dv-ghl .wb-label { color: var(--input); }
+.dv-fw { border-left: 3px solid var(--go); background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); }
+.dv-fw .wb-label { color: var(--go); }
+.dv-fw p:not(.wb-label) { color: var(--paper); }
+.dv-mark { display: inline-flex; }
+.dv-mark svg { width: 14px; height: 14px; }
+
+.dv-proofs { padding: 16px 20px 8px; border: 1px solid rgba(134,194,143,0.28); }
+.dv-proofs > .wb-label { display: flex; align-items: center; gap: 8px; color: var(--ok); }
+.dv-proofs ol { list-style: none; margin: 10px 0 0; padding: 0; counter-reset: dv; }
+.dv-proofs li { counter-increment: dv; border-top: 1px dashed var(--line); }
+.dv-proofs a { display: grid; grid-template-columns: 22px 15px 170px minmax(0, 1fr); align-items: start; gap: 10px; padding: 11px 0; color: #cfd8e3; }
+.dv-proofs a::before { content: counter(dv); font: 500 12.5px/1.6 var(--font-mono); color: var(--muted); }
+.dv-proofs a svg { margin-top: 3px; color: var(--ok); }
+.dv-proofs code { font: 500 12.5px/1.6 var(--font-mono); color: var(--input); overflow-wrap: anywhere; }
+.dv-proofs span { font-size: 15px; line-height: 1.5; }
+.dv-proofs a:hover span { color: var(--paper); text-decoration: underline; text-underline-offset: 3px; }
+
+.dv .wb-clock { margin: 0; }
+.dv-end { margin-top: 24px; padding-top: 40px; border-top: 1px solid var(--line); max-width: 820px; }
+.dv-end p { margin: 0; font-size: 17px; line-height: 1.6; color: #cfd8e3; }
+.dv-end p a { color: var(--go); text-decoration: underline; text-underline-offset: 3px; }
+.dv-end p a svg { vertical-align: -2px; margin-right: 5px; }
+.dv-do { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+@media (max-width: 1100px) {
+  .dv-case { grid-template-columns: 1fr; gap: 20px; }
+  .dv-side { position: static; display: flex; align-items: baseline; gap: 16px; }
+  .wb .dv-side h2 { margin: 0; }
+}
+@media (max-width: 700px) {
+  .dv-row { grid-template-columns: 1fr; gap: 8px; }
+  .dv-jump { display: none; }
+  .dv-proofs a { grid-template-columns: 22px 15px minmax(0, 1fr); }
+  .dv-proofs code { grid-column: 3; }
+  .dv-proofs span { grid-column: 3; }
+  .dv-no { font-size: 34px; }
+  .wb .dv-side h2 { font-size: 22px; }
+}

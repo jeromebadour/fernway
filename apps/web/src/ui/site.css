@@ -321,3 +321,4 @@
     background: rgba(10,16,25,0.92); border-top: 1px solid var(--line); backdrop-filter: blur(8px); }
   .wb-thumb .wb-go { width: 100%; justify-content: center; height: 52px; font-size: 16.5px; }
 }
+.wb-clock .wb-link { margin-top: 16px; }
