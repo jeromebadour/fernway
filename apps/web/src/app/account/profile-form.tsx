@@ -66,7 +66,7 @@ export function ProfileForm({ initial, owner }: { initial: P; owner: boolean }) 
 }
 
 /** An unconfirmed email: one press sends a fresh link, and says so. */
-function ConfirmAgain() {
+export function ConfirmAgain() {
   const [state, setState] = useState<"idle" | "busy" | "sent" | "failed">("idle");
   const [why, setWhy] = useState("");
   return (

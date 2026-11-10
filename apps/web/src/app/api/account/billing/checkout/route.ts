@@ -14,6 +14,8 @@ export async function POST(request: Request) {
   const p = await currentPerson();
   if (!p) return answer(401, { ok: false, problems: ["form: you were signed out; sign in again"] });
   if (p.role !== "owner") return new Response(null, { status: 404 });
+  // Paying acts in the account's name: only from a confirmed address.
+  if (!p.emailConfirmed) return answer(403, { ok: false, problems: ["email: confirm your email first; the link is in your inbox"] });
   const plan = planKeys.find((k) => k === g.body.plan);
   if (!plan) return answer(422, { ok: false, problems: ["plan: Starter, Growth or Scale"] });
   if (!(await within(`billing:${p.accountId}`, 20))) return answer(429, { ok: false, problems: ["billing: too many tries this hour; try again later"] });

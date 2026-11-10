@@ -6,6 +6,7 @@ import { requirePerson } from "@/lib/session";
 import { whenFor } from "@/lib/when-for";
 import { GKey } from "@/ui/glyphs";
 import { day } from "@/ui/when";
+import { ConfirmFirst } from "../confirm-first";
 import { KeyList } from "./list";
 
 export const metadata: Metadata = { title: "API keys · Fernway" };
@@ -25,7 +26,8 @@ export default async function Keys() {
         <p className="wb-eyebrow"><GKey size={16} />API keys</p>
         <h1 className="ac-h1">Keys that send leads as {m.accountName}.</h1>
       </header>
-      <KeyList keys={keys} max={MAX_KEYS} />
+      {!m.emailConfirmed && <ConfirmFirst what="Making an API key" />}
+      <KeyList keys={keys} max={MAX_KEYS} canMake={m.emailConfirmed} />
     </>
   );
 }

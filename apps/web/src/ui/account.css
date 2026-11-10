@@ -424,3 +424,12 @@
   .ky-table td:nth-child(3) { grid-area: 2 / 2 / 3 / 4; }
 }
 .ac-save .fm-btn, .sc-do .fm-btn, .fm-dialog-do .fm-btn { white-space: nowrap; }
+
+/* Confirm your email first: in place of paying or making a key */
+.cf { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; margin: 0 0 22px; padding: 16px 18px;
+  border: 1px solid rgba(122,168,224,0.4); border-left: 3px solid var(--input); background: rgba(122,168,224,0.06); }
+.cf > svg { color: var(--input); }
+.cf-t { margin: 0; font-weight: 600; color: var(--paper); }
+.cf-l { margin: 3px 0 0; font-size: 14px; color: #cfd8e3; }
+@media (max-width: 700px) { .cf { grid-template-columns: auto minmax(0, 1fr); } .cf .ac-confirm { grid-column: 1 / -1; } }
+.bl-cf { margin-top: 16px; }

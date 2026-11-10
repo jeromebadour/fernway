@@ -11,7 +11,7 @@ type Key = { prefix: string; label: string; madeBy: string | null; made: string;
 const post = (path: string, body: object) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
   .then((r) => r.json()).catch(() => ({ ok: false, problems: ["form: Fernway could not be reached"] })) as Promise<{ ok?: boolean; key?: string; prefix?: string; problems?: string[] }>;
 
-export function KeyList({ keys: first, max }: { keys: Key[]; max: number }) {
+export function KeyList({ keys: first, max, canMake }: { keys: Key[]; max: number; canMake: boolean }) {
   const [keys, setKeys] = useState(first);
   const make = useRef<HTMLDialogElement>(null);
   const ask = useRef<HTMLDialogElement>(null);
@@ -22,7 +22,7 @@ export function KeyList({ keys: first, max }: { keys: Key[]; max: number }) {
     <>
       <div className="dv-bar">
         <p className="dv-count"><b>{live}</b>{live === 1 ? "live key" : "live keys"}<em>of {max}</em></p>
-        <button type="button" className="wb-go fm-btn" disabled={live >= max} onClick={() => make.current?.showModal()}><GKey size={16} />Make a key</button>
+        {canMake && <button type="button" className="wb-go fm-btn" disabled={live >= max} onClick={() => make.current?.showModal()}><GKey size={16} />Make a key</button>}
         <Link className="ky-docs" href="/docs"><GBrackets size={15} />How to send leads with a key</Link>
       </div>
       {keys.length === 0 ? (
