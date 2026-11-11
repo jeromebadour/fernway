@@ -147,7 +147,7 @@ export const routes = pgTable("routes", {
 export const shipmentStates = ["picked_up", "in_transit", "waiting", "signed", "held", "returned"] as const;
 export type ShipmentState = (typeof shipmentStates)[number];
 
-export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo", "stripe"] as const;
+export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo", "stripe", "workflow"] as const;
 export type Source = (typeof sources)[number];
 
 export const shipments = pgTable("shipments", {
@@ -168,6 +168,8 @@ export const shipments = pgTable("shipments", {
   bookingStart: timestamp("booking_start", { withTimezone: true }),
   ghlAppointmentId: text("ghl_appointment_id"),
   holdReason: text("hold_reason"),
+  /** The GHL workflow that sent this lead ("Track with Fernway"), so its own trigger never fires on it. */
+  viaWorkflow: text("via_workflow"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -308,4 +310,32 @@ export const ghlEvents = pgTable("ghl_events", {
   leads: integer("leads").notNull().default(0),
   summary: text("summary").notNull().default(""),
   receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const triggerEvents = ["held", "returned", "signed"] as const;
+export type TriggerEvent = (typeof triggerEvents)[number];
+
+/** A GHL workflow whose trigger is "Fernway lead": where to send which arrivals. */
+export const workflowTriggers = pgTable("workflow_triggers", {
+  id: text("id").primaryKey(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  locationId: text("location_id").notNull(),
+  workflowId: text("workflow_id").notNull(),
+  events: text("events").array().$type<TriggerEvent[]>().notNull(),
+  targetUrl: text("target_url").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const triggerSends = pgTable("trigger_sends", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  triggerId: text("trigger_id").notNull(),
+  shipmentId: bigint("shipment_id", { mode: "number" }).notNull(),
+  event: text("event").$type<TriggerEvent>().notNull(),
+  tries: smallint("tries").notNull().default(0),
+  nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  givenUpAt: timestamp("given_up_at", { withTimezone: true }),
+  lastStatus: smallint("last_status"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

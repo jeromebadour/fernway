@@ -12,6 +12,9 @@ import {
   createQueue,
   deliverTry,
   forgetOldGhlEvents,
+  forgetOldTriggerSends,
+  noteTriggerSends,
+  sendDueTriggers,
   forgetOldSignIns,
   keyFrom,
   machine,
@@ -130,6 +133,16 @@ if (send) {
   console.log(`worker ${commit}: alert emails on`);
 }
 
+// GHL workflows started by "Fernway lead": what arrived is noted, then sent to each workflow's trigger, every 20 s.
+const TRIGGERS_MS = 20_000;
+const triggerAppUrl = (process.env.APP_URL ?? "https://fernway.jeromebadour.com").replace(/\/$/, "");
+setInterval(() => {
+  noteTriggerSends(db)
+    .then(() => sendDueTriggers({ db, connectionFor: deps.connectionFor, key: tokenKey, appUrl: triggerAppUrl }))
+    .then((r) => (r.sent || r.failed || r.gaveUp) && console.log(`worker: workflow triggers sent ${r.sent}, to retry ${r.failed}, given up ${r.gaveUp}`))
+    .catch((e) => console.error(`worker: workflow triggers failed: ${e.message}`));
+}, TRIGGERS_MS);
+
 // Old sign-ins and spent email links go after their time (the Privacy Policy says how long), every hour.
 setInterval(() => {
   forgetOldSignIns(db)
@@ -138,6 +151,9 @@ setInterval(() => {
   forgetOldGhlEvents(db)
     .then((n) => n && console.log(`worker: GHL events older than 30 days removed ${n}`))
     .catch((e) => console.error(`worker: GHL event clean-up failed: ${e.message}`));
+  forgetOldTriggerSends(db)
+    .then((n) => n && console.log(`worker: workflow trigger calls older than 30 days removed ${n}`))
+    .catch((e) => console.error(`worker: trigger clean-up failed: ${e.message}`));
 }, PURGE_MS);
 
 // The watchers, every minute: a watcher gone wrong opens an incident (one per watcher), raised if it gets worse and

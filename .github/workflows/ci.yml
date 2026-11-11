@@ -253,6 +253,43 @@ jobs:
           # Another account's lead is not there at all.
           if [ -n "$OTHER" ]; then test "$(view "$T" "lead?id=$OTHER")" = 404; fi
 
+      - name: GHL workflows, through the real worker - "Track with Fernway" makes a waybill, "Fernway lead" fires once
+        run: |
+          B=http://127.0.0.1:3103
+          K=ci-workflow-key-0123456789abcdef
+          LOC=$(psql -At -c "select location_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select r.key from routes r join ghl_connections c on c.account_id = r.account_id where c.location_id = '$LOC' and r.calendar_id is null order by r.id limit 1")
+          test -n "$ROUTE"
+          wf() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' -H "x-fernway-key: $2" --data-raw "$3" "$B/api/workflows/$1"; }
+          subscription() { echo '{"triggerData":{"id":"ci-trigger","key":"fernway_lead","eventType":"'"$1"'","targetUrl":"'"$2"'/workflows-marketplace/triggers/execute/ci/ci-trigger","filters":[{"field":"event","value":["signed"]}]},"extras":{"locationId":"'"$LOC"'","workflowId":"wf-listens"}}'; }
+          sub=$(subscription CREATED http://fake-ghl:4010)
+          # Without the app's header, or with another, nothing is kept.
+          test "$(wf trigger "" "$sub")" = 401
+          test "$(wf trigger wrong-key-0123456789abcdefghij "$sub")" = 401
+          # A trigger pointed anywhere but GHL's API is refused (the sub-account's token would go with it).
+          test "$(wf trigger $K "$(subscription CREATED https://attacker.example)")" = 422
+          test "$(wf trigger $K "$sub")" = 200
+          # The action's route list is the sub-account's own routes.
+          test "$(wf track/fields $K '{"data":{},"extras":{"locationId":"'"$LOC"'"}}')" = 200; grep -q "\"value\":\"$ROUTE\"" /tmp/r.json
+          act='{"data":{"route":"'"$ROUTE"'","email":"workflow-ci@example.com","firstName":"Wren"},"extras":{"locationId":"'"$LOC"'","contactId":"c_wf","workflowId":"wf-sends"}}'
+          test "$(wf track $K "$act")" = 201
+          WB=$(node -pe 'require("/tmp/r.json").waybill'); grep -q '"receipt":"http://localhost:3103/track/' /tmp/r.json
+          # Run again by GHL a moment later: the same waybill.
+          test "$(wf track $K "$act")" = 200; grep -q "\"waybill\":\"$WB\"" /tmp/r.json
+          # The worker delivers it; once signed, the listening workflow's trigger is called once, with the sub-account's token.
+          for i in $(seq 1 45); do
+            n=$(curl -s 127.0.0.1:4010/__fired | node -pe "JSON.parse(require('fs').readFileSync(0)).filter(f => f.body.waybill === '$WB').length")
+            [ "$n" -ge 1 ] && break; sleep 2
+          done
+          curl -s 127.0.0.1:4010/__fired | node -e "
+            const f = JSON.parse(require('fs').readFileSync(0)).filter(x => x.body.waybill === '$WB');
+            if (f.length !== 1) { console.log('fired', f.length, 'times'); process.exit(1); }
+            const [x] = f;
+            if (x.path !== '/workflows-marketplace/triggers/execute/ci/ci-trigger' || x.body.event !== 'signed' || !/^Bearer ./.test(x.auth || '') || x.body.email !== 'workflow-ci@example.com') { console.log(x); process.exit(1); }"
+          # Deleted in GHL: forgotten in Fernway.
+          test "$(wf trigger $K "$(subscription DELETED http://fake-ghl:4010)")" = 200
+          test "$(psql -At -c "select count(*) from workflow_triggers")" = 0
+
       - name: Break it, through the real queue, never reaching a GHL
         # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
         # so it proves none of Break it's calls ever leave Fernway.

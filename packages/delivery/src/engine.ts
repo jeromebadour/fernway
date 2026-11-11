@@ -40,7 +40,7 @@ const toWaybill = (s: { id: number; waybillYear: number; waybillSeq: number; sta
 });
 
 /** Picks up a lead: checks it, gives it a waybill number and puts its first try on the queue. */
-export async function ingestLead(deps: Deps, accountId: number, input: unknown): Promise<IngestResult> {
+export async function ingestLead(deps: Deps, accountId: number, input: unknown, opts: { viaWorkflow?: string } = {}): Promise<IngestResult> {
   const checked = checkLead(input);
   if (!checked.ok) return checked;
   const { lead } = checked;
@@ -65,6 +65,7 @@ export async function ingestLead(deps: Deps, accountId: number, input: unknown):
         source: lead.source,
         contact: lead.contact,
         bookingStart: lead.slot ? new Date(lead.slot) : null,
+        viaWorkflow: opts.viaWorkflow ?? null,
         state: "picked_up",
         nextTryAt: sql`now()`,
       })

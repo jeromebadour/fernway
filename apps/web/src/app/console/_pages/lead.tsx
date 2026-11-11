@@ -21,7 +21,7 @@ const scanWord: Record<string, { what: string; G: typeof GScan; tone: string }> 
   ghl_deleted: { what: "Deleted in GHL", G: GTrash, tone: "hz" },
 };
 const stepWord: Record<string, string> = { contact: "Contact", note: "Note", appointment: "Meeting", opportunity: "Pipeline" };
-const sourceWord: Record<string, string> = { form: "A website form", embed: "The embed form", wordpress: "WordPress", laravel: "Laravel", api: "Your code (API)", import: "An import", demo: "The demo", stripe: "A Stripe payment" };
+const sourceWord: Record<string, string> = { form: "A website form", embed: "The embed form", wordpress: "WordPress", laravel: "Laravel", api: "Your code (API)", import: "An import", demo: "The demo", stripe: "A Stripe payment", workflow: "A GHL workflow" };
 
 // One lead: who it is, how it came in and where it was sent, then every scan in order. A scan that called GHL opens to
 // show exactly what Fernway sent and what GHL answered, with how long GHL took.

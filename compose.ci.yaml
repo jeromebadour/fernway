@@ -17,6 +17,7 @@ services:
       FERNWAY_GHL_API: http://fake-ghl:4010
       FERNWAY_GHL_WEBHOOK_KEY: ${CI_GHL_WEBHOOK_KEY:-}
       GHL_SSO_KEY: ci-ghl-shared-secret
+      FERNWAY_WORKFLOW_KEY: ci-workflow-key-0123456789abcdef
   worker:
     environment:
       FERNWAY_GHL_API: http://fake-ghl:4010
