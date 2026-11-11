@@ -17,3 +17,5 @@ export * from "./billing.js";
 export * from "./account.js";
 export * from "./mail.js";
 export * from "./alerts.js";
+export * from "./console.js";
+export * from "./manage.js";

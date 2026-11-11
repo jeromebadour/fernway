@@ -2,11 +2,12 @@
 // The one field every form uses: a glyph for what the field holds (each kind its own), the label, the box, and the
 // helps under it (a hint, an error, or a suggestion with a button that applies it).
 import type { ReactNode } from "react";
-import { GBuilding, GCaps, GCheck, GClock, GGlobe, GLock, GMail, GNote, GPhone, GScan, GUser } from "./glyphs";
+import { GBuilding, GCalendar, GCaps, GCheck, GClock, GGlobe, GKey, GLock, GMail, GNote, GPhone, GPrice, GRoute, GScan, GShield, GStage, GUser } from "./glyphs";
 
-export type FieldKind = "name" | "company" | "email" | "password" | "phone" | "website" | "message" | "waybill" | "zone";
+export type FieldKind = "name" | "company" | "email" | "password" | "phone" | "website" | "message" | "waybill" | "zone" | "route" | "tags" | "stage" | "calendar" | "role" | "key";
 const glyphs: Record<FieldKind, (p: { size?: number }) => ReactNode> = {
   name: GUser, company: GBuilding, email: GMail, password: GLock, phone: GPhone, website: GGlobe, message: GNote, waybill: GScan, zone: GClock,
+  route: GRoute, tags: GPrice, stage: GStage, calendar: GCalendar, role: GShield, key: GKey,
 };
 
 export function Field({ kind, label, aside, half, area, bad, hint, error, suggest, children, after }: {

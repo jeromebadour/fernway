@@ -45,10 +45,11 @@ const STATE_TTL = 15 * 60_000;
 // Refresh a little before GHL's expiry, so no request leaves with a token about to lapse.
 const REFRESH_MARGIN = 5 * 60_000;
 
-export type ConnectState = { accountId: number; nonce: string };
+// From the console, the person who started it rides along, so the audit log can say who connected GHL.
+export type ConnectState = { accountId: number; nonce: string; by?: { userId: number; name: string } };
 
-export function connectState(cfg: OAuthConfig, accountId: number): string {
-  return signValue(cfg.key, "connect", { accountId, nonce: crypto.randomUUID() }, STATE_TTL);
+export function connectState(cfg: OAuthConfig, accountId: number, by?: { userId: number; name: string }): string {
+  return signValue(cfg.key, "connect", { accountId, nonce: crypto.randomUUID(), ...(by ? { by } : {}) }, STATE_TTL);
 }
 
 export function readConnectState(cfg: OAuthConfig, token: string | null | undefined) {

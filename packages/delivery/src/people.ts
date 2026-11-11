@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { and, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "./db.js";
-import { accounts, emailLinks, memberships, sessions, users, type Role } from "./schema.js";
+import { accounts, emailLinks, invites, memberships, sessions, users, type Role } from "./schema.js";
 
 const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number, opts: object) => Promise<Buffer>;
 const N = 2 ** 15, R = 8, P = 1, LEN = 64;
@@ -181,12 +181,14 @@ export async function updateProfile(db: Db, who: { userId: number; accountId: nu
   return { ok: true };
 }
 
-/** Ended or run-out sign-ins are kept 30 days (Devices lists them), then deleted; used or run-out email links after a
- *  day. Returns how many rows went. Run hourly by the worker. */
-export async function forgetOldSignIns(db: Db): Promise<{ sessions: number; links: number }> {
+/** Ended or run-out sign-ins are kept 30 days (Devices lists them), then deleted; used or run-out email links and team
+ *  invites after a day. Returns how many rows went. Run hourly by the worker. */
+export async function forgetOldSignIns(db: Db): Promise<{ sessions: number; links: number; invites: number }> {
   const s = await db.delete(sessions)
     .where(sql`coalesce(${sessions.endedAt}, ${sessions.expiresAt}) < now() - interval '30 days'`).returning({ id: sessions.id });
   const l = await db.delete(emailLinks)
     .where(sql`coalesce(${emailLinks.usedAt}, ${emailLinks.expiresAt}) < now() - interval '1 day'`).returning({ id: emailLinks.id });
-  return { sessions: s.length, links: l.length };
+  const i = await db.delete(invites)
+    .where(sql`coalesce(${invites.usedAt}, ${invites.cancelledAt}, ${invites.expiresAt}) < now() - interval '1 day'`).returning({ id: invites.id });
+  return { sessions: s.length, links: l.length, invites: i.length };
 }

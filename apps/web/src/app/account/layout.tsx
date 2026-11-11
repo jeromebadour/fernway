@@ -3,10 +3,11 @@ import type { ReactNode } from "react";
 import "@/ui/site.css";
 import "@/ui/forms.css";
 import "@/ui/account.css";
+import "@/ui/console.css";
 import { accountsOrNotFound } from "@/lib/accounts-on";
 import { requirePerson } from "@/lib/session";
 import { Notice } from "@/ui/notice";
-import { GMark } from "@/ui/glyphs";
+import { GGrid, GMark } from "@/ui/glyphs";
 import { Suspense } from "react";
 import { SignOut } from "./sign-out";
 import { AccountNav } from "./nav";
@@ -24,6 +25,7 @@ export default async function AccountLayout({ children }: { children: ReactNode 
         <Link className="wb-brand" href="/"><GMark /><span>FERNWAY</span></Link>
         <span className="ac-where">Account</span>
         <div className="ac-me">
+          <Link className="cn-to" href="/console"><GGrid size={15} />Console</Link>
           <span className="wb-ava ac-ava">{initials}</span>
           <span className="ac-me-who"><b>{m.name}</b><em>{m.accountName} · {m.role.charAt(0).toUpperCase() + m.role.slice(1)}</em></span>
           <SignOut />

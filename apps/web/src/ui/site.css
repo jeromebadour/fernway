@@ -341,6 +341,7 @@
 .pg a:hover { border-color: rgba(92,200,184,0.45); }
 .pg a[aria-current="page"] { color: var(--go-ink) !important; background: var(--go); border-color: var(--go); }
 .pg-step svg { color: var(--input); }
+.pg-gap { padding: 0 4px; font: 500 14px var(--font-mono); color: var(--faint); }
 .pg-step:first-child svg { transform: scaleX(-1); }
 /* The landing's builder band. */
 .wb-maker-grid { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 64px; align-items: center; }

@@ -12,16 +12,36 @@ export function pageOf(raw: string | string[] | undefined, total: number) {
   return Number.isInteger(n) && n >= 1 ? Math.min(n, last) : 1;
 }
 
-export function Pager({ path, page, total }: { path: string; page: number; total: number }) {
-  const last = Math.ceil(total / PAGE_SIZE);
+/** The pages to show: the first, the last, and two either side of this one; a gap in between reads as "...". */
+export function pageWindow(page: number, last: number): (number | "gap")[] {
+  const keep = new Set([1, last, page - 2, page - 1, page, page + 1, page + 2].filter((p) => p >= 1 && p <= last));
+  const out: (number | "gap")[] = [];
+  let prev = 0;
+  for (const p of [...keep].sort((a, b) => a - b)) {
+    if (p - prev > 1) out.push("gap");
+    out.push(p);
+    prev = p;
+  }
+  return out;
+}
+
+export function Pager({ path, page, total, size = PAGE_SIZE, query = {} }: {
+  path: string; page: number; total: number; size?: number; query?: Record<string, string | undefined>;
+}) {
+  const last = Math.ceil(total / size);
   if (last <= 1) return null;
-  const href = (p: number) => (p === 1 ? path : `${path}?page=${p}`);
+  // The list's own filters ride along on every page link.
+  const href = (p: number) => {
+    const q = new URLSearchParams(Object.entries(query).filter((e): e is [string, string] => !!e[1]));
+    if (p > 1) q.set("page", String(p));
+    return q.size ? `${path}?${q}` : path;
+  };
   return (
     <nav className="pg" aria-label="Pages">
       {page > 1 && <Link className="pg-step" href={href(page - 1)}><GJump size={13} />Previous</Link>}
-      {Array.from({ length: last }, (_, i) => i + 1).map((p) => (
-        <Link key={p} href={href(p)} className="pg-n" aria-current={p === page ? "page" : undefined}>{p}</Link>
-      ))}
+      {pageWindow(page, last).map((p, i) => p === "gap"
+        ? <span key={`g${i}`} className="pg-gap" aria-hidden="true">...</span>
+        : <Link key={p} href={href(p)} className="pg-n" aria-current={p === page ? "page" : undefined}>{p}</Link>)}
       {page < last && <Link className="pg-step" href={href(page + 1)}>Next<GJump size={13} /></Link>}
     </nav>
   );
