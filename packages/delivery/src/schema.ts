@@ -173,7 +173,7 @@ export const shipments = pgTable("shipments", {
 });
 
 export type Step = "contact" | "note" | "appointment" | "opportunity";
-export const scanKinds = ["picked_up", "checked", "handed", "signed", "retry_scheduled", "held", "returned", "resent"] as const;
+export const scanKinds = ["picked_up", "checked", "handed", "signed", "retry_scheduled", "held", "returned", "resent", "ghl_moved", "ghl_changed", "ghl_deleted"] as const;
 export type ScanKind = (typeof scanKinds)[number];
 
 export const scans = pgTable("scans", {
@@ -297,4 +297,15 @@ export const incidents = pgTable("incidents", {
   acknowledgedBy: bigint("acknowledged_by", { mode: "number" }),
   acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
   note: text("note"),
+});
+
+export const ghlEvents = pgTable("ghl_events", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  webhookId: text("webhook_id").notNull().unique(),
+  type: text("type").notNull(),
+  locationId: text("location_id"),
+  accountId: bigint("account_id", { mode: "number" }),
+  leads: integer("leads").notNull().default(0),
+  summary: text("summary").notNull().default(""),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
 });

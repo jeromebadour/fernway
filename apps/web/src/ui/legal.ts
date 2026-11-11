@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.3",
+  version: "1.4",
   effective: "11 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -47,6 +47,7 @@ export const privacy: LegalDoc = {
         "**Your plan:** which plan the account is on and its billing period, the Stripe customer and subscription it belongs to, and each invoice as Stripe reports it (number, date, amount, state, and Stripe's links to it). Never a card number: cards are typed into Stripe's own page, never Fernway's.",
         "**The account's own leads and API keys,** and their receipts.",
         "**Your team:** who is in the account and in which role, and each open invite (the email it went to, the role, who sent it). An invite is deleted a day after it is used, cancelled or runs out. Removing someone from the team deletes their sign-in at once.",
+        "**What GHL tells Fernway:** when something happens in the account's GoHighLevel to a lead Fernway delivered (a deal moved, won or lost, a meeting moved or cancelled, a contact deleted), GoHighLevel tells Fernway. Fernway keeps a one-line summary of each, never the contact's details from it, for 30 days, and notes it on that lead's waybill. The public tracking receipt never shows it.",
         "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
         "The [Your record](/account/record) page in the account area shows all of this beside what GoHighLevel holds, and downloads it as a file.",
       ],
@@ -129,7 +130,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 says what Fernway's staff see. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 adds what GHL tells Fernway. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

@@ -1,7 +1,7 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GBuilding, GCheck, GClock, GGlobe, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
+import { GBuilding, GCalendar, GCheck, GStage, GTrash, GClock, GGlobe, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
 import { day, time } from "@/ui/when";
 import { ResendButton } from "../actions";
 import { stateWord } from "../states";
@@ -16,6 +16,9 @@ const scanWord: Record<string, { what: string; G: typeof GScan; tone: string }> 
   resent: { what: "Resent", G: GResend, tone: "re" },
   held: { what: "Held", G: GHold, tone: "hz" },
   returned: { what: "Returned", G: GHold, tone: "hz" },
+  ghl_moved: { what: "Moved in GHL", G: GStage, tone: "in" },
+  ghl_changed: { what: "Changed in GHL", G: GCalendar, tone: "in" },
+  ghl_deleted: { what: "Deleted in GHL", G: GTrash, tone: "hz" },
 };
 const stepWord: Record<string, string> = { contact: "Contact", note: "Note", appointment: "Meeting", opportunity: "Pipeline" };
 const sourceWord: Record<string, string> = { form: "A website form", embed: "The embed form", wordpress: "WordPress", laravel: "Laravel", api: "Your code (API)", import: "An import", demo: "The demo", stripe: "A Stripe payment" };
@@ -31,6 +34,19 @@ export async function Lead({ who, params }: { who: ConsoleWho; params: Promise<{
   const c = v.contact;
   const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || "No name";
   const receipt = who.data.receipt(v.shipmentId);
+  // A stage moved in GHL is named the way GHL names it now (asked only when the lead has such a move).
+  const stageNames = new Map<string, string>();
+  if (v.scans.some((x) => x.kind === "ghl_moved" && x.note?.startsWith("moved to stage "))) {
+    const ch = await who.data.choices();
+    if (!("problem" in ch)) for (const p of ch.pipelines) for (const st of p.stages) stageNames.set(st.id, `${p.name} › ${st.name}`);
+  }
+  const noteOf = (kind: string, note: string | null) => {
+    if (kind === "ghl_moved" && note?.startsWith("moved to stage ")) {
+      const id = note.slice("moved to stage ".length);
+      return `to ${stageNames.get(id) ?? `stage ${id}`}`;
+    }
+    return note;
+  };
   const fields: [typeof GUser, string, string | undefined][] = [
     [GMail, "Email", c.email], [GPhone, "Phone", c.phone], [GBuilding, "Company", c.companyName], [GGlobe, "Website", c.website],
   ];
@@ -85,7 +101,7 @@ export async function Lead({ who, params }: { who: ConsoleWho; params: Promise<{
                   <span className={`cn-scan-g cn-${k.tone}`}><k.G size={14} /></span>
                   <span className="cn-scan-w">
                     <b>{k.what}{sc.step ? ` · ${stepWord[sc.step] ?? sc.step}` : ""}</b>
-                    <em>{[sc.try ? `try ${sc.try}` : null, sc.status !== null ? `GHL ${sc.status}` : null, sc.ms !== null ? `${sc.ms} ms` : null, sc.note].filter(Boolean).join(" · ")}</em>
+                    <em>{[sc.try ? `try ${sc.try}` : null, sc.status !== null ? `GHL ${sc.status}` : null, sc.ms !== null ? `${sc.ms} ms` : null, noteOf(sc.kind, sc.note)].filter(Boolean).join(" · ")}</em>
                   </span>
                 </>
               );

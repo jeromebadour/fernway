@@ -11,6 +11,7 @@ import {
   createGhlClient,
   createQueue,
   deliverTry,
+  forgetOldGhlEvents,
   forgetOldSignIns,
   keyFrom,
   machine,
@@ -134,6 +135,9 @@ setInterval(() => {
   forgetOldSignIns(db)
     .then((r) => (r.sessions || r.links || r.invites) && console.log(`worker: old sign-ins removed ${r.sessions}, email links ${r.links}, invites ${r.invites}`))
     .catch((e) => console.error(`worker: sign-in clean-up failed: ${e.message}`));
+  forgetOldGhlEvents(db)
+    .then((n) => n && console.log(`worker: GHL events older than 30 days removed ${n}`))
+    .catch((e) => console.error(`worker: GHL event clean-up failed: ${e.message}`));
 }, PURGE_MS);
 
 // The watchers, every minute: a watcher gone wrong opens an incident (one per watcher), raised if it gets worse and

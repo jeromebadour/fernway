@@ -60,6 +60,9 @@ const scanMeaning: Record<(typeof scanKinds)[number], string> = {
   held: "GHL refused it for a reason a retry can't fix.",
   returned: "Out of tries after 24 hours.",
   resent: "Someone sent a held lead again after fixing it.",
+  ghl_moved: "In GHL, someone moved its deal to another stage, or marked it won or lost.",
+  ghl_changed: "In GHL, its meeting was moved, confirmed or cancelled.",
+  ghl_deleted: "In GHL, its contact, deal or meeting was deleted.",
 };
 
 type Op = { summary: string; description: string; requestBody?: { content: { "application/json": { schema: Js; example: unknown } } }; responses: Record<string, { description: string; content: { "application/json": { example?: unknown } } }> };

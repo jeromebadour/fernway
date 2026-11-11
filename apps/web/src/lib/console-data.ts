@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  auditView, boardView, connectionView, leadView, routesView, shipmentByWaybill, syncLog, teamView, trackToken,
+  auditView, boardView, connectionView, ghlEventsFor, leadView, routesView, shipmentByWaybill, syncLog, teamView, trackToken,
   type AuditGroup, type LogState, type Role,
 } from "@fernway/delivery";
 import type { When } from "@/ui/when";
@@ -19,6 +19,7 @@ export type ConsoleData = {
   routes(): ReturnType<typeof routesView>;
   choices(): Promise<Choices>;
   connection(): ReturnType<typeof connectionView>;
+  ghlEvents(): ReturnType<typeof ghlEventsFor>;
   team(): ReturnType<typeof teamView>;
   audit(page: number, group?: AuditGroup): ReturnType<typeof auditView>;
   waybillId(waybill: string): Promise<number | null>;
@@ -43,6 +44,7 @@ export async function consoleWho(back: string): Promise<ConsoleWho> {
       routes: () => routesView(db, id),
       choices: () => ghlChoices(id),
       connection: () => connectionView(db, id),
+      ghlEvents: () => ghlEventsFor(db, id),
       team: () => teamView(db, id),
       audit: (page, group) => auditView(db, id, page, group),
       waybillId: (wb) => shipmentByWaybill(db, id, wb),

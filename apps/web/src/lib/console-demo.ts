@@ -148,6 +148,12 @@ function leadView(now: number, id: number): LeadView | null {
     scans.push(l.route.stageId
       ? scan("signed", l.signedAt!, { step: "opportunity", try: l.tries, status: 201, ms: 420 + (l.i % 400), sent: oppSent, answer: `{"new":true,"opportunity":{"id":"${oid}"}}`, note: `${l.route.label}: stage set` })
       : scan("signed", l.signedAt!, { try: l.tries, note: "contact in GHL; this route sets no stage" }));
+    // Later, in GHL: sales moved some deals on, and GHL told Fernway.
+    const moved = l.signedAt! + (3 * 60 + (l.i % 50)) * MIN;
+    if (l.route.stageId && l.i % 9 === 0 && moved < now) {
+      scans.push(scan("ghl_moved", moved, { note: "moved to stage stage_plan" }));
+      if (l.i % 18 === 0 && moved + 26 * 60 * MIN < now) scans.push(scan("ghl_moved", moved + 26 * 60 * MIN, { note: "marked won" }));
+    }
   } else if (l.state === "held") {
     scans.push(scan("held", l.updated, { step: "opportunity", try: 1, status: 422, ms: 340, sent: oppSent, answer: l.reason, note: readableOf(l.reason!) }));
   } else if (l.state === "waiting") {
@@ -227,6 +233,14 @@ export function demoConsoleWho(): ConsoleWho {
         calls: { ok, refused: leads.filter((l) => l.state === "held").length, failed: leads.filter((l) => l.tries === 2).length, none: 0, medianMs: 412, lastAt: iso(all(now)[0]!.updated) },
       };
     },
+    ghlEvents: async () => [
+      { id: 6, type: "OpportunityStageUpdate", leads: 1, summary: "A deal moved to another stage", at: iso(now - 12 * MIN) },
+      { id: 5, type: "AppointmentUpdate", leads: 1, summary: "A meeting confirmed", at: iso(now - 95 * MIN) },
+      { id: 4, type: "OpportunityStatusUpdate", leads: 1, summary: "A deal marked won", at: iso(now - 4 * 60 * MIN) },
+      { id: 3, type: "OpportunityStageUpdate", leads: 1, summary: "A deal moved to another stage", at: iso(now - 6 * 60 * MIN) },
+      { id: 2, type: "ContactDelete", leads: 0, summary: "A contact deleted", at: iso(now - 26 * 60 * MIN) },
+      { id: 1, type: "AppointmentUpdate", leads: 1, summary: "A meeting cancelled", at: iso(now - 30 * 60 * MIN) },
+    ],
     team: async () => ({
       members: [
         { userId: 1, name: "Maya Lindqvist", email: "maya.lindqvist@harborphysio.com", role: "owner", joinedAt: iso(now - 42 * 1440 * MIN), lastSeenAt: iso(now - 2 * MIN), twoStep: true },
