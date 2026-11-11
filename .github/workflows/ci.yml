@@ -348,8 +348,13 @@ jobs:
           # The operator console's public demo: invented data, read-only, open to anyone; the real one is a 404.
           curl -s $B/demo/operator | grep -q "Read-only demo"
           curl -s $B/demo/operator/accounts/37 | grep -q "Lumen Studio"
+          # And the customer console's: the same pages over an invented clinic, with no account behind it.
+          curl -s $B/demo/console | grep -q "Harbor Physio"
+          curl -s $B/demo/console/lead/918397 | grep -q "FW 26 18397"
+          curl -s "$B/demo/console/log?state=held" | grep -q "Held"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/console)" = 404
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/operator)" = 404
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots /demo/operator /demo/operator/staff; do
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots /demo/operator /demo/operator/staff /demo/console /demo/console/team; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 

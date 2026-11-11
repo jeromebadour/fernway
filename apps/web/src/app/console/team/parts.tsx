@@ -4,6 +4,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Ago } from "@/ui/ago";
+import { DemoSaid, useDemo } from "@/ui/demo-mode";
 import { Field } from "@/ui/field";
 import { GCheck, GClock, GClose, GLock, GMail, GShield, GSignUp, GTrash, GUser } from "@/ui/glyphs";
 
@@ -31,10 +32,13 @@ export function Team({ me, max, members, invites }: { me: { userId: number; role
   const [roleBusy, setRoleBusy] = useState<number | null>(null);
   const [roleProblem, setRoleProblem] = useState<string | null>(null);
   const can = me.role !== "member";
+  const demo = useDemo();
+  const [roleSaid, setRoleSaid] = useState<string | null>(null);
   const mayRemove = (x: Member) => x.userId !== me.userId && x.role !== "owner" && (me.role === "owner" || (me.role === "admin" && x.role === "member"));
   const open = (a: Ask) => { setAsk(a); requestAnimationFrame(() => askD.current?.showModal()); };
 
   async function role(x: Member, to: Role) {
+    if (demo) { setRoleSaid(`${x.name} is now ${to === "admin" ? "an admin" : "a member"}, and the audit log says who changed it.`); return; }
     setRoleBusy(x.userId); setRoleProblem(null);
     const r = await post("/api/console/team/role", { userId: x.userId, role: to });
     setRoleBusy(null);
@@ -49,6 +53,7 @@ export function Team({ me, max, members, invites }: { me: { userId: number; role
           onClick={() => { setN((k) => k + 1); requestAnimationFrame(() => inviteD.current?.showModal()); }}><GSignUp size={16} />Invite someone</button>}
       </div>
       {roleProblem && <p className="fm-error" role="alert">{roleProblem}</p>}
+      {roleSaid && <DemoSaid what={roleSaid} />}
 
       <table className="bl-table tm-table">
         <thead><tr><th>Person</th><th>Role</th><th>Two-step</th><th>Joined</th><th>Last seen</th><th><span className="bl-sr">Remove</span></th></tr></thead>
@@ -114,13 +119,17 @@ export function Team({ me, max, members, invites }: { me: { userId: number; role
 function AskIt({ a, close, done }: { a: Ask; close: () => void; done: () => void }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const demo = useDemo();
+  const [said, setSaid] = useState(false);
   return (
     <>
       <h2 id="tm-ask-h">{a.title}</h2>
       <p>{a.text}</p>
       {problem && <p className="fm-error" role="alert">{problem}</p>}
+      {said && <DemoSaid what={<>this happens at once and is written to the audit log.</>} />}
       <div className="fm-dialog-do">
         <button type="button" className="wb-ghost fm-btn ac-stop sc-stop-go" disabled={busy} onClick={async () => {
+          if (demo) { setSaid(true); return; }
           setBusy(true);
           const r = await post(a.path, a.body);
           setBusy(false);
@@ -138,8 +147,11 @@ function InviteForm({ owner, close, done }: { owner: boolean; close: () => void;
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [sent, setSent] = useState<{ to: string; mailed: boolean } | null>(null);
+  const demo = useDemo();
+  const [said, setSaid] = useState(false);
   async function go(e: React.FormEvent) {
     e.preventDefault();
+    if (demo) { setSaid(true); return; }
     setBusy(true); setProblem(null);
     const r = await post("/api/console/team/invite", { email, role });
     setBusy(false);
@@ -170,6 +182,7 @@ function InviteForm({ owner, close, done }: { owner: boolean; close: () => void;
           ))}
         </fieldset>
       </div>
+      {said && <DemoSaid what={<>they get an email with a link to join, good for 7 days, and the invite shows under Waiting to join.</>} />}
       <div className="fm-dialog-do">
         <button type="submit" className="wb-go fm-btn" disabled={busy || !email.includes("@")}>{busy ? <GClock size={16} /> : <GMail size={16} />}{busy ? "Sending" : "Send the invite"}</button>
         <button type="button" className="wb-ghost fm-btn" disabled={busy} onClick={close}><GClose size={16} />Not now</button>

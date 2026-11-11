@@ -167,3 +167,4 @@
   .op-staff td:nth-child(6) { grid-area: 5 / 1 / 6 / 3; }
   .op-links { justify-content: flex-start; }
 }
+.op-demo a + a { margin-left: 16px; }
