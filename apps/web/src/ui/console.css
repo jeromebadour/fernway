@@ -125,7 +125,7 @@
 .cn-scan-w em { display: block; margin-top: 2px; font: 400 13px var(--font-body); font-style: normal; color: var(--muted); }
 .cn-scan-open { align-self: center; margin-right: 4px; padding: 4px 9px; font: 500 12px var(--font-body); color: var(--input); border: 1px solid rgba(122,168,224,0.4); white-space: nowrap; }
 details[open] .cn-scan-open { color: var(--paper); border-color: var(--input); }
-.cn-call { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin: 0 0 14px 34px; }
+.cn-call { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 14px 34px; }
 .cn-call-k { margin: 0 0 6px; font: 500 10.5px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .cn-call pre { margin: 0; max-height: 260px; overflow: auto; padding: 12px 14px; font: 500 12.5px/1.5 var(--font-mono); color: #cfd8e3;
   background: #070c13; border: 1px solid var(--line); white-space: pre; }

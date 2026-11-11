@@ -3,6 +3,7 @@
 // own lists the stage it lands in and the calendar a picked time is booked on. Saving reads the page again.
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { DemoSaid, useDemo } from "@/ui/demo-mode";
 import { Field } from "@/ui/field";
 import { GClock, GClose, GPlus, GSave, GSliders } from "@/ui/glyphs";
 
@@ -45,6 +46,8 @@ function RouteDialog({ id, start, lists, close }: { id: string; start: RouteForm
   const [cal, setCal] = useState(start.calendarId ?? "");
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<Record<string, string>>({});
+  const demo = useDemo();
+  const [said, setSaid] = useState(false);
   const k = keyTouched ? key : slug(label);
   // A stage or calendar GHL no longer lists is kept as it is, and shown as such.
   const lostStage = start.stageId && !lists?.pipelines.some((p) => p.id === start.pipelineId && p.stages.some((s) => s.id === start.stageId));
@@ -52,6 +55,7 @@ function RouteDialog({ id, start, lists, close }: { id: string; start: RouteForm
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (demo) { setSaid(true); return; }
     setBusy(true); setProblems({});
     const [pipelineId, stageId] = stage ? stage.split("|") : [null, null];
     const body = { ...(making ? { key: k } : { id: start.id }), label, tags: tags.split(",").map((t) => t.trim()).filter(Boolean), pipelineId, stageId, calendarId: cal || null };
@@ -107,6 +111,7 @@ function RouteDialog({ id, start, lists, close }: { id: string; start: RouteForm
         </Field>
       </div>
       {problems.form && <p className="fm-error" role="alert">{problems.form}</p>}
+      {said && <DemoSaid what={<>the route is saved, the next lead on it goes the new way, and the change is written to the audit log.</>} />}
       <div className="fm-dialog-do">
         <button type="submit" className="wb-go fm-btn" disabled={busy || !label.trim() || !k}>{busy ? <GClock size={16} /> : making ? <GPlus size={16} /> : <GSave size={16} />}{busy ? "Saving" : making ? "Make the route" : "Save the route"}</button>
         <button type="button" className="wb-ghost fm-btn" disabled={busy} onClick={close}><GClose size={16} />Not now</button>

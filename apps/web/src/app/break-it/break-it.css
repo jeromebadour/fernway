@@ -33,3 +33,18 @@
   .bk-facts, .bk-picks { grid-template-columns: 1fr; }
   .bk-do .fm-btn { width: 100%; justify-content: center; }
 }
+
+/* The two console demos, below the failures */
+.bk-more { padding-top: 0; }
+.bk-more .bl-h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font: 600 22px var(--font-body); color: var(--paper); }
+.bk-more .bl-h2 svg { color: var(--input); }
+.bk-more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.bk-more-card { display: grid; gap: 8px; padding: 20px 22px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft)); border: 1px solid rgba(190,210,232,0.14); border-top: 3px solid var(--go); }
+.bk-more-card:hover { border-color: rgba(190,210,232,0.3); border-top-color: var(--go); }
+.bk-more-k { display: flex; align-items: center; gap: 8px; font: 600 12px var(--font-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.bk-more-k svg { color: var(--go); }
+.bk-more-card b { font: 600 19px var(--font-body); color: var(--paper); }
+.bk-more-card em { font: 400 15px/1.55 var(--font-body); font-style: normal; color: #cfd8e3; }
+.bk-more-go { display: inline-flex; align-items: center; gap: 7px; margin-top: 4px; font-size: 15px; color: var(--paper); }
+.bk-more-go svg { color: var(--go); }
+@media (max-width: 700px) { .bk-more-grid { grid-template-columns: 1fr; } }
