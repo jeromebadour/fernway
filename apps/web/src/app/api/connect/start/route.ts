@@ -12,13 +12,17 @@ export async function GET(request: Request) {
   const t = new URL(request.url).searchParams.get("t");
   let accountId: number | null = null;
   let by: { userId: number; name: string } | undefined;
+  // Signed in as a member: back to the console, which says who may connect. Anyone else without a good link: the
+  // public connection page, as before.
+  let refused = "/connected?problem=link";
   if (t) {
     accountId = verifyValue<{ accountId: number }>(cfg.key, "setup", t)?.accountId ?? null;
   } else if (accountsOn()) {
     const p = await currentPerson();
     if (p && p.role !== "member") { accountId = p.accountId; by = { userId: p.userId, name: p.name }; }
+    else if (p) refused = "/console/ghl?problem=not-allowed";
   }
-  if (accountId === null) return Response.redirect(new URL(t ? "/connected?problem=link" : "/console/ghl?problem=not-allowed", cfg.redirectUri), 303);
+  if (accountId === null) return Response.redirect(new URL(refused, cfg.redirectUri), 303);
   const state = connectState(cfg, accountId, by);
   const headers = new Headers({ Location: authorizeUrl(cfg, state) });
   headers.append("Set-Cookie", `${CONNECT_COOKIE}=${state}; Path=/api/connect; Max-Age=900; HttpOnly; Secure; SameSite=Lax`);
