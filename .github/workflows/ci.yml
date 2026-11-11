@@ -260,7 +260,7 @@ jobs:
           LOC=$(psql -At -c "select location_id from ghl_connections order by account_id limit 1")
           ROUTE=$(psql -At -c "select r.key from routes r join ghl_connections c on c.account_id = r.account_id where c.location_id = '$LOC' and r.calendar_id is null order by r.id limit 1")
           test -n "$ROUTE"
-          wf() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' -H "x-fernway-key: $2" --data-raw "$3" "$B/api/workflows/$1"; }
+          wf() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' -H "authorization: $2" --data-raw "$3" "$B/api/workflows/$1"; }
           subscription() { echo '{"triggerData":{"id":"ci-trigger","key":"fernway_lead","eventType":"'"$1"'","targetUrl":"'"$2"'/workflows-marketplace/triggers/execute/ci/ci-trigger","filters":[{"field":"event","value":["signed"]}]},"extras":{"locationId":"'"$LOC"'","workflowId":"wf-listens"}}'; }
           sub=$(subscription CREATED http://fake-ghl:4010)
           # Without the app's header, or with another, nothing is kept.
