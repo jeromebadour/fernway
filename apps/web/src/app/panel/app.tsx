@@ -18,22 +18,22 @@ const tabs: { k: LogState | ""; w: string }[] = [
 ];
 const scanWord: Record<string, { w: string; G: typeof GScan; tone: string }> = {
   picked_up: { w: "Picked up", G: GScan, tone: "in" }, checked: { w: "Checked", G: GCheck, tone: "ok" },
-  handed: { w: "Handed to GHL", G: GHand, tone: "in" }, signed: { w: "Signed for", G: GManifest, tone: "ok" },
-  retry_scheduled: { w: "GHL said not now · re-send booked", G: GResend, tone: "re" }, resent: { w: "Resent", G: GResend, tone: "re" },
+  handed: { w: "Handed to the CRM", G: GHand, tone: "in" }, signed: { w: "Signed for", G: GManifest, tone: "ok" },
+  retry_scheduled: { w: "The CRM said not now · re-send booked", G: GResend, tone: "re" }, resent: { w: "Resent", G: GResend, tone: "re" },
   held: { w: "Held", G: GHold, tone: "hz" }, returned: { w: "Returned", G: GHold, tone: "hz" },
-  ghl_moved: { w: "Moved in GHL", G: GStage, tone: "in" }, ghl_changed: { w: "Changed in GHL", G: GCalendar, tone: "in" },
-  ghl_deleted: { w: "Deleted in GHL", G: GTrash, tone: "hz" },
+  ghl_moved: { w: "Moved in the CRM", G: GStage, tone: "in" }, ghl_changed: { w: "Changed in the CRM", G: GCalendar, tone: "in" },
+  ghl_deleted: { w: "Deleted in the CRM", G: GTrash, tone: "hz" },
 };
 const stepWord: Record<string, string> = { contact: "Contact", note: "Note", appointment: "Meeting", opportunity: "Pipeline" };
 const closedWord: Record<string, { h: string; p: string }> = {
-  "not-connected": { h: "This sub-account is not connected to Fernway", p: "Connect it from your Fernway console (GHL page), then open this page again." },
+  "not-connected": { h: "This sub-account is not connected to Fernway", p: "Connect it from your Fernway console, then open this page again." },
   agency: { h: "Open Fernway from a sub-account", p: "Fernway carries leads into one sub-account at a time. Switch to the sub-account, then open Fernway from its menu." },
-  payload: { h: "GHL's note about you could not be read", p: "Reload the page. If it keeps happening, the app's shared secret may have changed; tell support@jeromebadour.com." },
-  "not-set-up": { h: "Fernway inside GHL is not switched on yet", p: "Use the Fernway console at fernway.jeromebadour.com meanwhile." },
+  payload: { h: "Your sign-in could not be read", p: "Reload the page. If it keeps happening, the app's shared secret may have changed; tell support@jeromebadour.com." },
+  "not-set-up": { h: "This panel is not switched on yet", p: "Use the Fernway console at fernway.jeromebadour.com meanwhile." },
   busy: { h: "Too many openings at once", p: "Wait a minute, then reload." },
 };
 
-const fallback = { h: "GHL's note about you could not be read", p: "Reload the page. If it keeps happening, tell support@jeromebadour.com." };
+const fallback = { h: "Your sign-in could not be read", p: "Reload the page. If it keeps happening, tell support@jeromebadour.com." };
 
 export function GhlApp() {
   const [phase, setPhase] = useState<Phase>({ at: "asking" });
@@ -46,7 +46,7 @@ export function GhlApp() {
     const heard = async (e: MessageEvent) => {
       if (done || e.source !== window.parent || e.data?.message !== "REQUEST_USER_DATA_RESPONSE") return;
       finish();
-      const r = await fetch("/api/ghl/app/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payload: e.data.payload }) });
+      const r = await fetch("/api/panel/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payload: e.data.payload }) });
       const b = await r.json().catch(() => ({})) as { ok?: boolean; why?: string; ticket?: string; account?: { name: string }; user?: string };
       setPhase(b.ok && b.ticket ? { at: "in", s: { ticket: b.ticket, account: b.account?.name ?? "", user: b.user ?? "" } } : { at: "closed", why: b.why ?? "payload" });
     };
@@ -67,8 +67,8 @@ export function GhlApp() {
     <main className="ga ga-center">
       <div className="ga-card ga-gate">
         <p className="ga-brand"><GMark size={22} />Fernway</p>
-        {phase.at === "asking" && <><h1>Asking GHL who you are</h1><p>One moment.</p></>}
-        {phase.at === "outside" && <><h1>This page lives inside GoHighLevel</h1><p>Open Fernway from the left menu of a connected sub-account. Outside GHL, use the console instead.</p>
+        {phase.at === "asking" && <><h1>Checking who you are</h1><p>One moment.</p></>}
+        {phase.at === "outside" && <><h1>This panel lives inside your CRM</h1><p>Open Fernway from the left menu of a connected sub-account. Outside it, use the console instead.</p>
           <a className="ga-btn" href="/console" target="_top"><GJump size={15} />Open the Fernway console</a></>}
         {phase.at === "closed" && <><h1>{closed.h}</h1><p>{closed.p}</p></>}
       </div>
@@ -98,12 +98,12 @@ function Inside({ s, again }: { s: Session; again: () => void }) {
     if (state) u.set("state", state);
     if (q) u.set("q", q);
     let live = true;
-    call(`/api/ghl/app/view?${u}`).then((r) => { if (live && r?.status === 200) { setBoard(r.body.board); setLog(r.body.log); } });
+    call(`/api/panel/view?${u}`).then((r) => { if (live && r?.status === 200) { setBoard(r.body.board); setLog(r.body.log); } });
     return () => { live = false; };
   }, [call, state, q, page, tick]);
 
   const resend = async (what: { id: number } | { reason: string }) => {
-    const r = await call("/api/ghl/app/resend", { method: "POST", body: JSON.stringify(what) });
+    const r = await call("/api/panel/resend", { method: "POST", body: JSON.stringify(what) });
     if (!r) return;
     setSaid(r.body.ok ? `${r.body.resent === 1 ? "1 lead" : `${r.body.resent} leads`} sent again. Watch for the signature.` : String(r.body.problems?.[0] ?? "Could not resend").replace(/^form: /, ""));
     setTick((t) => t + 1);
@@ -203,7 +203,7 @@ function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; c
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let live = true;
-    call(`/api/ghl/app/lead?id=${id}`).then((r) => { if (live && r) setV(r.status === 200 && r.body.lead ? { lead: r.body.lead, receipt: r.body.receipt ?? "" } : "gone"); });
+    call(`/api/panel/lead?id=${id}`).then((r) => { if (live && r) setV(r.status === 200 && r.body.lead ? { lead: r.body.lead, receipt: r.body.receipt ?? "" } : "gone"); });
     return () => { live = false; };
   }, [call, id, tick]);
   const back = <button type="button" className="ga-back" onClick={close}><GJump size={14} />All deliveries</button>;
@@ -227,7 +227,7 @@ function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; c
           {v.receipt && <a className="ga-btn ga-btn-ghost" href={v.receipt} target="_blank" rel="noopener"><GOut size={15} />Receipt</a>}
         </div>
       </header>
-      {l.reason && <p className="ga-card ga-held"><GHold size={16} /><span><b>GHL said:</b> {l.reason}</span></p>}
+      {l.reason && <p className="ga-card ga-held"><GHold size={16} /><span><b>The CRM said:</b> {l.reason}</span></p>}
       {l.state === "waiting" && l.nextTryAt && <p className="ga-card ga-held ga-wait"><GClock size={16} /><span>Try {l.tries + 1} of 8 is booked.</span></p>}
       <section className="ga-card ga-scans">
         <h2><GRoute size={16} />Every scan</h2>
@@ -238,7 +238,7 @@ function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; c
               <li key={sc.id}>
                 <span className={`ga-dot ga-${k.tone}`}><k.G size={13} /></span>
                 <span><b>{k.w}{sc.step ? ` · ${stepWord[sc.step] ?? sc.step}` : ""}</b>
-                  <span className="ga-muted">{[sc.try ? `try ${sc.try}` : null, sc.status !== null ? `GHL ${sc.status}` : null, sc.ms !== null ? `${sc.ms} ms` : null, sc.note].filter(Boolean).join(" · ")}</span></span>
+                  <span className="ga-muted">{[sc.try ? `try ${sc.try}` : null, sc.status !== null ? `answer ${sc.status}` : null, sc.ms !== null ? `${sc.ms} ms` : null, sc.note].filter(Boolean).join(" · ")}</span></span>
                 <span className="ga-muted ga-at"><Ago iso={sc.at} /></span>
               </li>
             );
