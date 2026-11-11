@@ -262,3 +262,39 @@ export const invites = pgTable("invites", {
   usedAt: timestamp("used_at", { withTimezone: true }),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 });
+
+export const staffRoles = ["owner", "support", "viewer"] as const;
+export type StaffRole = (typeof staffRoles)[number];
+export const staff = pgTable("staff", {
+  userId: bigint("user_id", { mode: "number" }).primaryKey(),
+  role: text("role").$type<StaffRole>().notNull(),
+  addedBy: bigint("added_by", { mode: "number" }),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const operatorActions = ["staff.added", "staff.role", "staff.removed", "account.synced", "account.trial_extended",
+  "incident.acknowledged", "incident.noted"] as const;
+export type OperatorAction = (typeof operatorActions)[number];
+export const operatorAudit = pgTable("operator_audit", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" }),
+  who: text("who").notNull(),
+  action: text("action").$type<OperatorAction>().notNull(),
+  accountId: bigint("account_id", { mode: "number" }),
+  target: text("target"),
+  detail: text("detail").notNull().default(""),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const incidents = pgTable("incidents", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  watcher: text("watcher").notNull(),
+  level: text("level").$type<"warn" | "down">().notNull(),
+  openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  firstReading: text("first_reading").notNull(),
+  worstReading: text("worst_reading").notNull(),
+  acknowledgedBy: bigint("acknowledged_by", { mode: "number" }),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  note: text("note"),
+});

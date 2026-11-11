@@ -325,6 +325,9 @@ jobs:
           for p in / /trial /pricing /sign-in /sign-up /reset; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
+          # The operator console doesn't exist for a customer: its pages and actions answer 404.
+          for p in /operator /operator/accounts /operator/staff; do test "$(code $p)" = 404; done
+          test "$(post /api/operator/incidents/ack '{"id":1,"code":"123456"}')" = 404
           # Back to how production runs: accounts off.
           $COMPOSE up -d --no-build web
           for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3103/api/health && break; sleep 2; done
@@ -342,7 +345,11 @@ jobs:
           curl -s $B/changelog | grep -qF "$(git log -1 --format=%h)"
           # Accounts are pictured but not wired yet: their pages stay hidden.
           for p in /sign-up /sign-in /account; do test "$(curl -s -o /dev/null -w '%{http_code}' $B$p)" = 404; done
-          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots; do
+          # The operator console's public demo: invented data, read-only, open to anyone; the real one is a 404.
+          curl -s $B/demo/operator | grep -q "Read-only demo"
+          curl -s $B/demo/operator/accounts/37 | grep -q "Lumen Studio"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/operator)" = 404
+          for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots /demo/operator /demo/operator/staff; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
 
