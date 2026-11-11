@@ -166,7 +166,8 @@ export async function leadView(db: Db, accountId: number, shipmentId: number): P
 // ---------------------------------------------------------------------------------------------------------------
 // Resend and the audit log.
 
-export type Actor = { accountId: number; userId: number; name: string };
+// userId is null for someone acting from inside GHL (no Fernway sign-in), and for GHL itself.
+export type Actor = { accountId: number; userId: number | null; name: string };
 
 export async function audit(db: Db, a: Actor, action: AuditAction, target: { kind: AuditTarget; id: string } | null, detail = "") {
   await db.insert(auditLog).values({

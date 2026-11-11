@@ -70,7 +70,7 @@ export async function Audit({ who, searchParams }: { who: ConsoleWho; searchPara
                 <tr key={r.id}>
                   <td className="bl-num">{v.total - (v.page - 1) * 15 - i}</td>
                   <td className="cn-mono">{stamp(r.at, w)}</td>
-                  <td className="cn-who">{r.who}{r.userId === null && <em>no longer in the team</em>}</td>
+                  <td className="cn-who">{r.who}{r.userId === null && !r.who.endsWith(" · in GHL") && r.who !== "GHL" && <em>no longer in the team</em>}</td>
                   <td><span className={`ad-what cn-${s.tone}`}><s.G size={14} />{s.word}</span></td>
                   <td>{target(r)}</td>
                   <td className="ad-detail">{r.detail}</td>

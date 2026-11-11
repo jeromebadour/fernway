@@ -1,0 +1,103 @@
+/* Fernway inside GHL: GHL's own light look (white cards on pale grey, grey hairlines, blue for doing), so the page
+   reads as part of GHL; Fernway's state colours stay, darkened for a light ground. */
+html, body { background: #f2f4f7; color: #101828; }
+.ga { --line: #eaecf0; --mute: #667085; --blue: #155eef; --in: #2e6fb8; --ok: #2f7d3b; --re: #5b63c9; --hz: #a86a00;
+  font: 14px/1.45 "Instrument Sans", system-ui, sans-serif; max-width: 1180px; margin: 0 auto; padding: 20px 24px 40px; }
+.ga-center { min-height: 100vh; display: grid; place-items: center; }
+.ga-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+.ga-gate { max-width: 440px; padding: 28px; }
+.ga-gate h1 { font-size: 18px; margin: 14px 0 6px; }
+.ga-gate p { color: var(--mute); margin: 0 0 16px; }
+.ga-brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; margin: 0; }
+.ga-brand span { color: var(--mute); font-weight: 400; font-size: 14px; }
+.ga-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.ga-me { color: var(--mute); margin: 0; }
+.ga-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--blue); color: #fff; border: 0; border-radius: 6px;
+  padding: 8px 14px; font: 500 14px/1.2 inherit; font-family: inherit; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.ga-btn:hover { background: #004eeb; }
+.ga-btn-s { padding: 5px 10px; font-size: 13px; }
+.ga-btn-ghost { background: #fff; color: #344054; border: 1px solid #d0d5dd; }
+.ga-btn-ghost:hover { background: #f9fafb; }
+.ga-said { display: flex; align-items: center; gap: 8px; background: #eff8ff; border: 1px solid #b2ddff; color: #175cd3; border-radius: 8px; padding: 8px 12px; margin: 0 0 14px; }
+.ga-said button { margin-left: auto; background: none; border: 0; font-size: 18px; color: inherit; cursor: pointer; }
+.ga-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 14px; }
+.ga-tile { text-align: left; padding: 14px 16px; cursor: pointer; font: inherit; color: inherit; border-top: 3px solid var(--tone); }
+.ga-tile:hover { border-color: #d0d5dd; border-top-color: var(--tone); }
+.ga-tile.ga-on { box-shadow: 0 0 0 2px var(--blue); }
+.ga-tile-w { display: flex; align-items: center; gap: 6px; color: var(--mute); font-size: 13px; }
+.ga-tile-w svg { color: var(--tone); }
+.ga-tile b { display: block; font-size: 26px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ga-in { --tone: var(--in); } .ga-ok { --tone: var(--ok); } .ga-re { --tone: var(--re); } .ga-hz { --tone: var(--hz); }
+.ga-reasons { padding: 14px 16px; margin-bottom: 14px; }
+.ga h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 10px; }
+.ga h2 svg { color: var(--mute); }
+.ga-reasons ul { list-style: none; margin: 0; padding: 0; }
+.ga-reasons li { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.ga-reason { font-weight: 500; }
+.ga-muted { color: var(--mute); }
+.ga-log { overflow: hidden; }
+.ga-log-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.ga-tabs { display: flex; gap: 2px; }
+.ga-tabs button { background: none; border: 0; border-radius: 6px; padding: 6px 10px; font: 500 13px inherit; font-family: inherit; color: #475467; cursor: pointer; }
+.ga-tabs button:hover { background: #f9fafb; }
+.ga-tabs button.ga-on { background: #eff4ff; color: var(--blue); }
+.ga-tabs span { margin-left: 6px; background: #f2f4f7; color: #475467; border-radius: 10px; padding: 0 6px; font-size: 12px; }
+.ga-find { display: flex; align-items: center; gap: 6px; border: 1px solid #d0d5dd; border-radius: 6px; padding: 0 10px; color: var(--mute); }
+.ga-find input { border: 0; outline: 0; padding: 7px 0; font: inherit; width: 220px; background: none; }
+.ga table { width: 100%; border-collapse: collapse; }
+.ga th { text-align: left; font-weight: 500; font-size: 12px; color: var(--mute); background: #f9fafb; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.ga td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ga tr:last-child td { border-bottom: 0; }
+.ga-wb { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: var(--blue);
+  font: 500 13px "JetBrains Mono", monospace; cursor: pointer; }
+.ga-wb:hover { text-decoration: underline; }
+.ga-who { display: block; font-weight: 500; }
+.ga td .ga-muted { display: block; font-size: 13px; }
+.ga-why { max-width: 260px; }
+.ga-pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 12px; padding: 2px 9px; font-size: 12px; font-weight: 500; color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 10%, #fff); }
+.ga-pill-l { font-size: 14px; padding: 5px 12px; }
+.ga-do { text-align: right; }
+.ga-empty { padding: 24px; text-align: center; color: var(--mute); margin: 0; }
+.ga-pager { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin: 0; border-top: 1px solid var(--line); color: var(--mute); }
+.ga-pager button { background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; padding: 5px 10px; font: inherit; cursor: pointer; color: #344054; }
+.ga-pager button:disabled { opacity: .4; cursor: default; }
+.ga-foot { margin: 16px 0 0; }
+.ga-foot a { display: inline-flex; align-items: center; gap: 6px; color: var(--mute); }
+.ga-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: var(--blue); font: 500 14px inherit; font-family: inherit; cursor: pointer; margin-bottom: 14px; }
+.ga-lead-head { display: flex; justify-content: space-between; gap: 16px; padding: 18px 20px; margin-bottom: 12px; flex-wrap: wrap; }
+.ga-lead-head h1 { font: 600 24px "JetBrains Mono", monospace; margin: 2px 0 4px; }
+.ga-lead-head p { margin: 0; }
+.ga-eyebrow { display: flex; align-items: center; gap: 6px; color: var(--mute); font-size: 13px; }
+.ga-lead-do { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ga-held { display: flex; gap: 8px; align-items: flex-start; padding: 12px 16px; margin: 0 0 12px; background: #fffaeb; border-color: #fedf89; color: #93370d; }
+.ga-wait { background: #f4f3ff; border-color: #d9d6fe; color: #4a1fb8; }
+.ga-scans { padding: 14px 16px; }
+.ga-scans ol { list-style: none; margin: 0; padding: 0; }
+.ga-scans li { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.ga-scans li b { font-weight: 500; margin-right: 8px; }
+.ga-dot { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: var(--tone); background: color-mix(in srgb, var(--tone) 10%, #fff); }
+.ga-at { font-size: 13px; }
+@media (max-width: 860px) {
+  .ga-tiles { grid-template-columns: repeat(2, 1fr); }
+  .ga th:nth-child(3), .ga td:nth-child(3), .ga th:nth-child(5), .ga td:nth-child(5) { display: none; }
+  .ga-reasons li { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (max-width: 560px) {
+  .ga { padding: 14px 12px 32px; }
+  .ga-top { flex-wrap: wrap; gap: 4px; }
+  .ga-brand span { display: none; }
+  .ga-tabs { overflow-x: auto; max-width: 100%; }
+  .ga-find, .ga-find input { width: 100%; }
+  .ga thead { display: none; }
+  .ga tbody tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .ga tbody tr:last-child { border-bottom: 0; }
+  .ga tbody td { padding: 0; border: 0; }
+  .ga td:nth-child(1) { grid-area: 1 / 1; } .ga td:nth-child(4) { grid-area: 1 / 2; text-align: right; }
+  .ga td:nth-child(2) { grid-area: 2 / 1; } .ga td:nth-child(6) { grid-area: 2 / 2; align-self: end; }
+  .ga td:nth-child(4) .ga-why { display: none; }
+  .ga-reasons li button { justify-self: start; }
+  .ga-lead-head h1 { font-size: 20px; }
+  .ga-scans li { grid-template-columns: 28px 1fr; }
+  .ga-at { grid-column: 2; }
+}
