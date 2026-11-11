@@ -13,6 +13,9 @@ import {
   deliverTry,
   forgetOldSignIns,
   keyFrom,
+  machine,
+  recordIncidents,
+  watch,
   mailer,
   noteLeadAlerts,
   noteWeeklyAlerts,
@@ -132,3 +135,19 @@ setInterval(() => {
     .then((r) => (r.sessions || r.links || r.invites) && console.log(`worker: old sign-ins removed ${r.sessions}, email links ${r.links}, invites ${r.invites}`))
     .catch((e) => console.error(`worker: sign-in clean-up failed: ${e.message}`));
 }, PURGE_MS);
+
+// The watchers, every minute: a watcher gone wrong opens an incident (one per watcher), raised if it gets worse and
+// closed when it is fine again. The worker's own watcher is left out here: a stopped worker can't record itself, and
+// the operator console reads it live from the heartbeat.
+const WATCH_MS = 60_000;
+setInterval(async () => {
+  try {
+    const m = await machine("/");
+    const w = (await watch(db, { at: new Date().toISOString(), ...m, redisBytes: null, webCommit: "", workerCommit: commit, workerBeatAt: new Date().toISOString(), jobs: null }))
+      .filter((x) => x.key !== "worker");
+    const r = await recordIncidents(db, w);
+    if (r.opened || r.closed) console.log(`worker: incidents opened ${r.opened}, closed ${r.closed}`);
+  } catch (e) {
+    console.error(`worker: watchers failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}, WATCH_MS);

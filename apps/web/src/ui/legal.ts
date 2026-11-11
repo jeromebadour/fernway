@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.2",
+  version: "1.3",
   effective: "11 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -73,6 +73,7 @@ export const privacy: LegalDoc = {
       clauses: [
         "**GoHighLevel**, as described above.",
         "**Jerome Badour**, who runs Fernway and its GoHighLevel account, and reads what arrives there.",
+        "**Fernway's staff**, in Fernway's own operator console, to keep the service running: an account's name, its people (name, email, role, last seen), plan and invoices, GHL connection and lead counts. Not the leads' own details. Staff sign in with two-step sign-in, and everything they change is recorded.",
         "**Stripe**, for plans and their invoices, as described above.",
         "**Resend** (Resend, Inc.), which delivers Fernway's emails: confirming your address, a password reset, an invite to join a team, and the alerts you keep on. It handles each email's address and content to deliver it.",
         "**The hosting provider** (Contabo), whose server stores Fernway's database. It provides the machine; it does not use the data.",
@@ -128,7 +129,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 adds teams (invites and roles) and the audit log. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 says what Fernway's staff see. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

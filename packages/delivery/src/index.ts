@@ -19,3 +19,4 @@ export * from "./mail.js";
 export * from "./alerts.js";
 export * from "./console.js";
 export * from "./manage.js";
+export * from "./operator.js";

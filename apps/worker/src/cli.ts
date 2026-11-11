@@ -15,6 +15,8 @@
 //   revoke-apikey <prefix>                      stop a key at once
 //   stripe-catalog                              makes or checks Fernway's plans in Stripe (test mode only): one
 //                                               product and monthly price per plan, and the customer portal
+//   staff-owner <email>                         makes that Fernway user the operator console's owner (the first
+//                                               staff; more are added in the console). Opens with two-step on.
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
 import { formatWaybill, parseWaybill } from "@fernway/core";
@@ -41,6 +43,8 @@ import {
   seal,
   shipments,
   signValue,
+  staff,
+  users,
 } from "@fernway/delivery";
 import { and, asc, eq } from "drizzle-orm";
 import { Redis } from "ioredis";
@@ -67,6 +71,14 @@ try {
       const name = args.join(" ").trim() || fail("a name, e.g. account Fernway Demo");
       const [a] = await db.insert(accounts).values({ name }).returning();
       console.log(`account ${a!.id}: ${a!.name}`);
+      break;
+    }
+    case "staff-owner": {
+      const email = (args[0] ?? fail("an email, e.g. staff-owner jerome@jeromebadour.com")).trim().toLowerCase();
+      const [u] = await db.select().from(users).where(eq(users.email, email));
+      if (!u) fail(`no Fernway user has ${email}; sign up first`);
+      await db.insert(staff).values({ userId: u!.id, role: "owner" }).onConflictDoUpdate({ target: staff.userId, set: { role: "owner" } });
+      console.log(`staff owner: ${u!.name} (${u!.email})${u!.totpEnabledAt ? "" : "; turn two-step sign-in on before the console opens"}`);
       break;
     }
     case "apikey": {
