@@ -41,7 +41,10 @@ describe("the page's session", () => {
     if (s.ok) {
       expect(ghlAppWho(key, s.ticket)).toMatchObject({ accountId: harbor });
       expect(ghlAppWho(keyFrom("0000000000000000000000000000000000000000000000000000000000000003"), s.ticket)).toBeNull();
-      expect(ghlAppWho(key, s.ticket.replace(/.$/, (c) => (c === "A" ? "B" : "A")))).toBeNull();
+      // One changed character of the signature (the first: every bit of it counts, unlike the last one's).
+      const [body, sig] = s.ticket.split(".");
+      expect(ghlAppWho(key, `${body}.${sig![0] === "A" ? "B" : "A"}${sig!.slice(1)}`)).toBeNull();
+      expect(ghlAppWho(key, `${body!.slice(0, -2)}xx.${sig}`)).toBeNull();
     }
     expect(await ghlAppSession(app.db, key, sealGhlUser({ userId: "u", activeLocation: "loc_other" }, secret), secret)).toEqual({ ok: false, why: "not-connected" });
     expect(await ghlAppSession(app.db, key, sealGhlUser({ userId: "u", type: "agency", companyId: "c" }, secret), secret)).toEqual({ ok: false, why: "agency" });
