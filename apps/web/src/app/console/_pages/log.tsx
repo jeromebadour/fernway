@@ -12,7 +12,7 @@ const chips: { k: LogState | "all"; label: string; tone: string }[] = [
   { k: "all", label: "All", tone: "in" }, { k: "moving", label: "Moving", tone: "in" }, { k: "waiting", label: "Waiting", tone: "re" },
   { k: "signed", label: "Signed for", tone: "ok" }, { k: "held", label: "Held", tone: "hz" }, { k: "returned", label: "Returned", tone: "hz" },
 ];
-const sourceWord: Record<string, string> = { form: "Form", embed: "Embed", wordpress: "WordPress", laravel: "Laravel", api: "API", import: "Import", demo: "Demo", stripe: "Stripe" };
+const sourceWord: Record<string, string> = { form: "Form", embed: "Embed", wordpress: "WordPress", laravel: "Laravel", api: "API", import: "Import", demo: "Demo", stripe: "Stripe", workflow: "Workflow" };
 
 // The sync log: every lead the account sent, newest first, 15 a page; by state, and found by waybill, name, email,
 // company or phone. Each row opens the lead.

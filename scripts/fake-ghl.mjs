@@ -27,6 +27,8 @@ function slotsBetween(from, to) {
 
 // What each contact was last upserted with.
 const held = new Map();
+// Each workflow trigger Fernway fired.
+const fired = [];
 const send = (res, status, body) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
 
 createServer(async (req, res) => {
@@ -36,6 +38,12 @@ createServer(async (req, res) => {
   const json = body ? JSON.parse(body) : {};
   // Asking what it was asked is not a GHL call: it isn't counted.
   if (url.pathname === "/__calls") return send(res, 200, calls);
+  if (url.pathname === "/__fired") return send(res, 200, fired);
+  // A workflow trigger Fernway fired: kept apart from the lead calls (Break it counts those), with its token.
+  if (req.method === "POST" && url.pathname.startsWith("/workflows-marketplace/triggers/execute/")) {
+    fired.push({ path: url.pathname, auth: req.headers.authorization ?? null, body: json });
+    return send(res, 200, { succeeded: true });
+  }
   calls.push({ method: req.method, path: url.pathname });
   if (req.method === "POST" && url.pathname === "/contacts/upsert") {
     const key = json.email ?? json.phone;

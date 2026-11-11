@@ -99,6 +99,8 @@ services:
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
       # The app's shared secret from GHL's developer portal, for Fernway's page inside GHL; the page stays shut without it.
       GHL_SSO_KEY: ${GHL_SSO_KEY:-}
+      # The header GHL's app settings send with each workflow trigger and action call; the workflow addresses stay shut without it.
+      FERNWAY_WORKFLOW_KEY: ${FERNWAY_WORKFLOW_KEY:-}
       FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
     # Only Nginx on the same box reaches it.
     ports:
