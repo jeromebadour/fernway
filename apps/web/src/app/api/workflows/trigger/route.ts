@@ -1,6 +1,6 @@
 import { GHL_API, subscribe } from "@fernway/delivery";
 import { delivery } from "@/lib/connect";
-import { fromGhlWorkflows } from "@/lib/workflows";
+import { fromGhlWorkflows, noteMisfit } from "@/lib/workflows";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const refused = await fromGhlWorkflows(request);
   if (refused) return refused;
-  const r = await subscribe(delivery().db, await request.json().catch(() => null), process.env.FERNWAY_GHL_API ?? GHL_API);
+  const body = await request.json().catch(() => null);
+  const r = await subscribe(delivery().db, body, process.env.FERNWAY_GHL_API ?? GHL_API);
+  if (!r.ok && r.why === "body") noteMisfit("trigger", request, body);
   if (r.ok) return Response.json(r);
   return Response.json(r, { status: r.why === "not-connected" ? 404 : 422 });
 }
