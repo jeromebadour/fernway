@@ -46,7 +46,9 @@ export async function trackView(db: Db, shipmentId: number): Promise<TrackView |
     .innerJoin(routes, eq(routes.id, shipments.routeId))
     .where(eq(shipments.id, shipmentId));
   if (!s) return null;
-  const rows = await db.select().from(scans).where(eq(scans.shipmentId, shipmentId)).orderBy(asc(scans.at), asc(scans.id));
+  // What the business did with the lead in GHL afterwards (a stage, a deleted deal) is theirs, not the visitor's.
+  const rows = (await db.select().from(scans).where(eq(scans.shipmentId, shipmentId)).orderBy(asc(scans.at), asc(scans.id)))
+    .filter((r) => !r.kind.startsWith("ghl_"));
   const c = s.shipment.contact;
   return {
     number: formatWaybill({ year: s.shipment.waybillYear, seq: s.shipment.waybillSeq }),

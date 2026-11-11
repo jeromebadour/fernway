@@ -20,3 +20,4 @@ export * from "./alerts.js";
 export * from "./console.js";
 export * from "./manage.js";
 export * from "./operator.js";
+export * from "./ghl-events.js";

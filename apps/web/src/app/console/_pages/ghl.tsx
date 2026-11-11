@@ -1,10 +1,21 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import { Ago } from "@/ui/ago";
-import { GCheck, GClock, GHold, GKey, GLock, GNodes, GResend, GSilent } from "@/ui/glyphs";
+import { GCalendar, GCheck, GClock, GHold, GJump, GKey, GLock, GNodes, GResend, GSilent, GStage, GTrash, GUser } from "@/ui/glyphs";
 import { day } from "@/ui/when";
 import { DemoOnly } from "@/ui/demo-mode";
 import { Disconnect } from "../ghl/actions";
 
+
+type G = (p: { size?: number }) => React.ReactNode;
+// Each kind of event from GHL with its own glyph and colour: moves, meetings, deletions, the app itself.
+const eventLook = (type: string): { G: G; tone: string } =>
+  type.startsWith("Opportunity") && type.endsWith("Delete") ? { G: GTrash, tone: "hz" }
+    : type.startsWith("Opportunity") ? { G: GStage, tone: "in" }
+    : type.startsWith("Appointment") ? (type.endsWith("Delete") ? { G: GTrash, tone: "hz" } : { G: GCalendar, tone: "re" })
+    : type === "ContactDelete" ? { G: GTrash, tone: "hz" }
+    : type === "UNINSTALL" ? { G: GSilent, tone: "hz" }
+    : type === "INSTALL" ? { G: GCheck, tone: "ok" }
+    : { G: GUser, tone: "in" };
 
 const problems: Record<string, string> = {
   expired: "That attempt expired. Start again with Reconnect, in this browser, within 15 minutes.",
@@ -27,7 +38,7 @@ export async function Ghl({ who, searchParams }: { who: ConsoleWho; searchParams
   const m = who;
   const w = who.when;
   const sp = await searchParams;
-  const c = await who.data.connection();
+  const [c, events] = await Promise.all([who.data.connection(), who.data.ghlEvents()]);
   const can = m.role !== "member";
   const calls = c.calls.ok + c.calls.refused + c.calls.failed + c.calls.none;
   const part = (n: number) => (calls ? `${(n / calls) * 100}%` : "0");
@@ -90,6 +101,25 @@ export async function Ghl({ who, searchParams }: { who: ConsoleWho; searchParams
           <li><i className="gh-hz" /><b>{c.calls.refused}</b>refused (4xx): held for a fix</li>
           <li><i className="gh-re" /><b>{c.calls.failed + c.calls.none}</b>failed or unanswered: tried again by itself</li>
         </ul>
+      </section>
+
+      <section className="gh-from" aria-labelledby="gh-f">
+        <h2 id="gh-f" className="bl-h2"><GJump size={18} />What GHL told Fernway</h2>
+        {events.length === 0 ? (
+          <p className="bl-empty"><GJump size={16} />Nothing yet. When a deal moves or a meeting changes in GHL, GHL tells Fernway, and it shows here and on the lead&apos;s waybill.</p>
+        ) : (
+          <ul className="gh-events">{events.map((e) => {
+            const t = eventLook(e.type);
+            return (
+              <li key={e.id} className={`cn-${t.tone}`}>
+                <t.G size={15} />
+                <span><b>{e.summary}</b><em>{e.type}</em></span>
+                <span className="gh-ev-n">{e.leads ? `${e.leads} ${e.leads === 1 ? "lead" : "leads"}` : "no lead of yours"}</span>
+                <span className="cn-mono"><Ago iso={e.at} /></span>
+              </li>
+            );
+          })}</ul>
+        )}
       </section>
 
       {c.connected && (

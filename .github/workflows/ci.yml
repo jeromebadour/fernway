@@ -79,6 +79,12 @@ jobs:
         with:
           fetch-depth: 0  # the whole history, for the changelog page
 
+      - name: A stand-in GHL signing key, for this run only
+        # GHL signs its webhooks with its own Ed25519 key; CI can't, so the app is given this run's key instead
+        # (FERNWAY_GHL_WEBHOOK_KEY, compose.ci.yaml only). The private half stays in /tmp and dies with the runner.
+        run: |
+          node -e 'const c=require("crypto");const k=c.generateKeyPairSync("ed25519");require("fs").writeFileSync("/tmp/ghl-sign.pem",k.privateKey.export({type:"pkcs8",format:"pem"}));console.log("CI_GHL_WEBHOOK_KEY="+k.publicKey.export({type:"spki",format:"pem"}).toString().replace(/\n/g,"\\n"))' >> "$GITHUB_ENV"
+
       - name: Build and start the stack
         run: |
           # The changelog page is built from the git history, which never enters the image (see apps/web/scripts).
@@ -203,6 +209,23 @@ jobs:
           import json,sys; c=json.load(sys.stdin)
           assert sum(1 for x in c if x["path"]=="/calendars/events/appointments")==1, "one appointment only"'
           test "$(curl -s -o /dev/null -w '%{http_code}' $B/demo)" = 200
+
+      - name: GHL's webhooks, signed, reach the lead they belong to
+        run: |
+          B=http://127.0.0.1:3103
+          read -r SID OPP LOC < <(psql -At -F' ' -c "select s.id, s.ghl_opportunity_id, c.location_id from shipments s join ghl_connections c on c.account_id = s.account_id where s.ghl_opportunity_id is not null order by s.id desc limit 1")
+          test -n "$OPP"
+          body="{\"type\":\"OpportunityStageUpdate\",\"webhookId\":\"ci-$GITHUB_RUN_ID\",\"locationId\":\"$LOC\",\"id\":\"$OPP\",\"pipelineStageId\":\"stage_ci\"}"
+          sig=$(printf '%s' "$body" | node -e 'const c=require("crypto");let d="";process.stdin.on("data",x=>d+=x).on("end",()=>console.log(c.sign(null,Buffer.from(d),require("fs").readFileSync("/tmp/ghl-sign.pem")).toString("base64")))')
+          hook() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' -H "x-ghl-signature: $2" --data-raw "$1" $B/api/ghl/webhook; }
+          test "$(hook "$body" "$sig")" = 200; grep -q '"leads":1' /tmp/r.json
+          test "$(hook "$body" "$sig")" = 200; grep -q '"result":"repeat"' /tmp/r.json
+          # The body changed by one character, no signature, someone else's signature: all refused, nothing recorded.
+          test "$(hook "${body/stage_ci/stage_cx}" "$sig")" = 401
+          test "$(hook "$body" "")" = 401
+          test "$(psql -At -c "select count(*) from scans where shipment_id = $SID and kind = 'ghl_moved'")" = 1
+          # Kept once, however many times GHL sends it.
+          test "$(psql -At -c "select count(*) from ghl_events")" = 1
 
       - name: Break it, through the real queue, never reaching a GHL
         # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
