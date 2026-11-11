@@ -411,7 +411,14 @@ jobs:
         # The same scripts with the off-box copy on (ops/offsite.sh), pointed at a folder instead of R2: the dump is
         # encrypted with age before it leaves; the restore test downloads and decrypts the newest copy and restores it.
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq rclone age > /dev/null
+          # age and rclone come straight from their own releases, pinned by checksum, so CI never waits on Ubuntu's mirror.
+          tools=$(mktemp -d)
+          curl -fsSL -o $tools/age.tgz https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-amd64.tar.gz
+          curl -fsSL -o $tools/rclone.zip https://github.com/rclone/rclone/releases/download/v1.71.2/rclone-v1.71.2-linux-amd64.zip
+          printf '%s  %s\n' 7df45a6cc87d4da11cc03a539a7470c15b1041ab2b396af088fe9990f7c79d50 $tools/age.tgz \
+            ab9fa5877cee91c64fdfd61a27028a458cf618b39259e5c371dc2ec34a12e415 $tools/rclone.zip | sha256sum -c --quiet
+          tar -xzf $tools/age.tgz -C $tools && unzip -qo $tools/rclone.zip -d $tools
+          sudo install -m 755 $tools/age/age $tools/age/age-keygen $tools/rclone-v1.71.2-linux-amd64/rclone /usr/local/bin/
           sudo sh -c 'age-keygen -o /tmp/offsite-age.key 2> /dev/null'
           off="OFFSITE_REMOTE=:local:/tmp/offsite OFFSITE_KEY=/tmp/offsite-age.key BACKUP_DIR=/tmp/fernway-backups"
           sudo env $off ops/backup.sh | tee /tmp/offsite.txt
