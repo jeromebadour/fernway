@@ -233,3 +233,32 @@ export const alerts = pgTable("alerts", {
   givenUpAt: timestamp("given_up_at", { withTimezone: true }),
   lastError: text("last_error"),
 });
+
+export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
+  "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed"] as const;
+export type AuditAction = (typeof auditActions)[number];
+export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan";
+export const auditLog = pgTable("audit_log", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  userId: bigint("user_id", { mode: "number" }),
+  who: text("who").notNull(),
+  action: text("action").$type<AuditAction>().notNull(),
+  targetKind: text("target_kind").$type<AuditTarget>(),
+  targetId: text("target_id"),
+  detail: text("detail").notNull().default(""),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const invites = pgTable("invites", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  email: text("email").notNull(),
+  role: text("role").$type<"admin" | "member">().notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  invitedBy: bigint("invited_by", { mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+});

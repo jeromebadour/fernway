@@ -68,3 +68,6 @@ export const GGlobe = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="
 export const GNote = (p: P) => (<S {...p}><path d="M3 3h14v10l-5 5H3z" /><path d="M12 18v-5h5" /><path d="M6 7h8M6 10h5" /></S>);
 export const GCaps = (p: P) => (<S {...p}><path d="M10 3l7 7h-4v4H7v-4H3z" /><path d="M7 17h6" /></S>);
 export const GClose = (p: P) => (<S {...p}><path d="M4 4l12 12M16 4L4 16" /></S>);
+export const GCalendar = (p: P) => (<S {...p}><rect x="2" y="4" width="16" height="14" /><path d="M2 8h16M6 2v4M14 2v4" /><rect x="11" y="11" width="3" height="3" fill="currentColor" stroke="none" /></S>);
+export const GStage = (p: P) => (<S {...p}><path d="M2 4h5l3 6-3 6H2l3-6z" /><path d="M11 4h4l3 6-3 6h-4l3-6z" /></S>);
+export const GPlus = (p: P) => (<S {...p}><path d="M10 3v14M3 10h14" /></S>);

@@ -13,6 +13,8 @@ const notices: Record<string, { title: string; line: string; G: (p: { size?: num
   "plan-started": { title: "Payment taken", line: "Stripe took the first payment. The plan below shows it as soon as Stripe confirms, in a few seconds.", G: GCheck },
   "account-deleted": { title: "Account deleted", line: "It was removed from GHL, from Stripe and from Fernway, in that order. Nothing of it is kept.", G: GCheck, stays: true },
   "recovery-used": { title: "Signed in with a recovery code", line: "That code is spent now. Make a new set below if only a few are left.", G: GLock },
+  joined: { title: "You're in the team", line: "This is the account's console: every lead it sends, where it is, and what GHL said.", G: GCheck },
+  "ghl-connected": { title: "GHL is connected", line: "New leads travel straight into the sub-account. Held ones can be resent from the board.", G: GCheck },
   "signed-out-elsewhere": { title: "Signed out elsewhere", line: "This session ended on another device. Sign in again to carry on.", G: GSignOut, stays: true },
 };
 

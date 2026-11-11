@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.1",
+  version: "1.2",
   effective: "11 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -46,6 +46,8 @@ export const privacy: LegalDoc = {
         "**Your devices:** for each sign-in, a short description your browser gives (like Firefox on Windows), when it started and when it was last used, and why it ended. Not your IP address.",
         "**Your plan:** which plan the account is on and its billing period, the Stripe customer and subscription it belongs to, and each invoice as Stripe reports it (number, date, amount, state, and Stripe's links to it). Never a card number: cards are typed into Stripe's own page, never Fernway's.",
         "**The account's own leads and API keys,** and their receipts.",
+        "**Your team:** who is in the account and in which role, and each open invite (the email it went to, the role, who sent it). An invite is deleted a day after it is used, cancelled or runs out. Removing someone from the team deletes their sign-in at once.",
+        "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
         "The [Your record](/account/record) page in the account area shows all of this beside what GoHighLevel holds, and downloads it as a file.",
       ],
     },
@@ -72,7 +74,7 @@ export const privacy: LegalDoc = {
         "**GoHighLevel**, as described above.",
         "**Jerome Badour**, who runs Fernway and its GoHighLevel account, and reads what arrives there.",
         "**Stripe**, for plans and their invoices, as described above.",
-        "**Resend** (Resend, Inc.), which delivers Fernway's emails: confirming your address, a password reset, and the alerts you keep on. It handles each email's address and content to deliver it.",
+        "**Resend** (Resend, Inc.), which delivers Fernway's emails: confirming your address, a password reset, an invite to join a team, and the alerts you keep on. It handles each email's address and content to deliver it.",
         "**The hosting provider** (Contabo), whose server stores Fernway's database. It provides the machine; it does not use the data.",
         "**Cloudflare R2**, which stores the nightly backup copy. The copy is encrypted on our server before it leaves, so Cloudflare holds it without being able to read it.",
         "Nobody else, unless the law requires it. We do not sell data, show ads, or use tracking or analytics tools.",
@@ -126,7 +128,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 adds accounts, payments and emails. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 adds teams (invites and roles) and the audit log. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

@@ -62,7 +62,15 @@ createServer(async (req, res) => {
   if (req.method === "GET" && free) {
     return send(res, 200, { ...slotsBetween(Number(url.searchParams.get("startDate")), Number(url.searchParams.get("endDate"))), traceId: "fake" });
   }
-  if (req.method === "GET" && url.pathname === "/calendars/") return send(res, 200, { calendars: [{ id: "cal_demo", name: "Fernway demo", slotDuration: 30 }] });
+  if (req.method === "GET" && url.pathname === "/calendars/") {
+    return send(res, 200, { calendars: [{ id: "cal_demo", name: "Fernway demo", slotDuration: 30 }, { id: "cal_x", name: "Free assessment", slotDuration: 45 }] });
+  }
+  if (req.method === "GET" && url.pathname === "/opportunities/pipelines") {
+    return send(res, 200, { pipelines: [
+      { id: "pipe_x", name: "Patients", stages: [{ id: "stage_x", name: "New booking" }, { id: "stage_y", name: "Assessment booked" }, { id: "stage_z", name: "Treatment plan" }] },
+      { id: "pipe_w", name: "Corporate wellness", stages: [{ id: "stage_w1", name: "Enquiry" }, { id: "stage_w2", name: "Proposal sent" }] },
+    ] });
+  }
   if (req.method === "DELETE") return send(res, 200, { succeeded: true });
   send(res, 404, { message: `fake GHL has no ${req.method} ${url.pathname}` });
 }).listen(port, "0.0.0.0", () => console.log(`fake GHL on :${port}`));
