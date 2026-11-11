@@ -97,6 +97,8 @@ services:
       APP_URL: ${APP_URL:-https://fernway.jeromebadour.com}
       GHL_CLIENT_ID: ${GHL_CLIENT_ID:?set GHL_CLIENT_ID}
       GHL_CLIENT_SECRET: ${GHL_CLIENT_SECRET:?set GHL_CLIENT_SECRET}
+      # The app's shared secret from GHL's developer portal, for Fernway's page inside GHL; the page stays shut without it.
+      GHL_SSO_KEY: ${GHL_SSO_KEY:-}
       FERNWAY_TOKEN_KEY: ${FERNWAY_TOKEN_KEY:?set FERNWAY_TOKEN_KEY}
     # Only Nginx on the same box reaches it.
     ports:
