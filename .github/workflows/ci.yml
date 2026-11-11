@@ -227,26 +227,26 @@ jobs:
           # Kept once, however many times GHL sends it.
           test "$(psql -At -c "select count(*) from ghl_events")" = 1
 
-      - name: Fernway's page inside GHL opens only for a connected sub-account, and frames only inside GHL
+      - name: Fernway's panel inside GHL opens only for a connected sub-account; no other page can be framed
         run: |
           B=http://127.0.0.1:3103
-          # Every other page refuses to be framed; the page made for GHL may be framed by GHL alone.
+          # Every other page refuses to be framed; the panel made for GHL may be framed (GHL runs on agencies' own domains too).
           curl -sI $B/ | grep -qi "^x-frame-options: DENY"
           curl -sI $B/console | grep -qi "frame-ancestors 'none'"
-          curl -sI $B/ghl/app | grep -qi "^content-security-policy: frame-ancestors https://app.gohighlevel.com"
-          ! curl -sI $B/ghl/app | grep -qi "^x-frame-options"
+          curl -sI $B/panel | grep -qi "^content-security-policy: frame-ancestors https:"
+          ! curl -sI $B/panel | grep -qi "^x-frame-options"
           # GHL seals who is looking the way CryptoJS does (salted AES-256-CBC, MD5 key derivation); this run seals its own.
           seal() { node -e 'const c=require("crypto");const s=c.randomBytes(8);let d=Buffer.alloc(0),b=Buffer.alloc(0);while(d.length<48){b=c.createHash("md5").update(Buffer.concat([b,Buffer.from(process.argv[2]),s])).digest();d=Buffer.concat([d,b])}const x=c.createCipheriv("aes-256-cbc",d.subarray(0,32),d.subarray(32,48));console.log(JSON.stringify(Buffer.concat([Buffer.from("Salted__"),s,x.update(process.argv[1]),x.final()]).toString("base64")))' "$1" "${2:-ci-ghl-shared-secret}"; }
           LOC=$(psql -At -c "select location_id from ghl_connections order by account_id limit 1")
           OTHER=$(psql -At -c "select s.id from shipments s where s.account_id <> (select account_id from ghl_connections where location_id = '$LOC') limit 1")
-          sess() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' --data-raw "{\"payload\":$1}" $B/api/ghl/app/session; }
+          sess() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' --data-raw "{\"payload\":$1}" $B/api/panel/session; }
           user='{"userId":"ci","type":"location","userName":"CI User","activeLocation":"'"$LOC"'"}'
           test "$(sess "$(seal "$user")")" = 200
           T=$(node -pe 'require("/tmp/r.json").ticket')
           test "$(sess "$(seal "$user" wrong-secret)")" = 401
           test "$(sess "$(seal '{"userId":"ci","type":"location","activeLocation":"loc_nobody"}')")" = 404
           test "$(sess "$(seal '{"userId":"ci","type":"agency"}')")" = 404
-          view() { curl -s -o /tmp/r.json -w '%{http_code}' -H "Authorization: Bearer $1" "$B/api/ghl/app/$2"; }
+          view() { curl -s -o /tmp/r.json -w '%{http_code}' -H "Authorization: Bearer $1" "$B/api/panel/$2"; }
           test "$(view "$T" view)" = 200; grep -q '"board"' /tmp/r.json
           test "$(view "${T}x" view)" = 401
           test "$(view "" view)" = 401
