@@ -82,6 +82,15 @@ describe("Track with Fernway", () => {
     expect(mine.map((s) => s.viaWorkflow)).toEqual(["wf_track", "wf_track"]);
   });
 
+  it("says which field names it got when the call's shape doesn't fit, never their values", async () => {
+    const { deps } = testDeps(app.db, fakeConnection());
+    const r = await trackFromWorkflow(deps, { email: "secret@x.example", locationId: "loc_north", meta: { key: "k" } }, key, "https://fw.test");
+    expect(r).toMatchObject({ ok: false, status: 400 });
+    if (r.ok) throw new Error("accepted");
+    expect(r.problems.at(-1)).toBe("received: {email,locationId,meta:{key}}");
+    expect(JSON.stringify(r)).not.toContain("secret@x.example");
+  });
+
   it("refuses an unknown sub-account, an unknown route and a contact without email or phone", async () => {
     const { deps } = testDeps(app.db, fakeConnection());
     expect(await trackFromWorkflow(deps, { ...body(), extras: { locationId: "loc_nobody" } }, key, "https://fw.test")).toMatchObject({ ok: false, status: 404 });

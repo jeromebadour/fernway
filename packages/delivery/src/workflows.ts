@@ -198,6 +198,13 @@ export async function actionFields(db: Db, body: unknown): Promise<{ inputs: unk
   };
 }
 
+/** The field names of a call that didn't fit, two levels deep, without any value: what to look at when GHL's shape differs. */
+export function shape(body: unknown, depth = 0): string {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return body === null ? "null" : Array.isArray(body) ? "array" : typeof body;
+  const keys = Object.keys(body).slice(0, 30);
+  return `{${keys.map((k) => (depth < 1 && (body as Record<string, unknown>)[k] && typeof (body as Record<string, unknown>)[k] === "object" ? `${k}:${shape((body as Record<string, unknown>)[k], depth + 1)}` : k)).join(",")}}`;
+}
+
 export type Tracked =
   | { ok: true; waybill: string; receipt: string; state: string; duplicate: boolean }
   | { ok: false; status: 400 | 404 | 422; problems: string[] };
@@ -208,7 +215,7 @@ export type Tracked =
  */
 export async function trackFromWorkflow(deps: Deps, body: unknown, key: Buffer, appUrl: string, now = new Date()): Promise<Tracked> {
   const p = action.safeParse(body);
-  if (!p.success) return { ok: false, status: 400, problems: p.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).slice(0, 5) };
+  if (!p.success) return { ok: false, status: 400, problems: [...p.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).slice(0, 5), `received: ${shape(body)}`] };
   const { data, extras: x } = p.data;
   const accountId = await accountAt(deps.db, x.locationId);
   if (accountId === null) return { ok: false, status: 404, problems: ["location: this sub-account is not connected to Fernway"] };
