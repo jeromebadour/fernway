@@ -1,0 +1,39 @@
+# n8n on Fernway's box (plan step 8): a workflow on Fernway's signed webhooks. Its own project, apart from Fernway's
+# stack; port 3104 on the box only, reached through Nginx at https://n8n.jeromebadour.com (the editor needs n8n's own
+# owner sign-in; only /webhook/ is for the world). Set up and updated by setup.sh; secrets in /srv/n8n/.env (root only).
+name: n8n
+services:
+  n8n:
+    image: ${N8N_IMAGE:?set by setup.sh in /srv/n8n/.env}
+    restart: unless-stopped
+    ports: ["127.0.0.1:3104:5678"]
+    env_file: /srv/n8n/.env
+    environment:
+      N8N_HOST: n8n.jeromebadour.com
+      N8N_PROTOCOL: https
+      N8N_PORT: "5678"
+      WEBHOOK_URL: https://n8n.jeromebadour.com/
+      N8N_PROXY_HOPS: "1"
+      GENERIC_TIMEZONE: Europe/Istanbul
+      TZ: Europe/Istanbul
+      # Nothing phoned home, no template gallery: a working tool, not a showroom.
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+      # The workflow checks Fernway's signature with node's crypto, and reads its secret from the env file.
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Runs are kept 14 days.
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "336"
+    volumes: ["/srv/n8n/data:/home/node/.n8n"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz/readiness').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 20s
+      start_period: 120s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

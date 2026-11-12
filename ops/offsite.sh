@@ -34,10 +34,12 @@ offsite_ready() {
 }
 
 # Encrypts one dump and uploads it, drops copies older than 30 days, writes BACKUP_DIR/offsite.json for the console.
+# The third argument is the kind of file (fernway by default; n8n for n8n's nightly export), whose copies are counted and
+# dropped on their own.
 # Every step is checked on its own (not left to set -e, which callers may switch off): a failure is recorded for the
 # console (it flags it) and returns 1; the local dump is already kept either way.
 offsite_upload() {
-  local dump=$1 dir=$2 enc bytes count
+  local dump=$1 dir=$2 kind=${3:-fernway} enc bytes count
   enc="$dir/.$(basename "$dump").age.part"
   offsite_record() {
     printf '{"at": "%s", "ok": %s, "name": "%s", "bytes": %s, "count": %s, "keepDays": %s}\n' \
@@ -50,8 +52,8 @@ offsite_upload() {
   bytes=$(stat -c %s "$enc")
   [ "$(rclone -q lsf --format s "$offsite_remote/$(basename "$dump").age")" = "$bytes" ] \
     || { offsite_fail "the copy off the box is not the size of the dump ($bytes bytes)"; return 1; }
-  rclone -q delete --min-age "${offsite_keep_days}d" --include 'fernway-*.dump.age' "$offsite_remote" || { offsite_fail "could not drop old copies"; return 1; }
-  count=$(rclone -q lsf --include 'fernway-*.dump.age' "$offsite_remote" | wc -l)
+  rclone -q delete --min-age "${offsite_keep_days}d" --include "$kind-*.age" "$offsite_remote" || { offsite_fail "could not drop old copies"; return 1; }
+  count=$(rclone -q lsf --include "$kind-*.age" "$offsite_remote" | wc -l)
   [ "$count" -ge 1 ] || { offsite_fail "the copy is not there after the upload"; return 1; }
   rm -f "$enc"
   offsite_record true "$bytes" "$count"

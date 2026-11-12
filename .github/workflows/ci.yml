@@ -411,6 +411,35 @@ jobs:
           test "$(psql -At -c "select count(*) from webhook_deliveries where state = 'delivered'")" = 2
           test "$(psql -At -c "select count(*) from audit_log where action = 'hook.made'")" = 1
 
+      - name: n8n - the hot leads workflow imports into the pinned n8n, answers a signed call 200 and an unsigned one 400
+        run: |
+          version=$(grep -oP '^version=\K.*' integrations/n8n/setup.sh)
+          docker run -d --name n8n-ci -p 127.0.0.1:5690:5678 -e N8N_DIAGNOSTICS_ENABLED=false -e N8N_SECURE_COOKIE=false \
+            -e NODE_FUNCTION_ALLOW_BUILTIN=crypto -e N8N_BLOCK_ENV_ACCESS_IN_NODE=false -e FERNWAY_HOOK_SECRET=whsec_ci_n8n_secret \
+            -e N8N_ENCRYPTION_KEY=ci0123456789abcdef0123456789abcd "docker.n8n.io/n8nio/n8n:$version"
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz/readiness > /dev/null && break; sleep 2; done
+          node -e 'const c=require("crypto");const k=c.generateKeyPairSync("rsa",{modulusLength:2048});require("fs").writeFileSync("/tmp/cred.json",JSON.stringify([{id:"fernwayGoogleSa1",name:"Fernway Google service account",type:"googleApi",data:{email:"ci@ci.iam.gserviceaccount.com",privateKey:k.privateKey.export({type:"pkcs8",format:"pem"})}}]))'
+          docker cp /tmp/cred.json n8n-ci:/tmp/cred.json
+          docker cp integrations/n8n/fernway-hot-leads.json n8n-ci:/tmp/wf.json
+          docker exec -u node n8n-ci sh -c 'n8n import:credentials --input=/tmp/cred.json && n8n import:workflow --input=/tmp/wf.json && n8n publish:workflow --id=FernwayHotLeads1'
+          docker restart n8n-ci > /dev/null
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz/readiness > /dev/null && break; sleep 2; done
+          sleep 5
+          node -e '
+            const c = require("crypto");
+            const body = JSON.stringify({ id: "evt_ci", type: "lead.signed", created: new Date().toISOString(), data: { waybill: "FW 26 00001" } });
+            const t = Math.floor(Date.now() / 1000);
+            const sig = (s) => `t=${t},v1=${c.createHmac("sha256", s).update(t + "." + body).digest("hex")}`;
+            const go = (h) => fetch("http://127.0.0.1:5690/webhook/fernway-leads", { method: "POST", headers: { "content-type": "application/json", ...h }, body }).then(async (r) => [r.status, await r.text()]);
+            (async () => {
+              const good = await go({ "fernway-signature": sig("whsec_ci_n8n_secret") });
+              const bad = await go({ "fernway-signature": sig("whsec_wrong") });
+              const none = await go({});
+              console.log(good, bad, none);
+              if (good[0] !== 200 || !good[1].includes("evt_ci") || bad[0] !== 400 || none[0] !== 400) process.exit(1);
+            })();'
+          docker rm -f n8n-ci > /dev/null
+
       - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new
         run: |
           W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"

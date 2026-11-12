@@ -46,3 +46,29 @@ if offsite_ready; then
     exit 1
   fi
 fi
+
+# n8n (integrations/n8n), when it runs on the box: its workflows and its credentials (still encrypted with its own
+# N8N_ENCRYPTION_KEY, which stays in /srv/n8n/.env) exported nightly, kept 14 days, and copied off the box like the dump.
+# Its own failure is printed and fails the run, but never touches Fernway's dump above.
+n8n=$(docker ps -q --filter label=com.docker.compose.project=n8n --filter label=com.docker.compose.service=n8n)
+if [ -n "$n8n" ]; then
+  ndir=${N8N_BACKUP_DIR:-/srv/n8n/backups}
+  install -d -m 700 "$ndir"
+  nname="n8n-$(date -u +%Y%m%d-%H%M%S).tar"
+  # n8n's export stops with an error when there is nothing to export: a new n8n with no workflow yet is not a failure.
+  if [ "$(docker exec "$n8n" n8n list:workflow 2>/dev/null | grep -c '|')" = 0 ]; then
+    echo "backup: n8n has no workflows yet, nothing to export"
+    exit 0
+  fi
+  docker exec "$n8n" sh -c 'rm -rf /tmp/n8n-export && mkdir -p /tmp/n8n-export/workflows /tmp/n8n-export/credentials \
+    && n8n export:workflow --all --separate --output=/tmp/n8n-export/workflows/ >/dev/null \
+    && { n8n export:credentials --all --separate --output=/tmp/n8n-export/credentials/ >/dev/null 2>&1 || true; } \
+    && tar -C /tmp/n8n-export -cf - . && rm -rf /tmp/n8n-export' > "$ndir/.$nname.part" \
+    || { rm -f "$ndir/.$nname.part"; echo "backup: n8n could not export its workflows" >&2; exit 1; }
+  tar -tf "$ndir/.$nname.part" | grep -q '^./workflows/.' || { rm -f "$ndir/.$nname.part"; echo "backup: n8n's export has no workflows" >&2; exit 1; }
+  chmod 600 "$ndir/.$nname.part"
+  mv "$ndir/.$nname.part" "$ndir/$nname"
+  find "$ndir" -maxdepth 1 -name 'n8n-*.tar' -mmin +$((keep_days * 24 * 60)) -delete
+  echo "backup: $nname, $(stat -c %s "$ndir/$nname") bytes, $(tar -tf "$ndir/$nname" | grep -c '^./workflows/.') workflows"
+  if offsite_ready; then offsite_upload "$ndir/$nname" "$ndir" n8n || exit 1; fi
+fi

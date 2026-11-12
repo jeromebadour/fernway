@@ -20,6 +20,7 @@
 //   scoring <account> on|off                    Claude score for that account's new leads (the console does the same)
 //   sheet <account> <link>|off                  link that account's Google Sheet (shared with Fernway's address), or unlink
 //   sheet-in <account> <route>|off              read the linked sheet's tab Leads in, its rows sent on that route
+//   sheet-tab <account> <tab> <header,...>      add a tab with that header row to the account's linked sheet (n8n's Hot leads)
 //   hook <account> <label> <url> <events,...>   add a webhook endpoint (events: picked_up, signed, held, returned, scored);
 //                                               prints its secret once
 //   claude-spend                                what Fernway spent on Claude this month, against its cap
@@ -52,6 +53,7 @@ import {
   linkSheet,
   setSheetIn,
   saveHook,
+  sheetLinks,
   serviceKeyFrom,
   unlinkSheet,
   shipments,
@@ -240,6 +242,19 @@ try {
       console.log(args[1] === "off" ? `account ${acc}: Leads in off` : `account ${acc}: Leads in on; its rows become leads on ${args[1]}`);
       break;
     }
+    case "sheet-tab": {
+      const acc = accountArg(args[0]);
+      const [tab, header] = [args[1], args[2]];
+      if (!tab || !header) fail("sheet-tab <account> <tab> <header,...>");
+      const key = serviceKeyFrom(process.env.GOOGLE_SHEETS_KEY) ?? fail("GOOGLE_SHEETS_KEY is not set");
+      const [l] = await db.select().from(sheetLinks).where(eq(sheetLinks.accountId, acc));
+      if (!l) fail(`account ${acc} has no Google Sheet linked`);
+      const sheets = createSheets({ key: key!, baseUrl: process.env.FERNWAY_GOOGLE_API || undefined, tokenUrl: process.env.FERNWAY_GOOGLE_TOKEN || undefined });
+      const r = await sheets.prepare(l!.spreadsheetId, tab!, header!.split(","));
+      if (!r.ok) fail(`Google said ${r.status ?? "nothing"}: ${r.why}`);
+      console.log(`   tab "${tab}" ready in "${l!.title}" with ${header!.split(",").length} columns`);
+      break;
+    }
     case "hook": {
       const acc = accountArg(args[0]);
       const [label, url, list] = [args[1], args[2], args[3]];
@@ -271,7 +286,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, sheet-in, hook, claude-spend, fake-connect");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, sheet-in, sheet-tab, hook, claude-spend, fake-connect");
   }
 } finally {
   await pool.end();

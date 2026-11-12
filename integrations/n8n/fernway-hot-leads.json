@@ -1,0 +1,371 @@
+{
+  "id": "FernwayHotLeads1",
+  "name": "Fernway hot leads",
+  "nodes": [
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0001",
+      "name": "Fernway webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "7d0e6c1a-3b2f-4e1d-8f6a-2c9b5e4d0001",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fernway-leads",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0002",
+      "name": "Check Fernway's signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Fernway signs every call: Fernway-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, \"<t>.<raw body>\")>.\n// The check runs on the raw bytes, compares in constant time, and refuses a time more than 5 minutes off.\nconst crypto = require('crypto');\nconst secret = $env.FERNWAY_HOOK_SECRET;\nconst header = String($json.headers['fernway-signature'] ?? '');\nconst parts = Object.fromEntries(header.split(',').map((p) => p.split('=')));\nconst raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\nconst want = crypto.createHmac('sha256', secret ?? '').update(`${parts.t}.${raw}`).digest('hex');\nconst fresh = Math.abs(Date.now() / 1000 - Number(parts.t)) <= 300;\nconst same = typeof parts.v1 === 'string' && parts.v1.length === want.length && crypto.timingSafeEqual(Buffer.from(parts.v1), Buffer.from(want));\nconst signed = Boolean(secret) && fresh && same;\nreturn { json: { signed, event: signed ? JSON.parse(raw) : null } };"
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0003",
+      "name": "Signed by Fernway?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.signed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0004",
+      "name": "Answer 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { received: true, id: $json.event.id } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0005",
+      "name": "Answer 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        500
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: 'bad signature' } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0006",
+      "name": "Scored 4 or 5?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.event.type }}",
+              "rightValue": "lead.scored",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.event.data.score?.score ?? 0 }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0007",
+      "name": "The hot lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "Waybill",
+              "value": "={{ $json.event.data.waybill }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "Scored (UTC)",
+              "value": "={{ $json.event.created.slice(0, 19).replace('T', ' ') }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "Score",
+              "value": "={{ $json.event.data.score.score }}",
+              "type": "number"
+            },
+            {
+              "id": "a4",
+              "name": "Name",
+              "value": "={{ [$json.event.data.contact.firstName, $json.event.data.contact.lastName].filter(Boolean).join(' ') }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "Email",
+              "value": "={{ $json.event.data.contact.email ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "Phone",
+              "value": "={{ $json.event.data.contact.phone ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "Company",
+              "value": "={{ $json.event.data.contact.companyName ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "Claude's read",
+              "value": "={{ $json.event.data.score.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "a9",
+              "name": "Receipt",
+              "value": "={{ $json.event.data.receipt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0008",
+      "name": "Add to Hot leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.FERNWAY_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Hot leads"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "fernwayGoogleSa1",
+          "name": "Fernway Google service account"
+        }
+      }
+    },
+    {
+      "id": "6f1d1b8e-1a1e-4c6e-9a2e-0c7f3f1a0009",
+      "name": "Email Jerome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { from: 'Fernway n8n <noreply@jeromebadour.com>', to: [$env.ALERT_TO], subject: 'Hot lead ' + $json['Score'] + ' of 5: ' + ($json['Company'] || $json['Name']), text: [$json['Claude\\'s read'], '', $json['Name'] + ' · ' + $json['Email'] + (($json['Phone']) ? ' · ' + $json['Phone'] : ''), 'Waybill ' + $json['Waybill'] + ': ' + $json['Receipt']].join('\\n') } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Fernway webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Fernway's signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Fernway's signature": {
+      "main": [
+        [
+          {
+            "node": "Signed by Fernway?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signed by Fernway?": {
+      "main": [
+        [
+          {
+            "node": "Answer 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answer 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer 200": {
+      "main": [
+        [
+          {
+            "node": "Scored 4 or 5?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scored 4 or 5?": {
+      "main": [
+        [
+          {
+            "node": "The hot lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "The hot lead": {
+      "main": [
+        [
+          {
+            "node": "Add to Hot leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Jerome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "active": false
+}
