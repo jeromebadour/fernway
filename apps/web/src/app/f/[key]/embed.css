@@ -1,6 +1,11 @@
 /* An embed form sits inside someone else's page, so it wears their light by default (BUILD-RULES 2.12, Kami
    2026-11-09 22:32): light, dark, or following the visitor. Fernway's meanings stay; their shades suit the ground. */
-html:has(.em), html:has(.em) body { background: transparent; color-scheme: light dark; }
+html:has(.em), html:has(.em) body { background: transparent; }
+/* The frame's colour scheme must match the form's look: a browser in dark mode paints an opaque dark canvas behind a
+   frame that says "light dark", which showed as a black edge around a light form (Kami's CodePen proof, 2026-11-12). */
+html:has(.em-light) { color-scheme: light; }
+html:has(.em-dark) { color-scheme: dark; }
+html:has(.em-auto) { color-scheme: light dark; }
 .em { --bg: transparent; --field: #ffffff; --field-line: rgba(16,24,40,0.2); --paper: #101828; --muted: #475467; --faint: #667085;
   --line: rgba(16,24,40,0.12); --kraft: #f7f9fb; --go: #17806f; --go-ink: #ffffff; --input: #2e6fb8; --ok: #2f7d3b; --hazard: #a15c00;
   font-family: var(--font-body); color: var(--paper); padding: 4px 3px 8px; }
