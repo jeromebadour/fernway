@@ -54,7 +54,7 @@ echo "== 4. the workflow"
 docker cp -q "$here/fernway-hot-leads.json" "$c:/tmp/wf.json"
 docker exec -u node "$c" sh -c 'n8n import:workflow --input=/tmp/wf.json >/dev/null && n8n publish:workflow --id=FernwayHotLeads1 >/dev/null; rc=$?; rm -f /tmp/wf.json; exit $rc'
 "${n8[@]}" up -d --force-recreate --quiet-pull >/dev/null 2>&1
-for _ in $(seq 1 40); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3104/healthz)" = 200 ] && break; sleep 3; done
+for _ in $(seq 1 40); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3104/healthz/readiness)" = 200 ] && break; sleep 3; done
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -d '{}')
 [ "$code" = 400 ] || { echo "   the workflow's address answered $code to an unsigned call (wanted 400)"; exit 1; }
 echo "CONNECTED: account $acc sends scored leads to $url (an unsigned call is refused: 400)"

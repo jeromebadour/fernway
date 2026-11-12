@@ -34,7 +34,7 @@ for _ in $(seq 1 40); do
   [ "$(docker inspect --format '{{.State.Health.Status}}' "$("${compose[@]}" ps -q n8n)")" = healthy ] && break
   sleep 3
 done
-[ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3104/healthz)" = 200 ] || { echo "n8n did not start; see: ${compose[*]} logs n8n"; exit 1; }
+[ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3104/healthz/readiness)" = 200 ] || { echo "n8n did not start; see: ${compose[*]} logs n8n"; exit 1; }
 echo "   healthy on 127.0.0.1:3104"
 
 if curl -s http://127.0.0.1:3104/rest/settings | grep -q '"showSetupOnFirstLoad":true'; then
@@ -56,6 +56,6 @@ nginx -t -q
 systemctl reload nginx
 # A reinstalled site file has no HTTPS block again: certbot makes the certificate once and puts it back after that.
 certbot --nginx -d "$domain" --non-interactive --redirect --keep-until-expiring --quiet
-code=$(curl -s -o /dev/null -w '%{http_code}' "https://$domain/healthz")
+code=$(curl -s -o /dev/null -w '%{http_code}' "https://$domain/healthz/readiness")
 [ "$code" = 200 ] || { echo "n8n: https://$domain/healthz answered $code"; exit 1; }
 echo "READY n8n $version at https://$domain (healthz 200)"

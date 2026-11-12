@@ -417,13 +417,13 @@ jobs:
           docker run -d --name n8n-ci -p 127.0.0.1:5690:5678 -e N8N_DIAGNOSTICS_ENABLED=false -e N8N_SECURE_COOKIE=false \
             -e NODE_FUNCTION_ALLOW_BUILTIN=crypto -e N8N_BLOCK_ENV_ACCESS_IN_NODE=false -e FERNWAY_HOOK_SECRET=whsec_ci_n8n_secret \
             -e N8N_ENCRYPTION_KEY=ci0123456789abcdef0123456789abcd "docker.n8n.io/n8nio/n8n:$version"
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz > /dev/null && break; sleep 2; done
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz/readiness > /dev/null && break; sleep 2; done
           node -e 'const c=require("crypto");const k=c.generateKeyPairSync("rsa",{modulusLength:2048});require("fs").writeFileSync("/tmp/cred.json",JSON.stringify([{id:"fernwayGoogleSa1",name:"Fernway Google service account",type:"googleApi",data:{email:"ci@ci.iam.gserviceaccount.com",privateKey:k.privateKey.export({type:"pkcs8",format:"pem"})}}]))'
           docker cp /tmp/cred.json n8n-ci:/tmp/cred.json
           docker cp integrations/n8n/fernway-hot-leads.json n8n-ci:/tmp/wf.json
           docker exec -u node n8n-ci sh -c 'n8n import:credentials --input=/tmp/cred.json && n8n import:workflow --input=/tmp/wf.json && n8n publish:workflow --id=FernwayHotLeads1'
           docker restart n8n-ci > /dev/null
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz > /dev/null && break; sleep 2; done
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5690/healthz/readiness > /dev/null && break; sleep 2; done
           sleep 5
           node -e '
             const c = require("crypto");

@@ -29,8 +29,9 @@ services:
       EXECUTIONS_DATA_MAX_AGE: "336"
     volumes: ["/srv/n8n/data:/home/node/.n8n"]
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz/readiness').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
       interval: 20s
+      start_period: 120s
       timeout: 5s
       retries: 5
     logging:
