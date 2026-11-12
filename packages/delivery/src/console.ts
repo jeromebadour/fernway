@@ -200,7 +200,7 @@ export async function resendHeld(deps: Deps, a: Actor, reason: string): Promise<
 }
 
 export const AUDIT_PAGE = 15;
-export const auditGroups = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."] } as const;
+export const auditGroups = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."] } as const;
 export type AuditGroup = keyof typeof auditGroups;
 
 export async function auditView(db: Db, accountId: number, page = 1, group?: AuditGroup) {

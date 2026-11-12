@@ -6,7 +6,7 @@ import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
 import { perLead, rates } from "@/ui/rates";
 import {
   GRoute, GScan, GManifest, GPrice, GKey, GCheck, GResend, GHand,
-  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GGrid, GHold, GShield, GOut,
+  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GSheet, GHold, GShield, GOut,
 } from "@/ui/glyphs";
 
 const scans = [
@@ -54,7 +54,7 @@ const worksWith = [
   { Glyph: GNodes, name: "n8n" },
   { Glyph: GLoop, name: "Make" },
   { Glyph: GCard, name: "Stripe" },
-  { Glyph: GGrid, name: "Google Sheets" },
+  { Glyph: GSheet, name: "Google Sheets" },
 ];
 
 export default function Landing() {

@@ -3,7 +3,7 @@ import "server-only";
 // stored: every lead is worked out from its place in line and the time now, so the board always reads as live, and the
 // same lead keeps its number, name and story between visits.
 import { formatWaybill, parseWaybill } from "@fernway/core";
-import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type ShipmentState } from "@fernway/delivery";
+import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type SheetView, type ShipmentState } from "@fernway/delivery";
 import type { ConsoleData, ConsoleWho } from "./console-data";
 import { demoWhen } from "./operator-demo";
 
@@ -86,6 +86,19 @@ function demoScore(l: Lead, now: number): LeadScore | null {
     why: null, ghl, ghlError: ghl === "skipped" ? "the lead is not in GHL" : null, tag: scoreTag(score),
   };
 }
+// Google Sheets: Jonas linked the clinic's sheet 6 days ago; each lead since then has its row.
+function sheetView(now: number): SheetView {
+  const since = now - 6 * 1440 * MIN;
+  const mine = all(now).filter((l) => l.created >= since && l.state !== "in_transit");
+  return {
+    serviceEmail: "fernway-sheets@fernway-514517.iam.gserviceaccount.com",
+    link: { spreadsheetId: "1HpXr4bQ9mTz7wLkVn2sYc8dFg0aJe5uRiOq3NhB6tCv", title: "Harbor Physio leads 2026", url: "https://docs.google.com/spreadsheets/d/1HpXr4bQ9mTz7wLkVn2sYc8dFg0aJe5uRiOq3NhB6tCv/edit",
+      madeBy: "Jonas Berg", since: iso(since), lastOkAt: iso(mine[0]?.updated ?? now), lastError: null },
+    rows: { written: mine.length, waiting: 1, givenUp: 0 },
+    latest: mine.slice(0, 8).map((l, i) => ({ shipmentId: l.id, waybill: l.waybill, who: who(l), row: mine.length + 1 - i, at: iso(l.updated + 3_000) })),
+  };
+}
+
 function scoreView(now: number): ScoreView {
   const start = new Date(now); start.setUTCDate(1); start.setUTCHours(0, 0, 0, 0);
   const leads = all(now).map((l) => ({ l, s: demoScore(l, now) })).filter((x) => x.s);
@@ -237,6 +250,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "member.invited", targetKind: "invite", targetId: "oskar.lund@harborphysio.com", detail: "as member", at: at(1440) },
     { who: "Sara Okafor", action: "member.joined", targetKind: "member", targetId: "3", detail: "as member", at: at(4 * 1440) },
     { who: "Jonas Berg", action: "member.invited", targetKind: "invite", targetId: "sara.okafor@harborphysio.com", detail: "as member", at: at(5 * 1440) },
+    { who: "Jonas Berg", action: "sheet.linked", targetKind: "sheet", targetId: "Harbor Physio leads 2026", detail: "new leads are written to the tab Fernway leads", at: at(6 * 1440) },
     { who: "Maya Lindqvist", action: "score.on", targetKind: "score", targetId: "Claude score", detail: "new leads are read by Claude", at: at(14 * 1440) },
     { who: "Jonas Berg", action: "form.made", targetKind: "form", targetId: "Corporate wellness funnel", detail: "contact · 4 fields · any site", at: at(9 * 1440 - 50) },
     { who: "Jonas Berg", action: "key.revoked", targetKind: "key", targetId: "fw_p3x8d1wz_", detail: "", at: at(8 * 1440) },
@@ -251,7 +265,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "plan.changed", targetKind: "plan", targetId: "growth", detail: "Growth, $49 a month", at: at(41 * 1440 + 30) },
   ];
 };
-const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."] };
+const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."] };
 
 export function demoConsoleWho(): ConsoleWho {
   const now = Date.now();
@@ -262,6 +276,7 @@ export function demoConsoleWho(): ConsoleWho {
     receipt: () => null,
     routes: async () => routesView(now),
     score: async () => scoreView(now),
+    sheet: async () => sheetView(now),
     scoreOf: async (id) => {
       const i = 900_000 + TOP - id;
       return Number.isInteger(i) && i >= 0 && i < N ? demoScore(lead(i, now), now) : null;

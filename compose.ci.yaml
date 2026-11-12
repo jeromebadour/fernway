@@ -18,9 +18,16 @@ services:
       FERNWAY_GHL_WEBHOOK_KEY: ${CI_GHL_WEBHOOK_KEY:-}
       GHL_SSO_KEY: ci-ghl-shared-secret
       FERNWAY_WORKFLOW_KEY: ci-workflow-key-0123456789abcdef
+      # Google Sheets against the stand-in Google in fake-ghl.mjs, with this run's own service account key.
+      GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
+      FERNWAY_GOOGLE_API: http://fake-ghl:4010
+      FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token
   worker:
     environment:
       FERNWAY_GHL_API: http://fake-ghl:4010
       # Claude score against the stand-in Claude in fake-ghl.mjs.
       ANTHROPIC_API_KEY: ci-claude-key
       FERNWAY_CLAUDE_API: http://fake-ghl:4010
+      GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
+      FERNWAY_GOOGLE_API: http://fake-ghl:4010
+      FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token

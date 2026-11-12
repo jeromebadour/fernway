@@ -240,9 +240,9 @@ export const alerts = pgTable("alerts", {
 
 export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
   "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed",
-  "form.made", "form.changed", "form.revoked", "score.on", "score.off"] as const;
+  "form.made", "form.changed", "form.revoked", "score.on", "score.off", "sheet.linked", "sheet.unlinked"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score";
+export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score" | "sheet";
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   accountId: bigint("account_id", { mode: "number" }).notNull(),
@@ -399,4 +399,28 @@ export const claudeSpend = pgTable("claude_spend", {
   inputTokens: bigint("input_tokens", { mode: "number" }).notNull().default(0),
   outputTokens: bigint("output_tokens", { mode: "number" }).notNull().default(0),
   spentUsd: numeric("spent_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+});
+
+/** The Google Sheet an account linked: its id and title, who linked it, and from when its leads are written. */
+export const sheetLinks = pgTable("sheet_links", {
+  accountId: bigint("account_id", { mode: "number" }).primaryKey(),
+  spreadsheetId: text("spreadsheet_id").notNull(),
+  title: text("title").notNull(),
+  madeBy: text("made_by").notNull(),
+  since: timestamp("since", { withTimezone: true }).notNull().defaultNow(),
+  lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
+  lastError: text("last_error"),
+});
+
+/** One lead's row in the linked sheet. */
+export const sheetRows = pgTable("sheet_rows", {
+  shipmentId: bigint("shipment_id", { mode: "number" }).primaryKey(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  rowNumber: integer("row_number"),
+  printed: text("printed"),
+  writtenAt: timestamp("written_at", { withTimezone: true }),
+  tries: smallint("tries").notNull().default(0),
+  nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
+  lastError: text("last_error"),
+  givenUpAt: timestamp("given_up_at", { withTimezone: true }),
 });

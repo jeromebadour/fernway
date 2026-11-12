@@ -18,6 +18,7 @@
 //   staff-owner <email>                         makes that Fernway user the operator console's owner (the first
 //                                               staff; more are added in the console). Opens with two-step on.
 //   scoring <account> on|off                    Claude score for that account's new leads (the console does the same)
+//   sheet <account> <link>|off                  link that account's Google Sheet (shared with Fernway's address), or unlink
 //   claude-spend                                what Fernway spent on Claude this month, against its cap
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
@@ -44,6 +45,10 @@ import {
   scans,
   seal,
   setScoring,
+  createSheets,
+  linkSheet,
+  serviceKeyFrom,
+  unlinkSheet,
   shipments,
   spendThisMonth,
   MONTH_CAP_USD,
@@ -210,6 +215,16 @@ try {
       console.log(`account ${acc} (${a!.name}): Claude score ${on ? "on; leads picked up from now are scored" : "off"}`);
       break;
     }
+    case "sheet": {
+      const acc = accountArg(args[0]);
+      const m = { accountId: acc, userId: null, name: "Fernway (setup tool)", role: "owner" as const };
+      if (args[1] === "off") { await unlinkSheet(db, m); console.log(`account ${acc}: sheet unlinked`); break; }
+      const key = serviceKeyFrom(process.env.GOOGLE_SHEETS_KEY) ?? fail("GOOGLE_SHEETS_KEY is not set");
+      const r = await linkSheet(db, createSheets({ key: key!, baseUrl: process.env.FERNWAY_GOOGLE_API || undefined, tokenUrl: process.env.FERNWAY_GOOGLE_TOKEN || undefined }), m, args[1] ?? "");
+      if (!r.ok) fail(r.problems.join("; "));
+      if (r.ok) console.log(`account ${acc}: linked "${r.title}"; new leads are written to the tab Fernway leads`);
+      break;
+    }
     case "claude-spend": {
       const s = await spendThisMonth(db);
       const cap = Number(process.env.CLAUDE_MONTH_CAP_USD ?? MONTH_CAP_USD);
@@ -231,7 +246,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, claude-spend, fake-connect");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, claude-spend, fake-connect");
   }
 } finally {
   await pool.end();

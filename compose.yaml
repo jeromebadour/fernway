@@ -93,6 +93,10 @@ services:
       FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
       # Claude score's cap a month, for the operator console's watcher (the key itself stays with the worker).
       CLAUDE_MONTH_CAP_USD: ${CLAUDE_MONTH_CAP_USD:-8}
+      # Google Sheets: Fernway's service account key (base64 JSON), to check a sheet when an owner links it.
+      GOOGLE_SHEETS_KEY: ${GOOGLE_SHEETS_KEY:-}
+      FERNWAY_GOOGLE_API: ${FERNWAY_GOOGLE_API:-}
+      FERNWAY_GOOGLE_TOKEN: ${FERNWAY_GOOGLE_TOKEN:-}
       # Stripe, test mode only (the app refuses a live key). Billing stays off until both are set.
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -141,6 +145,10 @@ services:
       # Claude score: Fernway's own key (its own workspace, capped in Anthropic's console), and Fernway's own cap a month.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MONTH_CAP_USD: ${CLAUDE_MONTH_CAP_USD:-8}
+      # Google Sheets: Fernway's service account key (base64 JSON); the sheets are the ones owners shared with it.
+      GOOGLE_SHEETS_KEY: ${GOOGLE_SHEETS_KEY:-}
+      FERNWAY_GOOGLE_API: ${FERNWAY_GOOGLE_API:-}
+      FERNWAY_GOOGLE_TOKEN: ${FERNWAY_GOOGLE_TOKEN:-}
     <<: *logs
 
 volumes:

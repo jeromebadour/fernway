@@ -1,12 +1,13 @@
 import "server-only";
 import {
-  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, scoreOf, scoreView, shipmentByWaybill, syncLog, teamView, trackToken,
+  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, scoreOf, scoreView, sheetView, shipmentByWaybill, syncLog, teamView, trackToken,
   type AuditGroup, type LogState, type Role,
 } from "@fernway/delivery";
 import type { When } from "@/ui/when";
 import { delivery } from "./connect";
 import { ghlChoices, type Choices } from "./ghl-choices";
 import { requirePerson } from "./session";
+import { sheetsClient } from "./sheets";
 import { whenFor } from "./when-for";
 
 // What every console page reads, from one place: the real account's data, or the public demo's invented one. The pages
@@ -19,6 +20,7 @@ export type ConsoleData = {
   routes(): ReturnType<typeof routesView>;
   forms(): ReturnType<typeof formsView>;
   score(): ReturnType<typeof scoreView>;
+  sheet(): ReturnType<typeof sheetView>;
   scoreOf(id: number): ReturnType<typeof scoreOf>;
   choices(): Promise<Choices>;
   connection(): ReturnType<typeof connectionView>;
@@ -47,6 +49,7 @@ export async function consoleWho(back: string): Promise<ConsoleWho> {
       routes: () => routesView(db, id),
       forms: () => formsView(db, id),
       score: () => scoreView(db, id),
+      sheet: () => sheetView(db, id, sheetsClient()?.email ?? null),
       scoreOf: (sid) => scoreOf(db, id, sid),
       choices: () => ghlChoices(id),
       connection: () => connectionView(db, id),
