@@ -1,8 +1,7 @@
 // The public site's shared frame: the top bar, the footer and the phone's pinned trial button (styles in site.css).
-import Image from "next/image";
 import Link from "next/link";
 import { JEROME } from "./builder";
-import { GDepot, GFind, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan, GSignIn } from "./glyphs";
+import { GDepot, GFind, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan, GSignIn, GUser } from "./glyphs";
 
 const nav = [
   { href: "/#how", label: "Product", G: GDepot },
@@ -47,7 +46,7 @@ export function SiteFooter() {
       <div className="wb-foot-bottom">
         <span>Fernway is a portfolio product. © 2026</span>
         <a href={JEROME.site} className="wb-by">
-          {JEROME.photo && <Image src={JEROME.photo} alt="" width={28} height={28} unoptimized />}Built by <b>{JEROME.name}</b><GOut size={13} />
+          <GUser size={14} />Built by <b>{JEROME.name}</b><GOut size={13} />
         </a>
       </div>
     </footer>
