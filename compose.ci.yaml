@@ -22,6 +22,7 @@ services:
       GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: http://fake-ghl:4010
       FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl
   worker:
     environment:
       FERNWAY_GHL_API: http://fake-ghl:4010
@@ -31,3 +32,4 @@ services:
       GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: http://fake-ghl:4010
       FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl

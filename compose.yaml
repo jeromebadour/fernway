@@ -97,6 +97,8 @@ services:
       GOOGLE_SHEETS_KEY: ${GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: ${FERNWAY_GOOGLE_API:-}
       FERNWAY_GOOGLE_TOKEN: ${FERNWAY_GOOGLE_TOKEN:-}
+      # Webhooks out: hosts allowed over plain http (CI's stand-in only; empty on the box, so https and public only).
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: ${FERNWAY_WEBHOOK_INSECURE_HOSTS:-}
       # Stripe, test mode only (the app refuses a live key). Billing stays off until both are set.
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -149,6 +151,8 @@ services:
       GOOGLE_SHEETS_KEY: ${GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: ${FERNWAY_GOOGLE_API:-}
       FERNWAY_GOOGLE_TOKEN: ${FERNWAY_GOOGLE_TOKEN:-}
+      # Webhooks out: hosts allowed over plain http (CI's stand-in only; empty on the box, so https and public only).
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: ${FERNWAY_WEBHOOK_INSECURE_HOSTS:-}
     <<: *logs
 
 volumes:

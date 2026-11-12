@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.11",
+  version: "1.12",
   effective: "12 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -54,6 +54,7 @@ export const privacy: LegalDoc = {
         "**Imports:** Fernway\'s import tool runs on the account\'s own computer. It reads a file of contacts there, tidies and merges it there, and sends each contact through the account\'s own API key, the same way as any other lead. The file itself never reaches Fernway.",
         "**Lead score:** an account can turn on Claude's lead score. Each new lead is then read by Claude, Anthropic's AI, which is sent only the business's name, the route, where the lead came from, the company, website, the email's domain, whether a phone number or a meeting was given, and the message; never the person's name, email address or phone number. Fernway keeps Claude's score, its one-line read and reasons with the lead, and adds them to the GoHighLevel contact as a note and a tag. They go when the lead goes.",
         "**Google Sheets:** an account can link one Google Sheet of its own. Each lead picked up after that is written there as a row (waybill, times, name, email, phone, company, route, where it came from, its state, and its lead score if it has one) and rewritten as it changes. Fernway reaches only sheets their owners shared with its own Google address, keeps which sheet is linked and where each lead's row is, and stops writing when the sheet is unlinked; the rows already written stay in the owner's sheet, under Google's terms and the owner's control. If the account also turns on **Leads in**, Fernway reads that tab of the same sheet every minute: each new row becomes a lead like any other (kept as above), and Fernway writes its waybill, state and a note back into the row.",
+        "**Webhooks:** an account can add up to five addresses of its own that Fernway tells about its leads (picked up, signed for, held, returned, scored). Each call carries the lead's waybill, route, details as sent, GHL ids, receipt link and score, signed so the receiving system can check it came from Fernway. Fernway keeps each call, with what came back, for 30 days. Where those addresses send the lead next is up to the account.",
         "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
         "The [Your record](/account/record) page in the account area shows all of this beside what GoHighLevel holds, and downloads it as a file.",
       ],
@@ -138,7 +139,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 added the import tool; version 1.9 added lead score; version 1.10 added Google Sheets; version 1.11 adds reading leads from a sheet. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 added the import tool; version 1.9 added lead score; version 1.10 added Google Sheets; version 1.11 added reading leads from a sheet; version 1.12 adds webhooks. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

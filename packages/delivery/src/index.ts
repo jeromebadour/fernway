@@ -26,3 +26,4 @@ export * from "./workflows.js";
 export * from "./embed.js";
 export * from "./score.js";
 export * from "./sheets.js";
+export * from "./hooks.js";
