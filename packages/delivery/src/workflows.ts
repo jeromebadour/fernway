@@ -168,6 +168,30 @@ export async function forgetOldTriggerSends(db: Db): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Reading GHL's workflow calls. GHL's documentation puts the fields in "data" and the sub-account in "extras"; what it
+// really sends (seen on 2026-11-12) is the fields flat in the body, beside its own "DYNAMIC" and "type", with the
+// sub-account in a "locationid" header. Both shapes read the same here.
+
+const GHL_OWN = new Set(["data", "extras", "meta", "DYNAMIC", "type"]);
+
+/** One GHL workflow call in the documented shape, whichever shape it came in. */
+export function readGhlCall(body: unknown, headers: Headers | Record<string, string | undefined> = {}): { data: Record<string, unknown>; extras: Record<string, unknown> } {
+  const h = (k: string) => (headers instanceof Headers ? headers.get(k) : headers[k]) ?? undefined;
+  const b = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+  const obj = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
+  const data = obj(b.data) ?? Object.fromEntries(Object.entries(b).filter(([k]) => !GHL_OWN.has(k)));
+  const ex = obj(b.extras) ?? {};
+  const pick = (...v: unknown[]) => v.find((x) => typeof x === "string" && x.trim() !== "");
+  const extras = {
+    ...ex,
+    locationId: pick(ex.locationId, h("locationid"), h("x-location-id"), b.locationId),
+    contactId: pick(ex.contactId, h("contactid"), b.contactId),
+    workflowId: pick(ex.workflowId, h("workflowid"), b.workflowId),
+  };
+  return { data, extras: Object.fromEntries(Object.entries(extras).filter(([, v]) => v !== undefined)) };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // The action "Track with Fernway".
 
 const extras = z.object({ locationId: id, contactId: z.string().max(120).optional(), workflowId: z.string().max(120).optional() }).passthrough();
@@ -181,8 +205,8 @@ const action = z.object({
 }).passthrough();
 
 /** The fields of the action's settings in GHL: the account's routes that need no meeting time, as a list to pick from. */
-export async function actionFields(db: Db, body: unknown): Promise<{ inputs: unknown[] } | null> {
-  const p = z.object({ extras }).passthrough().safeParse(body);
+export async function actionFields(db: Db, body: unknown, headers?: Headers | Record<string, string | undefined>): Promise<{ inputs: unknown[] } | null> {
+  const p = z.object({ extras }).passthrough().safeParse(readGhlCall(body, headers));
   if (!p.success) return null;
   const accountId = await accountAt(db, p.data.extras.locationId);
   const mine = accountId === null ? [] : await db.select({ key: routes.key, label: routes.label }).from(routes)
@@ -213,8 +237,8 @@ export type Tracked =
  * Sends a workflow's contact through a Fernway route. The same contact sent by the same workflow within ten minutes
  * is the same waybill (GHL may run an action again after a slow answer); later, it is a new lead.
  */
-export async function trackFromWorkflow(deps: Deps, body: unknown, key: Buffer, appUrl: string, now = new Date()): Promise<Tracked> {
-  const p = action.safeParse(body);
+export async function trackFromWorkflow(deps: Deps, body: unknown, key: Buffer, appUrl: string, now = new Date(), headers?: Headers | Record<string, string | undefined>): Promise<Tracked> {
+  const p = action.safeParse(readGhlCall(body, headers));
   if (!p.success) return { ok: false, status: 400, problems: [...p.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).slice(0, 5), `received: ${shape(body)}`] };
   const { data, extras: x } = p.data;
   const accountId = await accountAt(deps.db, x.locationId);

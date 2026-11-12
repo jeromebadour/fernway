@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { keyFrom } from "../src/crypto.js";
 import { ghlConnections, routes, shipments, triggerSends, workflowTriggers } from "../src/schema.js";
-import { actionFields, eventsFrom, noteTriggerSends, sendDueTriggers, subscribe, trackFromWorkflow } from "../src/workflows.js";
+import { actionFields, eventsFrom, noteTriggerSends, readGhlCall, sendDueTriggers, subscribe, trackFromWorkflow } from "../src/workflows.js";
 import { createDb, fakeConnection, freshDatabase, seedAccount, testDeps } from "./support.js";
 
 const GHL = "https://services.leadconnectorhq.com";
@@ -80,6 +80,22 @@ describe("Track with Fernway", () => {
     expect(await trackFromWorkflow(deps, body(), key, "https://fw.test", new Date(at.getTime() + 11 * 60_000))).toMatchObject({ ok: true, duplicate: false });
     const mine = await app.db.select().from(shipments).where(eq(shipments.source, "workflow"));
     expect(mine.map((s) => s.viaWorkflow)).toEqual(["wf_track", "wf_track"]);
+  });
+
+  it("reads GHL's real shape: fields flat in the body, the sub-account in a header", async () => {
+    const real = { DYNAMIC: "", type: "action", email: "flat@northpine.example", firstName: "Flo", phone: "", lastName: "", company: "", message: "", route: "trial" };
+    expect(readGhlCall(real, { locationid: "loc_north" })).toEqual({
+      data: { email: "flat@northpine.example", firstName: "Flo", phone: "", lastName: "", company: "", message: "", route: "trial" },
+      extras: { locationId: "loc_north" },
+    });
+    const f = await actionFields(app.db, { DYNAMIC: "", type: "action", email: "x" }, new Headers({ locationid: "loc_north" }));
+    expect(JSON.stringify(f)).toContain('"value":"trial"');
+    const { deps } = testDeps(app.db, fakeConnection());
+    expect(await trackFromWorkflow(deps, real, key, "https://fw.test", new Date("2026-11-12T00:00:00Z"), { locationid: "loc_north" })).toMatchObject({ ok: true, state: "picked_up" });
+    // Its own lead goes again, so the firing tests below count only theirs.
+    await app.db.delete(shipments).where(eq(shipments.idempotencyKey, `workflow:none:flat@northpine.example:${Math.floor(new Date("2026-11-12T00:00:00Z").getTime() / 600_000)}`));
+    // The documented shape still reads the same, and the body's own extras win over a header.
+    expect(readGhlCall({ data: { route: "trial" }, extras: { locationId: "loc_a" } }, { locationid: "loc_b" }).extras.locationId).toBe("loc_a");
   });
 
   it("says which field names it got when the call's shape doesn't fit, never their values", async () => {

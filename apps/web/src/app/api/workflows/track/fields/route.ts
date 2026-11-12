@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const refused = await fromGhlWorkflows(request);
   if (refused) return refused;
   const body = await request.json().catch(() => null);
-  const f = await actionFields(delivery().db, body);
+  const f = await actionFields(delivery().db, body, request.headers);
   if (!f) noteMisfit("track/fields", request, body);
   return f ? Response.json(f) : Response.json({ ok: false }, { status: 400 });
 }
