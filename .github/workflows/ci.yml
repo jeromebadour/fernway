@@ -381,6 +381,36 @@ jobs:
           $W sheet-in $ACC off | grep -q "Leads in off"
           $W sheet $ACC off | grep -q "sheet unlinked"
 
+      - name: Webhooks out - a lead event reaches an endpoint once, signed so the receiver can check it
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          # Only https and public addresses; CI's stand-in is the one host allowed over http.
+          if $W hook $ACC Private https://10.0.0.5/x signed > /tmp/h.txt 2>&1; then exit 1; fi
+          grep -q "a public address" /tmp/h.txt
+          SECRET=$($W hook $ACC "CI receiver" http://fake-ghl:4010/hook picked_up,signed | tail -1)
+          echo "$SECRET" | grep -Eq '^whsec_[A-Za-z0-9_-]{32}$'
+          $W send-test $ACC $ROUTE hook-ci@northpine-ci.com
+          for i in $(seq 1 30); do
+            test "$(curl -sf http://127.0.0.1:4010/__hooks | node -e 'console.log(JSON.parse(require("fs").readFileSync(0)).filter((h)=>h.body.includes("hook-ci@")).length)')" = 2 && break; sleep 2
+          done
+          curl -sf http://127.0.0.1:4010/__hooks > /tmp/hooks.json
+          SECRET="$SECRET" node -e '
+            const c = require("crypto"); const hs = JSON.parse(require("fs").readFileSync("/tmp/hooks.json")).filter((h) => h.body.includes("hook-ci@"));
+            if (hs.length !== 2) process.exit(1);
+            for (const h of hs) {
+              const p = Object.fromEntries(h.headers["fernway-signature"].split(",").map((x) => x.split("=")));
+              const want = c.createHmac("sha256", process.env.SECRET).update(p.t + "." + h.body).digest("hex");
+              if (want !== p.v1) process.exit(2);
+              const b = JSON.parse(h.body);
+              if (b.id !== h.headers["fernway-delivery"] || b.type !== h.headers["fernway-event"]) process.exit(3);
+            }
+            const types = hs.map((h) => JSON.parse(h.body).type).sort().join(",");
+            if (types !== "lead.picked_up,lead.signed") process.exit(4);'
+          test "$(psql -At -c "select count(*) from webhook_deliveries where state = 'delivered'")" = 2
+          test "$(psql -At -c "select count(*) from audit_log where action = 'hook.made'")" = 1
+
       - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new
         run: |
           W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"

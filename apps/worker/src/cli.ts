@@ -20,6 +20,8 @@
 //   scoring <account> on|off                    Claude score for that account's new leads (the console does the same)
 //   sheet <account> <link>|off                  link that account's Google Sheet (shared with Fernway's address), or unlink
 //   sheet-in <account> <route>|off              read the linked sheet's tab Leads in, its rows sent on that route
+//   hook <account> <label> <url> <events,...>   add a webhook endpoint (events: picked_up, signed, held, returned, scored);
+//                                               prints its secret once
 //   claude-spend                                what Fernway spent on Claude this month, against its cap
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
@@ -49,6 +51,7 @@ import {
   createSheets,
   linkSheet,
   setSheetIn,
+  saveHook,
   serviceKeyFrom,
   unlinkSheet,
   shipments,
@@ -237,6 +240,16 @@ try {
       console.log(args[1] === "off" ? `account ${acc}: Leads in off` : `account ${acc}: Leads in on; its rows become leads on ${args[1]}`);
       break;
     }
+    case "hook": {
+      const acc = accountArg(args[0]);
+      const [label, url, list] = [args[1], args[2], args[3]];
+      if (!label || !url || !list) fail("hook <account> <label> <url> <events,...>");
+      const insecure = (process.env.FERNWAY_WEBHOOK_INSECURE_HOSTS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+      const r = await saveHook(db, key, { accountId: acc, userId: null, name: "Fernway (setup tool)", role: "owner" }, { label: label!, url: url!, events: list!.split(",").map((e) => `lead.${e.trim()}`) }, insecure);
+      if (!r.ok) fail(r.problems.join("; "));
+      if (r.ok) { console.log(`endpoint ${r.id} added; its secret (shown once):`); console.log(r.secret); }
+      break;
+    }
     case "claude-spend": {
       const s = await spendThisMonth(db);
       const cap = Number(process.env.CLAUDE_MONTH_CAP_USD ?? MONTH_CAP_USD);
@@ -258,7 +271,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, sheet-in, claude-spend, fake-connect");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, sheet-in, hook, claude-spend, fake-connect");
   }
 } finally {
   await pool.end();

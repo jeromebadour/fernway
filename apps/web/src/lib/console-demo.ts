@@ -3,7 +3,7 @@ import "server-only";
 // stored: every lead is worked out from its place in line and the time now, so the board always reads as live, and the
 // same lead keeps its number, name and story between visits.
 import { formatWaybill, parseWaybill } from "@fernway/core";
-import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type SheetView, type ShipmentState } from "@fernway/delivery";
+import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type SheetView, type HookView, type ShipmentState } from "@fernway/delivery";
 import type { ConsoleData, ConsoleWho } from "./console-data";
 import { demoWhen } from "./operator-demo";
 
@@ -86,6 +86,32 @@ function demoScore(l: Lead, now: number): LeadScore | null {
     why: null, ghl, ghlError: ghl === "skipped" ? "the lead is not in GHL" : null, tag: scoreTag(score),
   };
 }
+// Webhooks: the clinic's n8n hears signed, held and scored leads; a booking tool hears every pickup.
+function hookView(now: number): HookView {
+  const leads = all(now).filter((l) => l.state !== "in_transit").slice(0, 40);
+  const n8n = { id: 1, label: "Clinic n8n", url: "https://n8n.harborphysio.com/webhook/fernway-leads", host: "n8n.harborphysio.com", events: ["lead.signed", "lead.held", "lead.scored"] as HookView["endpoints"][number]["events"] };
+  const desk = { id: 2, label: "Front desk board", url: "https://desk.harborphysio.com/api/fernway", host: "desk.harborphysio.com", events: ["lead.picked_up"] as HookView["endpoints"][number]["events"] };
+  const deliveries: HookView["deliveries"] = leads.slice(0, 15).map((l, i) => {
+    const e = i % 3 === 2 ? desk : n8n;
+    const event = e === desk ? "lead.picked_up" : l.state === "held" ? "lead.held" : i % 2 ? "lead.scored" : "lead.signed";
+    const failed = i === 4, waiting = i === 1;
+    return {
+      id: 9000 - i, endpointId: e.id, endpoint: e.label, event, waybill: l.waybill, shipmentId: l.id, state: failed ? "failed" : waiting ? "waiting" : "delivered",
+      tries: failed ? 8 : waiting ? 2 : 1, status: failed ? 502 : waiting ? 503 : 200, ms: failed ? 10_000 : 140 + ((i * 37) % 200),
+      answer: failed ? "<html>502 Bad Gateway</html>" : waiting ? '{"error":"busy"}' : '{"received":true}',
+      payload: { id: `evt_demo${9000 - i}`, type: event, created: iso(l.updated), data: { waybill: l.waybill, state: l.state, route: { key: l.route.key, label: l.route.label }, source: l.source, contact: { firstName: l.first, lastName: l.last, email: l.email } } },
+      at: iso(l.updated + 1_200), nextAt: waiting ? iso(now + 4 * MIN) : null,
+    };
+  });
+  return {
+    endpoints: [
+      { ...n8n, madeBy: "Jonas Berg", createdAt: iso(now - 3 * 1440 * MIN), day: { delivered: 61, waiting: 1, failed: 1 }, lastAt: deliveries[0]!.at, lastStatus: 200 },
+      { ...desk, madeBy: "Maya Lindqvist", createdAt: iso(now - 9 * 1440 * MIN), day: { delivered: 54, waiting: 0, failed: 0 }, lastAt: deliveries[2]!.at, lastStatus: 200 },
+    ],
+    deliveries,
+  };
+}
+
 // Google Sheets: Jonas linked the clinic's sheet 6 days ago; each lead since then has its row.
 function sheetView(now: number): SheetView {
   const since = now - 6 * 1440 * MIN;
@@ -251,6 +277,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "member.invited", targetKind: "invite", targetId: "oskar.lund@harborphysio.com", detail: "as member", at: at(1440) },
     { who: "Sara Okafor", action: "member.joined", targetKind: "member", targetId: "3", detail: "as member", at: at(4 * 1440) },
     { who: "Jonas Berg", action: "member.invited", targetKind: "invite", targetId: "sara.okafor@harborphysio.com", detail: "as member", at: at(5 * 1440) },
+    { who: "Jonas Berg", action: "hook.made", targetKind: "hook", targetId: "Clinic n8n", detail: "n8n.harborphysio.com · Signed for, Held, Scored", at: at(3 * 1440) },
     { who: "Jonas Berg", action: "sheet.linked", targetKind: "sheet", targetId: "Harbor Physio leads 2026", detail: "new leads are written to the tab Fernway leads", at: at(6 * 1440) },
     { who: "Maya Lindqvist", action: "score.on", targetKind: "score", targetId: "Claude score", detail: "new leads are read by Claude", at: at(14 * 1440) },
     { who: "Jonas Berg", action: "form.made", targetKind: "form", targetId: "Corporate wellness funnel", detail: "contact · 4 fields · any site", at: at(9 * 1440 - 50) },
@@ -266,7 +293,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "plan.changed", targetKind: "plan", targetId: "growth", detail: "Growth, $49 a month", at: at(41 * 1440 + 30) },
   ];
 };
-const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."] };
+const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."], hooks: ["hook."] };
 
 export function demoConsoleWho(): ConsoleWho {
   const now = Date.now();
@@ -278,6 +305,7 @@ export function demoConsoleWho(): ConsoleWho {
     routes: async () => routesView(now),
     score: async () => scoreView(now),
     sheet: async () => sheetView(now),
+    hooks: async () => hookView(now),
     scoreOf: async (id) => {
       const i = 900_000 + TOP - id;
       return Number.isInteger(i) && i >= 0 && i < N ? demoScore(lead(i, now), now) : null;

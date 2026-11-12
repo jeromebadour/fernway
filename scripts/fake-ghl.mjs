@@ -35,6 +35,8 @@ const fired = [];
 // What the stand-in Claude was sent, and each contact's tags.
 const claude = [];
 const tags = new Map();
+// Fernway's webhooks, as received.
+const hooks = [];
 // The stand-in Google sheet: its tabs, each a list of rows.
 const sheet = new Map([["Sheet1", []]]);
 const SHARED = "1CiSharedSheetAbcdefghijkl";
@@ -51,6 +53,9 @@ createServer(async (req, res) => {
   if (url.pathname === "/__calls") return send(res, 200, calls);
   if (url.pathname === "/__fired") return send(res, 200, fired);
   if (url.pathname === "/__claude") return send(res, 200, claude);
+  // A receiver for Fernway's webhooks: keeps each call with its headers and raw body.
+  if (url.pathname === "/__hooks") return send(res, 200, hooks);
+  if (req.method === "POST" && url.pathname === "/hook") { hooks.push({ headers: req.headers, body }); return send(res, 200, { received: true }); }
   if (url.pathname === "/__sheet") return send(res, 200, sheet.get("Fernway leads") ?? []);
   // The test types a row into Leads in, the way a person would.
   if (req.method === "POST" && url.pathname === "/__sheet-in") { (sheet.get("Leads in") ?? []).push(json.row); return send(res, 200, sheet.get("Leads in")); }

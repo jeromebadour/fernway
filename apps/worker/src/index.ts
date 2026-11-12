@@ -37,6 +37,9 @@ import {
   serviceKeyFrom,
   syncSheets,
   readSheetsIn,
+  forgetOldDeliveries,
+  noteHookEvents,
+  sendDueHooks,
   type Deps,
 } from "@fernway/delivery";
 import { eq } from "drizzle-orm";
@@ -198,6 +201,25 @@ if (sheetsKey) {
   }, 60_000);
   console.log(`worker ${commit}: Google Sheets on (${sheets.email})`);
 }
+
+// Webhooks out, every 10 s: each lead event noted for the endpoints that asked for it, then what is due is sent.
+const hookCtx = {
+  db, key: tokenKey, appUrl: (process.env.APP_URL ?? "https://fernway.jeromebadour.com").replace(/\/$/, ""),
+  insecureHosts: (process.env.FERNWAY_WEBHOOK_INSECURE_HOSTS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+};
+let hooking = false;
+setInterval(() => {
+  if (hooking) return;
+  hooking = true;
+  noteHookEvents(hookCtx, [demoAccount])
+    .then(() => sendDueHooks(hookCtx))
+    .then((r) => (r.delivered || r.retry || r.failed) && console.log(`worker: webhooks delivered ${r.delivered}, to retry ${r.retry}, failed ${r.failed}`))
+    .catch((e) => console.error(`worker: webhooks failed: ${e.message}`))
+    .finally(() => { hooking = false; });
+}, 10_000);
+setInterval(() => {
+  forgetOldDeliveries(db).then((n) => n && console.log(`worker: webhook deliveries older than 30 days removed ${n}`)).catch((e) => console.error(`worker: webhook clean-up failed: ${e.message}`));
+}, PURGE_MS);
 
 // Old sign-ins and spent email links go after their time (the Privacy Policy says how long), every hour.
 setInterval(() => {
