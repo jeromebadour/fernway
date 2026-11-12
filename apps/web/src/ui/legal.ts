@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.7",
+  version: "1.8",
   effective: "12 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -51,6 +51,7 @@ export const privacy: LegalDoc = {
         "**Fernway inside GHL:** when someone opens Fernway from GoHighLevel's menu, GoHighLevel tells Fernway who they are and which sub-account they are in. Fernway checks it, keeps nothing of it except a pass that runs out after two hours, and writes their name in the account's audit log when they resend a lead.",
         "**GHL workflows:** an account's own GoHighLevel workflows can send a contact through Fernway, and can start when one of its leads is held, returned or signed for. Fernway then sends that workflow the lead's waybill, receipt link, contact details and route, inside the same GoHighLevel sub-account and nowhere else. Fernway keeps which workflows asked, until they stop, and a record of each send for 30 days.",
         "**Embed forms:** an account can put a Fernway form on its own website or funnel. What a visitor types there goes to that account\'s GoHighLevel the same way as any other lead, and the visitor gets a receipt link. The form sets no cookie. Fernway keeps each form\'s settings until its owner revokes it.",
+        "**Imports:** Fernway\'s import tool runs on the account\'s own computer. It reads a file of contacts there, tidies and merges it there, and sends each contact through the account\'s own API key, the same way as any other lead. The file itself never reaches Fernway.",
         "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
         "The [Your record](/account/record) page in the account area shows all of this beside what GoHighLevel holds, and downloads it as a file.",
       ],
@@ -133,7 +134,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 adds embed forms. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 adds the import tool. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

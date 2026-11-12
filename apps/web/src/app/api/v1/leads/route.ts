@@ -12,10 +12,11 @@ export async function POST(request: Request) {
 
   const body: unknown = await request.json().catch(() => undefined);
   if (body === undefined) return problem(400, "body: send the lead as JSON, with Content-Type: application/json");
-  // The engine checks everything; this only stops a caller choosing their own source.
-  if (body && typeof body === "object" && "source" in body) return problem(422, "source: Fernway sets this to api; leave it out");
+  // The engine checks everything; this only stops a caller choosing their own source (an import tool may say import).
   if (!body || typeof body !== "object" || Array.isArray(body)) return problem(422, "body: a lead is a JSON object");
-  const r = await ingestLead(intake().deps, who.accountId, { ...body, source: "api" });
+  const said = (body as { source?: unknown }).source;
+  if (said !== undefined && said !== "import") return problem(422, "source: leave it out (Fernway sets api), or import from an import tool");
+  const r = await ingestLead(intake().deps, who.accountId, { ...body, source: said === "import" ? "import" : "api" });
   if (!r.ok) return problem(422, ...r.problems);
 
   const number = r.waybill.number;

@@ -8,7 +8,9 @@ import { leadInput } from "./lead.js";
 import { scanKinds, shipments, shipmentStates } from "./schema.js";
 
 /** A lead as an API caller sends it: the engine's own lead, with the source set by Fernway to "api". */
-export const apiLeadBody = leadInput.omit({ source: true });
+export const apiLeadBody = leadInput.omit({ source: true }).extend({
+  source: z.literal("import").optional().describe("Leave it out, or \"import\" from an import tool, so the lead shows as imported. Fernway sets api otherwise."),
+});
 
 const number = z.string().regex(/^FW \d{2} \d{5}$/).describe('The waybill number, e.g. "FW 26 00817".');
 const state = z.enum(shipmentStates).describe("picked_up, in_transit, waiting (a retry is scheduled), signed (GHL has it), held (needs you), returned.");

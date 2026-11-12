@@ -10,7 +10,7 @@ describe("the API's contract", () => {
   it("documents both endpoints from the same schemas, request fields included", () => {
     const doc = openApi("https://fernway.example");
     const body = doc.paths["/api/v1/leads"].post.requestBody.content["application/json"].schema as { properties: Record<string, unknown>; required: string[] };
-    expect(Object.keys(body.properties).sort()).toEqual(["contact", "idempotencyKey", "route", "slot"]);
+    expect(Object.keys(body.properties).sort()).toEqual(["contact", "idempotencyKey", "route", "slot", "source"]);
     expect(body.required.sort()).toEqual(["contact", "idempotencyKey", "route"]);
     const contact = body.properties.contact as { properties: Record<string, unknown> };
     expect(Object.keys(contact.properties)).toContain("phone");
