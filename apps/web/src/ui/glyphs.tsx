@@ -29,6 +29,8 @@ export const GPackage = (p: P) => (<S {...p}><path d="M10 2l8 4v8l-8 4-8-4V6z" /
 export const GNodes = (p: P) => (<S {...p}><rect x="2" y="8" width="4" height="4" /><rect x="14" y="3" width="4" height="4" /><rect x="14" y="13" width="4" height="4" /><path d="M6 10h4V5h4M10 10v5h4" /></S>);
 // Lead score: five rising bars, the top one tagged.
 export const GScore = (p: P) => (<S {...p}><path d="M3 17v-2M7 17v-4M11 17v-7M15 17v-10" /><rect x="14" y="2" width="3" height="3" fill="currentColor" stroke="none" /><path d="M2 18h16" /></S>);
+// Google Sheets: a sheet with its corner folded, three rows and a column line.
+export const GSheet = (p: P) => (<S {...p}><path d="M3 2h10l4 4v12H3z" /><path d="M13 2v4h4" /><path d="M6 10h8M6 13h8M6 16h8M10 10v6" /></S>);
 export const GLoop = (p: P) => (<S {...p}><path d="M4 10a4 4 0 0 1 8 0a4 4 0 0 0 8 0" /><path d="M2 10h2" /></S>);
 export const GCard = (p: P) => (<S {...p}><rect x="2" y="4" width="16" height="12" /><path d="M2 8h16M5 13h4" /></S>);
 export const GGrid = (p: P) => (<S {...p}><rect x="3" y="2" width="14" height="16" /><path d="M3 7h14M3 12h14M9 2v16" /></S>);

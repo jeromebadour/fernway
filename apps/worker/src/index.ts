@@ -33,6 +33,9 @@ import {
   scoreDue,
   writeScoresToGhl,
   MONTH_CAP_USD,
+  createSheets,
+  serviceKeyFrom,
+  syncSheets,
   type Deps,
 } from "@fernway/delivery";
 import { eq } from "drizzle-orm";
@@ -166,6 +169,23 @@ if (process.env.ANTHROPIC_API_KEY) {
       .finally(() => { scoring = false; });
   }, 20_000);
   console.log(`worker ${commit}: Claude score on (${claude.model}, cap $${capUsd} a month)`);
+}
+
+// Google Sheets, every 20 s: each linked sheet gets a row for every new lead, rewritten when the lead changes. Only
+// with Fernway's own service account key.
+const sheetsKey = serviceKeyFrom(process.env.GOOGLE_SHEETS_KEY);
+if (sheetsKey) {
+  const sheets = createSheets({ key: sheetsKey, baseUrl: process.env.FERNWAY_GOOGLE_API || undefined, tokenUrl: process.env.FERNWAY_GOOGLE_TOKEN || undefined });
+  let writing = false;
+  setInterval(() => {
+    if (writing) return;
+    writing = true;
+    syncSheets({ db, sheets })
+      .then((r) => (r.written || r.updated || r.retry || r.failed) && console.log(`worker: sheet rows written ${r.written}, rewritten ${r.updated}, to retry ${r.retry}, given up ${r.failed}`))
+      .catch((e) => console.error(`worker: Google Sheets failed: ${e.message}`))
+      .finally(() => { writing = false; });
+  }, 20_000);
+  console.log(`worker ${commit}: Google Sheets on (${sheets.email})`);
 }
 
 // Old sign-ins and spent email links go after their time (the Privacy Policy says how long), every hour.

@@ -92,6 +92,12 @@ jobs:
         run: |
           node -e 'const c=require("crypto");const k=c.generateKeyPairSync("ed25519");require("fs").writeFileSync("/tmp/ghl-sign.pem",k.privateKey.export({type:"pkcs8",format:"pem"}));console.log("CI_GHL_WEBHOOK_KEY="+k.publicKey.export({type:"spki",format:"pem"}).toString().replace(/\n/g,"\\n"))' >> "$GITHUB_ENV"
 
+      - name: A stand-in Google service account key, for this run only
+        # Fernway signs in to Google with its service account's private key; CI uses a throwaway key made here, and the
+        # stand-in Google in fake-ghl.mjs. Never a real key in CI.
+        run: |
+          node -e 'const c=require("crypto");const k=c.generateKeyPairSync("rsa",{modulusLength:2048});const j={type:"service_account",client_email:"fernway-sheets@fernway-ci.iam.gserviceaccount.com",private_key:k.privateKey.export({type:"pkcs8",format:"pem"})};console.log("CI_GOOGLE_SHEETS_KEY="+Buffer.from(JSON.stringify(j)).toString("base64"))' >> "$GITHUB_ENV"
+
       - name: Build and start the stack
         run: |
           # The changelog page is built from the git history, which never enters the image (see apps/web/scripts).
@@ -344,6 +350,25 @@ jobs:
           $W claude-spend | grep -qF '1 calls, $0.0001 of $8.00'
           $W scoring $ACC off | grep -q "Claude score off"
           test "$(psql -At -c "select count(*) from audit_log where action in ('score.on', 'score.off')")" = 2
+
+      - name: Google Sheets - a sheet links only when shared, each lead is one row, rewritten as the lead moves
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          # Not shared with Fernway: refused, saying how to share it.
+          if $W sheet $ACC https://docs.google.com/spreadsheets/d/1CiNotSharedAbcdefghijklmn/edit > /tmp/sheet.txt 2>&1; then exit 1; fi
+          grep -q "Share it with fernway-sheets@fernway-ci.iam.gserviceaccount.com" /tmp/sheet.txt
+          $W sheet $ACC https://docs.google.com/spreadsheets/d/1CiSharedSheetAbcdefghijkl/edit | grep -q 'linked "CI leads"'
+          $W send-test $ACC $ROUTE sheet-ci@northpine-ci.com
+          WB=$(psql -At -c "select 'FW ' || waybill_year || ' ' || lpad(waybill_seq::text, 5, '0') from shipments where contact->>'email' = 'sheet-ci@northpine-ci.com'")
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4010/__sheet | node -e 'const g=JSON.parse(require("fs").readFileSync(0));const r=g.find((x)=>x[0]===process.argv[1]);process.exit(r&&r[8]==="Signed for"?0:1)' "$WB" && break; sleep 3
+          done
+          curl -sf http://127.0.0.1:4010/__sheet > /tmp/sheet.json
+          node -e 'const g=JSON.parse(require("fs").readFileSync("/tmp/sheet.json"));if(g[0][0]!=="Waybill"||g[0][11]!=="Updated (UTC)")process.exit(1);const r=g.filter((x)=>x[0]===process.argv[1]);if(r.length!==1||r[0][3]!=="sheet-ci@northpine-ci.com"||r[0][8]!=="Signed for")process.exit(2)' "$WB"
+          test "$(psql -At -c "select count(*) from audit_log where action = 'sheet.linked'")" = 1
+          $W sheet $ACC off | grep -q "sheet unlinked"
 
       - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new
         run: |
