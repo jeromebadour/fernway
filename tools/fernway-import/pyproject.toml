@@ -1,0 +1,23 @@
+[project]
+name = "fernway-import"
+version = "1.0.0"
+description = "Clean a CSV of leads, merge duplicates, and send it through Fernway into GoHighLevel."
+requires-python = ">=3.10"
+dependencies = []
+authors = [{ name = "Jerome Badour" }]
+
+[project.scripts]
+fernway-import = "fernway_import.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["fernway_import"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

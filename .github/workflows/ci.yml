@@ -54,6 +54,13 @@ jobs:
 
       - name: Unit tests and the delivery engine's suites
         run: npm run test:unit
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+      - name: The Python import tool's tests (Python 3.10, the oldest it supports)
+        run: |
+          python3 -m pip install -q pytest
+          cd tools/fernway-import && python3 -m pytest -q
 
   container:
     needs: checks
@@ -313,6 +320,26 @@ jobs:
           test "$(psql -At -c "select source || ' ' || (contact ? 'companyName') from shipments where idempotency_key like 'embed-%' order by id desc limit 1")" = "embed false"
           psql -q -c "update embed_forms set revoked_at = now() where key = '$K'"
           test "$(send $K "${lead/3301/3303}")" = 404
+
+      - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          export FERNWAY_API_KEY=$($W apikey $ACC "Import CI" | tail -1)
+          cp tools/fernway-import/examples/messy-leads.csv /tmp/import.csv
+          cd tools/fernway-import
+          python3 -m fernway_import.cli /tmp/import.csv --route $ROUTE --fernway http://127.0.0.1:3103 | tee /tmp/check.txt
+          grep -q "3 contacts after merging 2 duplicates" /tmp/check.txt
+          test "$(psql -At -c "select count(*) from shipments where source = 'import'")" = 0
+          python3 -m fernway_import.cli /tmp/import.csv --route $ROUTE --send --fernway http://127.0.0.1:3103
+          test "$(psql -At -c "select count(*) from shipments where source = 'import'")" = 3
+          python3 -m fernway_import.cli /tmp/import.csv --route $ROUTE --send --fernway http://127.0.0.1:3103 | grep -q "3 were already sent"
+          test "$(psql -At -c "select count(*) from shipments where source = 'import'")" = 3
+          test "$(psql -At -c "select contact->>'email' from shipments where source = 'import' order by id limit 1 offset 1")" = "tomas.reyes@gmail.com"
+          # Only an import may name its source; any other is refused.
+          curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $FERNWAY_API_KEY" -H 'content-type: application/json' \
+            --data-raw '{"idempotencyKey":"ci-source-form1","route":"'"$ROUTE"'","source":"form","contact":{"email":"a@b.co"}}' http://127.0.0.1:3103/api/v1/leads | grep -q 422
 
       - name: Break it, through the real queue, never reaching a GHL
         # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
