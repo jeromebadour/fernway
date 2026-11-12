@@ -3,7 +3,7 @@ import "server-only";
 // stored: every lead is worked out from its place in line and the time now, so the board always reads as live, and the
 // same lead keeps its number, name and story between visits.
 import { formatWaybill, parseWaybill } from "@fernway/core";
-import type { AuditAction, AuditGroup, AuditTarget, BoardView, LeadView, LogRow, LogState, RouteRow, ShipmentState } from "@fernway/delivery";
+import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type ShipmentState } from "@fernway/delivery";
 import type { ConsoleData, ConsoleWho } from "./console-data";
 import { demoWhen } from "./operator-demo";
 
@@ -60,6 +60,49 @@ function lead(i: number, now: number): Lead {
   };
 }
 const all = (now: number) => Array.from({ length: N }, (_, i) => lead(i, now));
+
+// Lead score: Harbor Physio turned it on 14 days ago; every lead since then has Claude's read, worked out like the rest.
+const SCORE_ON = 14 * 1440 * MIN;
+const scorePattern = [4, 3, 5, 3, 2, 4, 3, 5, 1, 4, 3, 2, 4, 5, 3, 4, 2, 3];
+const reads: Record<number, { summary: string; signals: string[] }[]> = {
+  5: [{ summary: "A runner with a sore knee asking for the first free slot this week.", signals: ["Asks for a slot this week", "Clear injury, clear need", "Gave a phone number"] },
+    { summary: "An office team lead booking assessments for four staff with back pain.", signals: ["Several patients at once", "Work email domain", "Wants dates now"] }],
+  4: [{ summary: "Someone with shoulder pain after a fall, asking how soon they can come in.", signals: ["Clear need", "Asks about timing"] },
+    { summary: "A cyclist recovering from a broken wrist, looking for a course of treatment.", signals: ["Clear need", "Ongoing treatment, not a one-off"] }],
+  3: [{ summary: "Asking about prices and insurance before deciding to book.", signals: ["Interested, no date yet", "Price question first"] },
+    { summary: "A parent asking whether the clinic treats teenagers' sports injuries.", signals: ["Real interest", "No injury described yet"] }],
+  2: [{ summary: "A general question about opening hours, no treatment named.", signals: ["No treatment named", "No time asked for"] }],
+  1: [{ summary: "A marketing agency offering website services to the clinic.", signals: ["Selling to the clinic", "Not a patient"] }],
+};
+function demoScore(l: Lead, now: number): LeadScore | null {
+  if (l.created < now - SCORE_ON) return null;
+  if (l.state === "in_transit") return { state: "waiting", score: null, word: null, summary: null, signals: [], model: null, costUsd: null, scoredAt: null, why: null, ghl: "waiting", ghlError: null, tag: null };
+  const score = scorePattern[l.i % scorePattern.length]!;
+  const r = reads[score]![l.i % reads[score]!.length]!;
+  const ghl = l.state === "signed" ? "written" : l.state === "waiting" ? "waiting" : "skipped";
+  return {
+    state: "scored", score, word: scoreWords[score]!, summary: r.summary, signals: r.signals, model: "claude-haiku-5-5",
+    costUsd: costOf("claude-haiku-5-5", 760 + (l.i % 90), 58 + (l.i % 21)), scoredAt: iso(l.created + 2_600 + ((l.i * 97) % 1500)),
+    why: null, ghl, ghlError: ghl === "skipped" ? "the lead is not in GHL" : null, tag: scoreTag(score),
+  };
+}
+function scoreView(now: number): ScoreView {
+  const start = new Date(now); start.setUTCDate(1); start.setUTCHours(0, 0, 0, 0);
+  const leads = all(now).map((l) => ({ l, s: demoScore(l, now) })).filter((x) => x.s);
+  const month = leads.filter(({ l }) => l.created >= start.getTime());
+  const scored = month.filter(({ s }) => s!.state === "scored");
+  const by = (n: number) => scored.filter(({ s }) => s!.score === n).length;
+  return {
+    on: true, since: iso(now - SCORE_ON),
+    month: {
+      scored: scored.length, byScore: { 1: by(1), 2: by(2), 3: by(3), 4: by(4), 5: by(5) },
+      average: scored.length ? Math.round((scored.reduce((a, { s }) => a + s!.score!, 0) / scored.length) * 10) / 10 : null,
+      costUsd: Math.round(scored.reduce((a, { s }) => a + s!.costUsd!, 0) * 1e6) / 1e6, waiting: month.length - scored.length, notScored: 0,
+      inGhl: scored.filter(({ s }) => s!.ghl === "written").length,
+    },
+    latest: leads.filter(({ s }) => s!.state === "scored").slice(0, 8).map(({ l, s }) => ({ shipmentId: l.id, waybill: l.waybill, who: who(l), score: s!.score!, summary: s!.summary!, at: s!.scoredAt! })),
+  };
+}
 const iso = (t: number) => new Date(t).toISOString();
 const who = (l: Lead) => `${l.first} ${l.last}`;
 const statesOf: Record<LogState, ShipmentState[]> = { moving: ["picked_up", "in_transit"], waiting: ["waiting"], signed: ["signed"], held: ["held"], returned: ["returned"] };
@@ -117,6 +160,7 @@ function log(now: number, f: { q?: string; state?: LogState; page?: number }) {
       shipmentId: l.id, waybill: l.waybill, who: who(l), email: l.email, company: l.company, route: l.route.label, source: l.source, state: l.state,
       tries: l.tries, at: iso(l.created), updatedAt: iso(l.updated), reason: l.reason ? readableOf(l.reason) : null,
       lastStatus: l.state === "held" ? 422 : l.state === "signed" ? 201 : l.state === "waiting" ? 429 : null,
+      score: demoScore(l, now)?.score ?? null,
     })),
   };
 }
@@ -193,6 +237,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "member.invited", targetKind: "invite", targetId: "oskar.lund@harborphysio.com", detail: "as member", at: at(1440) },
     { who: "Sara Okafor", action: "member.joined", targetKind: "member", targetId: "3", detail: "as member", at: at(4 * 1440) },
     { who: "Jonas Berg", action: "member.invited", targetKind: "invite", targetId: "sara.okafor@harborphysio.com", detail: "as member", at: at(5 * 1440) },
+    { who: "Maya Lindqvist", action: "score.on", targetKind: "score", targetId: "Claude score", detail: "new leads are read by Claude", at: at(14 * 1440) },
     { who: "Jonas Berg", action: "form.made", targetKind: "form", targetId: "Corporate wellness funnel", detail: "contact · 4 fields · any site", at: at(9 * 1440 - 50) },
     { who: "Jonas Berg", action: "key.revoked", targetKind: "key", targetId: "fw_p3x8d1wz_", detail: "", at: at(8 * 1440) },
     { who: "Jonas Berg", action: "route.changed", targetKind: "route", targetId: "booking", detail: "tags booking, website", at: at(9 * 1440) },
@@ -206,7 +251,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "plan.changed", targetKind: "plan", targetId: "growth", detail: "Growth, $49 a month", at: at(41 * 1440 + 30) },
   ];
 };
-const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."] };
+const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."] };
 
 export function demoConsoleWho(): ConsoleWho {
   const now = Date.now();
@@ -216,6 +261,11 @@ export function demoConsoleWho(): ConsoleWho {
     lead: async (id) => leadView(now, id),
     receipt: () => null,
     routes: async () => routesView(now),
+    score: async () => scoreView(now),
+    scoreOf: async (id) => {
+      const i = 900_000 + TOP - id;
+      return Number.isInteger(i) && i >= 0 && i < N ? demoScore(lead(i, now), now) : null;
+    },
     forms: async () => [
       { id: 1, key: "fwf_hq3m7xk2pd5vbn4tr8ca", label: "Harbor Physio website", routeKey: "booking", routeLabel: "Booking requests",
         fields: ["firstName", "lastName", "email", "phone", "message"], theme: "light", button: "Request a booking", sites: ["harborphysio.com", "*.harborphysio.com"],

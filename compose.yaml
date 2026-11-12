@@ -91,6 +91,8 @@ services:
       FERNWAY_ACCOUNTS: ${FERNWAY_ACCOUNTS:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
+      # Claude score's cap a month, for the operator console's watcher (the key itself stays with the worker).
+      CLAUDE_MONTH_CAP_USD: ${CLAUDE_MONTH_CAP_USD:-8}
       # Stripe, test mode only (the app refuses a live key). Billing stays off until both are set.
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -136,6 +138,9 @@ services:
       # Alert emails (a lead held or returned, Monday's summary): Resend, or the outbox in local work and CI.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       FERNWAY_MAIL_OUTBOX: ${FERNWAY_MAIL_OUTBOX:-}
+      # Claude score: Fernway's own key (its own workspace, capped in Anthropic's console), and Fernway's own cap a month.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MONTH_CAP_USD: ${CLAUDE_MONTH_CAP_USD:-8}
     <<: *logs
 
 volumes:

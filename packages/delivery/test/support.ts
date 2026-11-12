@@ -44,10 +44,12 @@ export async function freshDatabase(label: string) {
 /** The fake GHL. Each path answers from its own script, then 200 forever; it remembers every request. */
 export const GHL_BASE = "http://ghl.fake";
 type Scripted = { status: number; body?: unknown; delayMs?: number };
-type Path = "contact" | "note" | "appointment" | "opportunity";
+type Path = "contact" | "note" | "appointment" | "opportunity" | "tags";
 
 export function fakeGhl() {
-  const script: Record<string, Scripted[]> = { contact: [], note: [], appointment: [], opportunity: [] };
+  const script: Record<string, Scripted[]> = { contact: [], note: [], appointment: [], opportunity: [], tags: [] };
+  // Each contact's tags as Fernway changed them (POST adds, DELETE takes off).
+  const tags = new Map<string, Set<string>>();
   const appointments: Record<string, unknown>[] = [];
   const requests: { path: Path; body: Record<string, unknown>; auth: string | null }[] = [];
   const notes: { contactId: string; body: string; id: string }[] = [];
@@ -72,6 +74,12 @@ export function fakeGhl() {
       appointments.push({ ...body, id });
       return HttpResponse.json({ id, ...body });
     }
+    if (path === "tags") {
+      const have = tags.get(contactId!) ?? new Set<string>();
+      for (const t of (body.tags as string[]) ?? []) { if (request.method === "DELETE") have.delete(t); else have.add(t); }
+      tags.set(contactId!, have);
+      return HttpResponse.json({ tags: [...have] }, { status: request.method === "DELETE" ? 200 : 201 });
+    }
     if (path === "note") {
       const id = `n_${notes.length + 1}`;
       notes.push({ contactId: contactId!, body: String(body.body), id });
@@ -93,6 +101,8 @@ export function fakeGhl() {
     http.post(`${GHL_BASE}/contacts/upsert`, ({ request }) => answer("contact", request)),
     http.post(`${GHL_BASE}/opportunities/upsert`, ({ request }) => answer("opportunity", request)),
     http.post(`${GHL_BASE}/contacts/:id/notes`, ({ request, params }) => answer("note", request, String(params.id))),
+    http.post(`${GHL_BASE}/contacts/:id/tags`, ({ request, params }) => answer("tags", request, String(params.id))),
+    http.delete(`${GHL_BASE}/contacts/:id/tags`, ({ request, params }) => answer("tags", request, String(params.id))),
     http.post(`${GHL_BASE}/calendars/events/appointments`, ({ request }) => answer("appointment", request)),
     http.get(`${GHL_BASE}/calendars/:id/free-slots`, ({ request }) => {
       const u = new URL(request.url);
@@ -127,6 +137,7 @@ export function fakeGhl() {
     server,
     requests,
     notes,
+    tags,
     appointments,
     freeSlotAsks,
     setFreeSlots(days: Record<string, { slots: string[] }>) {
@@ -147,6 +158,8 @@ export function fakeGhl() {
       freeSlotAsks.length = 0;
       freeSlotDays = {};
       script.opportunity = [];
+      script.tags = [];
+      tags.clear();
       notes.length = 0;
       requests.length = 0;
       deleted.length = 0;

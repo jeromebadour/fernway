@@ -11,6 +11,6 @@ export default async function Overview() {
   await requireStaff();
   const { db } = delivery();
   const box = await boxReading();
-  const [watches, o, inc] = await Promise.all([watch(db, box), overviewView(db), incidentsView(db)]);
+  const [watches, o, inc] = await Promise.all([watch(db, box, undefined, Number(process.env.CLAUDE_MONTH_CAP_USD || 8)), overviewView(db), incidentsView(db)]);
   return <OverviewView box={box} watches={watches} o={o} open={inc.rows.filter((i) => !i.closedAt)} base="/operator" />;
 }

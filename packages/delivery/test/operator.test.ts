@@ -1,6 +1,6 @@
 // The operator console against a real database: staff only with two-step on, watchers read right, one incident per
 // watcher (raised, then cleared), every action by role and written to the operator audit log.
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   accountDetail, accountsView, acknowledge, addStaff, extendTrial, incidentsView, operatorAuditView, overviewView, queueView, recordIncidents,
@@ -80,6 +80,11 @@ describe("watchers and incidents", () => {
     expect(state("worker")).toBe("down");
     expect(state("disk")).toBe("warn");
     expect(w.find((x) => x.key === "disk")?.reading).toBe("85% used");
+    expect(w.find((x) => x.key === "claude")).toMatchObject({ state: "ok", reading: "$0.00 of $8.00 this month" });
+    await owner.db.execute(sql`insert into claude_spend (month, calls, spent_usd) values (date_trunc('month', now() at time zone 'utc')::date, 40, 6.5)`);
+    expect((await watch(app.db, null)).find((x) => x.key === "claude")).toMatchObject({ state: "warn", reading: "$6.50 of $8.00 this month" });
+    expect((await watch(app.db, null, Date.now(), 6)).find((x) => x.key === "claude")?.state).toBe("down");
+    await owner.db.execute(sql`delete from claude_spend`);
     // Without a reading from a process, the box's watchers are left out, not guessed.
     expect((await watch(app.db, null)).some((x) => x.key === "worker")).toBe(false);
   });

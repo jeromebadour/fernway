@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BoardView, LeadView, LogRow, LogState } from "@fernway/delivery";
+import type { BoardView, LeadScore, LeadView, LogRow, LogState } from "@fernway/delivery";
 import { Ago } from "@/ui/ago";
-import { GCheck, GClock, GFind, GHold, GJump, GManifest, GMark, GOut, GResend, GRoute, GStage, GCalendar, GTrash, GScan, GHand } from "@/ui/glyphs";
+import { GCheck, GClock, GFind, GHold, GJump, GManifest, GMark, GOut, GResend, GRoute, GStage, GCalendar, GTrash, GScan, GHand, GScore } from "@/ui/glyphs";
 import { stateWord } from "@/app/console/states";
 
 // Fernway inside GHL. GHL frames this page and, asked, hands it the signed-in GHL user sealed with the app's shared
@@ -165,7 +165,7 @@ function Inside({ s, again }: { s: Session; again: () => void }) {
           </form>
         </div>
         <table>
-          <thead><tr><th>Waybill</th><th>Lead</th><th>Route</th><th>State</th><th>Picked up</th><th aria-label="Do" /></tr></thead>
+          <thead><tr><th>Waybill</th><th>Lead</th><th>Route</th><th>State</th><th>Score</th><th>Picked up</th><th aria-label="Do" /></tr></thead>
           <tbody>
             {log?.rows.map((r) => {
               const w = stateWord(r.state, r.tries);
@@ -175,6 +175,7 @@ function Inside({ s, again }: { s: Session; again: () => void }) {
                   <td><span className="ga-who">{r.who}</span><span className="ga-muted">{r.email ?? r.company ?? ""}</span></td>
                   <td>{r.route}</td>
                   <td><span className={`ga-pill ga-${w.tone}`}><w.G size={13} />{w.word}</span>{r.reason && <span className="ga-muted ga-why">{r.reason}</span>}</td>
+                  <td>{r.score ? <span className={`ga-score ga-s${r.score}`} title={`${r.score} of 5`}><b>{r.score}</b><Pips n={r.score} /></span> : <span className="ga-muted">None</span>}</td>
                   <td className="ga-muted"><Ago iso={r.at} /></td>
                   <td className="ga-do">{(r.state === "held" || r.state === "returned") && <button type="button" className="ga-btn ga-btn-s" onClick={() => resend({ id: r.shipmentId })}><GResend size={14} />Resend</button>}</td>
                 </tr>
@@ -196,14 +197,14 @@ function Inside({ s, again }: { s: Session; again: () => void }) {
   );
 }
 
-type Call = (path: string, init?: RequestInit) => Promise<{ status: number; body: { ok?: boolean; lead?: LeadView; receipt?: string } } | null>;
+type Call = (path: string, init?: RequestInit) => Promise<{ status: number; body: { ok?: boolean; lead?: LeadView; score?: LeadScore | null; receipt?: string } } | null>;
 
 function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; close: () => void; resend: (w: { id: number }) => Promise<void>; said: string | null }) {
-  const [v, setV] = useState<{ lead: LeadView; receipt: string } | null | "gone">(null);
+  const [v, setV] = useState<{ lead: LeadView; score: LeadScore | null; receipt: string } | null | "gone">(null);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let live = true;
-    call(`/api/panel/lead?id=${id}`).then((r) => { if (live && r) setV(r.status === 200 && r.body.lead ? { lead: r.body.lead, receipt: r.body.receipt ?? "" } : "gone"); });
+    call(`/api/panel/lead?id=${id}`).then((r) => { if (live && r) setV(r.status === 200 && r.body.lead ? { lead: r.body.lead, score: r.body.score ?? null, receipt: r.body.receipt ?? "" } : "gone"); });
     return () => { live = false; };
   }, [call, id, tick]);
   const back = <button type="button" className="ga-back" onClick={close}><GJump size={14} />All deliveries</button>;
@@ -228,6 +229,15 @@ function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; c
         </div>
       </header>
       {l.reason && <p className="ga-card ga-held"><GHold size={16} /><span><b>The CRM said:</b> {l.reason}</span></p>}
+      {v.score?.state === "scored" && v.score.score && (
+        <section className={`ga-card ga-scorecard ga-s${v.score.score}`}>
+          <p className="ga-eyebrow"><GScore size={15} />Lead score</p>
+          <p className="ga-score-big"><b>{v.score.score} of 5</b><Pips n={v.score.score} /><span>{v.score.word}</span></p>
+          <p>{v.score.summary}</p>
+          {v.score.signals.length > 0 && <ul>{v.score.signals.map((x) => <li key={x}>{x}</li>)}</ul>}
+          <p className="ga-muted">Read by Claude.{v.score.ghl === "written" ? <> Tag <code>{v.score.tag}</code> on this contact.</> : v.score.ghl === "waiting" ? " Its tag is added once the lead is signed for." : " Not on this contact: the lead is not in the CRM."}</p>
+        </section>
+      )}
       {l.state === "waiting" && l.nextTryAt && <p className="ga-card ga-held ga-wait"><GClock size={16} /><span>Try {l.tries + 1} of 8 is booked.</span></p>}
       <section className="ga-card ga-scans">
         <h2><GRoute size={16} />Every scan</h2>
@@ -247,4 +257,9 @@ function LeadPane({ id, call, close, resend, said }: { id: number; call: Call; c
       </section>
     </main>
   );
+}
+
+/** Five pips, the first n lit, in the score's colour. */
+function Pips({ n }: { n: number }) {
+  return <span className="ga-pips" aria-hidden="true">{[1, 2, 3, 4, 5].map((i) => <i key={i} className={i <= n ? "on" : ""} />)}</span>;
 }

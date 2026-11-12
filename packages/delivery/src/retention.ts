@@ -1,12 +1,12 @@
 // Leads sent through Fernway's own public forms are kept 30 days (the forms and the Privacy page say so). Then the
 // lead is removed from GHL first (its opportunity, then its contact) and only after that from Fernway, so nothing is
 // left behind in GHL that Fernway has forgotten about. A contact or opportunity a newer lead still uses stays in GHL
-// (the old lead's own note, its message, is removed from it). If GHL
+// (the old lead's own notes, its message and its score, are removed from it). If GHL
 // can't be reached, the lead is kept and tried again on the next run; it is never dropped from Fernway alone.
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import type { Deps } from "./engine.js";
 import type { GhlConnection } from "./ghl.js";
-import { shipments } from "./schema.js";
+import { leadScores, shipments } from "./schema.js";
 
 export const KEEP_DAYS = 30;
 
@@ -56,6 +56,11 @@ export async function removeFromGhl(deps: Deps, conn: GhlConnection, s: GhlIds, 
   // The message is this lead's alone: it goes even when another lead keeps the contact.
   if (contactStays && s.contactId && s.noteId
     && !(await deps.ghl.remove(conn, `contacts/${s.contactId}/notes/${s.noteId}`)).gone) return false;
+  // So is Claude's score note (lead_scores goes with the lead in Fernway).
+  if (contactStays && s.contactId) {
+    const [sc] = await deps.db.select({ noteId: leadScores.ghlNoteId }).from(leadScores).where(eq(leadScores.shipmentId, s.id));
+    if (sc?.noteId && !(await deps.ghl.remove(conn, `contacts/${s.contactId}/notes/${sc.noteId}`)).gone) return false;
+  }
   if (!contactStays && !(await deps.ghl.remove(conn, `contacts/${s.contactId}`)).gone) return false;
   return true;
 }

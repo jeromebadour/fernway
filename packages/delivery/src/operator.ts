@@ -5,6 +5,7 @@ import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { formatWaybill } from "@fernway/core";
 import { syncSubscription, type BillingDeps } from "./billing.js";
 import type { Db } from "./db.js";
+import { MONTH_CAP_USD } from "./score.js";
 import { accounts, incidents, operatorAudit, staff, users, type OperatorAction, type StaffRole } from "./schema.js";
 
 type Problems = { ok: false; problems: string[] };
@@ -97,7 +98,7 @@ export type BoxReading = {
 export type WatchState = "ok" | "warn" | "down";
 export const watcherLabels: Record<string, string> = {
   worker: "Worker", disk: "Disk", memory: "Memory", queue: "Queue", ghl_refusals: "GHL refusals", ghl_tokens: "GHL tokens",
-  backup: "Nightly backup", restore_test: "Restore test", email: "Alert emails", payments: "Payments",
+  backup: "Nightly backup", restore_test: "Restore test", email: "Alert emails", payments: "Payments", claude: "Claude score",
 };
 export type Watch = { key: string; label: string; state: WatchState; reading: string; limit: string };
 
@@ -106,7 +107,7 @@ const ageMin = (d: Date | string | null, now: number) => (d ? Math.round((now - 
 const agoWords = (min: number) => (min < 60 ? `${min} min ago` : min < 2880 ? `${Math.round(min / 60)} h ago` : `${Math.round(min / 1440)} days ago`);
 
 /** Every watcher, read now. The box's watchers need a reading from the process; without one they are left out. */
-export async function watch(db: Db, box: BoxReading | null, now = Date.now()): Promise<Watch[]> {
+export async function watch(db: Db, box: BoxReading | null, now = Date.now(), claudeCapUsd = MONTH_CAP_USD): Promise<Watch[]> {
   const out: Watch[] = [];
   if (box) {
     const beat = box.workerBeatAt ? Math.round((now - Date.parse(box.workerBeatAt)) / 1000) : null;
@@ -120,6 +121,7 @@ export async function watch(db: Db, box: BoxReading | null, now = Date.now()): P
   const r = (await db.execute<{
     overdue: string; oldest: Date | null; calls: string; refused: string; reconnect: string;
     backup_at: Date | null; backup_ok: boolean | null; restore_at: Date | null; restore_ok: boolean | null; gave_up: string; unpaid: string;
+    spent: string | null; score_failed: string;
   }>(sql`
     select
       (select count(*) from shipments where state in ('picked_up', 'in_transit', 'waiting') and next_try_at < now() - interval '5 minutes') overdue,
@@ -132,7 +134,9 @@ export async function watch(db: Db, box: BoxReading | null, now = Date.now()): P
       (select at from ops_runs where kind = 'restore_test' order by at desc, id desc limit 1) restore_at,
       (select ok from ops_runs where kind = 'restore_test' order by at desc, id desc limit 1) restore_ok,
       (select count(*) from alerts where given_up_at > now() - interval '24 hours') gave_up,
-      (select count(*) from accounts where billing_status in ('past_due', 'unpaid')) unpaid`)).rows[0]!;
+      (select count(*) from accounts where billing_status in ('past_due', 'unpaid')) unpaid,
+      (select spent_usd from claude_spend where month = date_trunc('month', now() at time zone 'utc')::date) spent,
+      (select count(*) from lead_scores where state = 'failed' and created_at > now() - interval '24 hours') score_failed`)).rows[0]!;
 
   const overdue = n(r.overdue);
   const late = ageMin(r.oldest, now);
@@ -155,6 +159,11 @@ export async function watch(db: Db, box: BoxReading | null, now = Date.now()): P
   out.push({ key: "email", label: "Alert emails", state: gaveUp ? "warn" : "ok", reading: gaveUp ? `${gaveUp} given up, 24 h` : "none given up, 24 h", limit: "none given up" });
   const unpaid = n(r.unpaid);
   out.push({ key: "payments", label: "Payments", state: unpaid ? "warn" : "ok", reading: unpaid ? `${unpaid} past due` : "none past due", limit: "none past due" });
+  // Claude score: the month's spend against Fernway's own cap (scoring stops at it), and calls given up in a day.
+  const spent = Number(r.spent ?? 0), failed = n(r.score_failed);
+  const used = claudeCapUsd > 0 ? Math.round((spent / claudeCapUsd) * 100) : 100;
+  out.push({ key: "claude", label: "Claude score", state: used >= 100 ? "down" : used >= 80 || failed ? "warn" : "ok",
+    reading: `$${spent.toFixed(2)} of $${claudeCapUsd.toFixed(2)} this month${failed ? `, ${failed} given up, 24 h` : ""}`, limit: "under 80% of the cap, none given up" });
   return out;
 }
 

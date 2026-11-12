@@ -1,7 +1,7 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { auditGroups, type AuditGroup } from "@fernway/delivery";
-import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GShield, GSignUp, GTrash, GUser, GWidget } from "@/ui/glyphs";
+import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GScore, GShield, GSignUp, GTrash, GUser, GWidget } from "@/ui/glyphs";
 import { Pager } from "@/ui/pager";
 import { stamp } from "@/ui/when";
 
@@ -25,9 +25,11 @@ const said: Record<string, { word: string; G: G; tone: string }> = {
   "form.made": { word: "Made an embed form", G: GWidget, tone: "in" },
   "form.changed": { word: "Changed an embed form", G: GWidget, tone: "in" },
   "form.revoked": { word: "Revoked an embed form", G: GWidget, tone: "hz" },
+  "score.on": { word: "Turned lead score on", G: GScore, tone: "ok" },
+  "score.off": { word: "Turned lead score off", G: GScore, tone: "hz" },
 };
 const groups: { k: AuditGroup | "all"; label: string }[] = [
-  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "ghl", label: "GHL" },
+  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "score", label: "Lead score" }, { k: "ghl", label: "GHL" },
   { k: "team", label: "Team" }, { k: "keys", label: "API keys" }, { k: "plan", label: "Plan" },
 ];
 
@@ -46,6 +48,7 @@ export async function Audit({ who, searchParams }: { who: ConsoleWho; searchPara
     if (r.targetKind === "route") return <Link className="ad-t" href={`${who.base}/routes#route-${r.targetId}`}><code>{r.targetId}</code></Link>;
     if (r.targetKind === "ghl") return <Link className="ad-t" href={`${who.base}/ghl`}><code>{r.targetId}</code></Link>;
     if (r.targetKind === "form") return <Link className="ad-t" href={`${who.base}/forms`}>{r.targetId}</Link>;
+    if (r.targetKind === "score") return <Link className="ad-t" href={`${who.base}/score`}>{r.targetId}</Link>;
     if (r.targetKind === "member") return <Link className="ad-t" href={`${who.base}/team`}>Team</Link>;
     return <code>{r.targetId}</code>;
   };
@@ -74,7 +77,7 @@ export async function Audit({ who, searchParams }: { who: ConsoleWho; searchPara
                 <tr key={r.id}>
                   <td className="bl-num">{v.total - (v.page - 1) * 15 - i}</td>
                   <td className="cn-mono">{stamp(r.at, w)}</td>
-                  <td className="cn-who">{r.who}{r.userId === null && !r.who.endsWith(" · in GHL") && r.who !== "GHL" && <em>no longer in the team</em>}</td>
+                  <td className="cn-who">{r.who}{r.userId === null && !r.who.endsWith(" · in GHL") && r.who !== "GHL" && !r.who.startsWith("Fernway (") && <em>no longer in the team</em>}</td>
                   <td><span className={`ad-what cn-${s.tone}`}><s.G size={14} />{s.word}</span></td>
                   <td>{target(r)}</td>
                   <td className="ad-detail">{r.detail}</td>
