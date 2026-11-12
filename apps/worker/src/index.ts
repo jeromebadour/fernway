@@ -36,6 +36,7 @@ import {
   createSheets,
   serviceKeyFrom,
   syncSheets,
+  readSheetsIn,
   type Deps,
 } from "@fernway/delivery";
 import { eq } from "drizzle-orm";
@@ -185,6 +186,16 @@ if (sheetsKey) {
       .catch((e) => console.error(`worker: Google Sheets failed: ${e.message}`))
       .finally(() => { writing = false; });
   }, 20_000);
+  // "Leads in", every minute: new rows become leads, and each row shows its waybill and state.
+  let reading = false;
+  setInterval(() => {
+    if (reading) return;
+    reading = true;
+    readSheetsIn({ db, sheets, deps })
+      .then((r) => (r.sent || r.refused) && console.log(`worker: sheet rows in: ${r.sent} sent, ${r.refused} refused, ${r.refreshed} rows updated`))
+      .catch((e) => console.error(`worker: Leads in failed: ${e.message}`))
+      .finally(() => { reading = false; });
+  }, 60_000);
   console.log(`worker ${commit}: Google Sheets on (${sheets.email})`);
 }
 

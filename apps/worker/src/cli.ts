@@ -19,6 +19,7 @@
 //                                               staff; more are added in the console). Opens with two-step on.
 //   scoring <account> on|off                    Claude score for that account's new leads (the console does the same)
 //   sheet <account> <link>|off                  link that account's Google Sheet (shared with Fernway's address), or unlink
+//   sheet-in <account> <route>|off              read the linked sheet's tab Leads in, its rows sent on that route
 //   claude-spend                                what Fernway spent on Claude this month, against its cap
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
@@ -47,6 +48,7 @@ import {
   setScoring,
   createSheets,
   linkSheet,
+  setSheetIn,
   serviceKeyFrom,
   unlinkSheet,
   shipments,
@@ -225,6 +227,16 @@ try {
       if (r.ok) console.log(`account ${acc}: linked "${r.title}"; new leads are written to the tab Fernway leads`);
       break;
     }
+    case "sheet-in": {
+      const acc = accountArg(args[0]);
+      const m = { accountId: acc, userId: null, name: "Fernway (setup tool)", role: "owner" as const };
+      const key = serviceKeyFrom(process.env.GOOGLE_SHEETS_KEY);
+      const sheets = key ? createSheets({ key, baseUrl: process.env.FERNWAY_GOOGLE_API || undefined, tokenUrl: process.env.FERNWAY_GOOGLE_TOKEN || undefined }) : null;
+      const r = await setSheetIn(db, sheets, m, args[1] === "off" ? null : (args[1] ?? fail("a route, or off")));
+      if (!r.ok) fail(r.problems.join("; "));
+      console.log(args[1] === "off" ? `account ${acc}: Leads in off` : `account ${acc}: Leads in on; its rows become leads on ${args[1]}`);
+      break;
+    }
     case "claude-spend": {
       const s = await spendThisMonth(db);
       const cap = Number(process.env.CLAUDE_MONTH_CAP_USD ?? MONTH_CAP_USD);
@@ -246,7 +258,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, claude-spend, fake-connect");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, sheet, sheet-in, claude-spend, fake-connect");
   }
 } finally {
   await pool.end();

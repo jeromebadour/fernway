@@ -461,3 +461,14 @@ a.wb-go.fm-btn { text-decoration: none; }
   .sh-table td:nth-child(2) { grid-area: 2 / 2 / 3 / 4; }
   .sh-table td:nth-child(4) { grid-area: 3 / 2 / 4 / 4; }
 }
+.sh-in { margin-top: 14px; }
+.sh-in-p { margin: 14px 0 0; color: #cfd8e3; font-size: 14.5px; line-height: 1.55; }
+.sh-in-p code { font: 500 13px var(--font-mono); color: var(--paper); }
+.sh-cols-in { margin-top: 16px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.sh-cols-in li { border-left-color: var(--input); }
+.sh-cols-in b { color: var(--input); }
+.sh-cols-in li.sh-fw { border-left-color: var(--ok); }
+.sh-cols-in li.sh-fw b { color: var(--ok); }
+.sh-cols-in em { margin-left: auto; font: 500 10.5px var(--font-mono); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 1000px) { .sh-cols-in { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .sh-cols-in { grid-template-columns: minmax(0, 1fr); } }

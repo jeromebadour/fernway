@@ -368,6 +368,17 @@ jobs:
           curl -sf http://127.0.0.1:4010/__sheet > /tmp/sheet.json
           node -e 'const g=JSON.parse(require("fs").readFileSync("/tmp/sheet.json"));if(g[0][0]!=="Waybill"||g[0][11]!=="Updated (UTC)")process.exit(1);const r=g.filter((x)=>x[0]===process.argv[1]);if(r.length!==1||r[0][3]!=="sheet-ci@northpine-ci.com"||r[0][8]!=="Signed for")process.exit(2)' "$WB"
           test "$(psql -At -c "select count(*) from audit_log where action = 'sheet.linked'")" = 1
+          # Leads in: a typed row becomes a lead once, and the row shows its waybill; a refused row says why.
+          $W sheet-in $ACC $ROUTE | grep -q "Leads in on"
+          curl -sf -H 'content-type: application/json' -d '{"row":["Ada","Moss","ada.sheet-ci@fjordline-ci.com","","Fjordline","","Twelve rowers"]}' http://127.0.0.1:4010/__sheet-in > /dev/null
+          curl -sf -H 'content-type: application/json' -d '{"row":["Bo","","","","","","no email"]}' http://127.0.0.1:4010/__sheet-in > /dev/null
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:4010/__sheet-in | node -e 'const g=JSON.parse(require("fs").readFileSync(0));process.exit(/^FW \d\d \d{5}$/.test(g[1]?.[7]??"")&&g[1][8]==="Signed for"?0:1)' && break; sleep 3
+          done
+          curl -sf http://127.0.0.1:4010/__sheet-in > /tmp/in.json
+          node -e 'const g=JSON.parse(require("fs").readFileSync("/tmp/in.json"));if(g[0][7]!=="Waybill (Fernway)")process.exit(1);if(!/^FW \d\d \d{5}$/.test(g[1][7])||g[1][8]!=="Signed for")process.exit(2);if(g[2][8]!=="Not sent"||!/email or a phone/.test(g[2][9]))process.exit(3)'
+          test "$(psql -At -c "select count(*) from shipments where source = 'sheet'")" = 1
+          $W sheet-in $ACC off | grep -q "Leads in off"
           $W sheet $ACC off | grep -q "sheet unlinked"
 
       - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new

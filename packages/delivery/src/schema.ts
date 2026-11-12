@@ -149,7 +149,7 @@ export const routes = pgTable("routes", {
 export const shipmentStates = ["picked_up", "in_transit", "waiting", "signed", "held", "returned"] as const;
 export type ShipmentState = (typeof shipmentStates)[number];
 
-export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo", "stripe", "workflow"] as const;
+export const sources = ["form", "embed", "wordpress", "laravel", "api", "import", "demo", "stripe", "workflow", "sheet"] as const;
 export type Source = (typeof sources)[number];
 
 export const shipments = pgTable("shipments", {
@@ -240,7 +240,7 @@ export const alerts = pgTable("alerts", {
 
 export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
   "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed",
-  "form.made", "form.changed", "form.revoked", "score.on", "score.off", "sheet.linked", "sheet.unlinked"] as const;
+  "form.made", "form.changed", "form.revoked", "score.on", "score.off", "sheet.linked", "sheet.unlinked", "sheet.in.on", "sheet.in.off"] as const;
 export type AuditAction = (typeof auditActions)[number];
 export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score" | "sheet";
 export const auditLog = pgTable("audit_log", {
@@ -410,6 +410,10 @@ export const sheetLinks = pgTable("sheet_links", {
   since: timestamp("since", { withTimezone: true }).notNull().defaultNow(),
   lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
   lastError: text("last_error"),
+  /** The route the tab "Leads in" sends its rows on; null when reading is off. */
+  inRoute: text("in_route"),
+  inReadAt: timestamp("in_read_at", { withTimezone: true }),
+  inError: text("in_error"),
 });
 
 /** One lead's row in the linked sheet. */
