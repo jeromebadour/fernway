@@ -52,25 +52,40 @@ createServer(async (req, res) => {
   if (url.pathname === "/__fired") return send(res, 200, fired);
   if (url.pathname === "/__claude") return send(res, 200, claude);
   if (url.pathname === "/__sheet") return send(res, 200, sheet.get("Fernway leads") ?? []);
+  // The test types a row into Leads in, the way a person would.
+  if (req.method === "POST" && url.pathname === "/__sheet-in") { (sheet.get("Leads in") ?? []).push(json.row); return send(res, 200, sheet.get("Leads in")); }
+  if (url.pathname === "/__sheet-in") return send(res, 200, sheet.get("Leads in") ?? []);
   // The stand-in Google: any signed sign-in gets a token; the one shared sheet answers like the Sheets API.
   if (req.method === "POST" && url.pathname === "/token") {
     const assertion = new URLSearchParams(body).get("assertion") ?? "";
     return assertion.split(".").length === 3 ? send(res, 200, { access_token: "ya29.ci", expires_in: 3600 }) : send(res, 400, { error: "invalid_grant" });
   }
-  const sh = url.pathname.match(/^\/v4\/spreadsheets\/([^/:]+)(:batchUpdate)?(?:\/values\/(.+))?$/);
+  const sh = url.pathname.match(/^\/v4\/spreadsheets\/([^/:]+)(:batchUpdate)?(?:\/values(:batchUpdate)?\/?(.*))?$/);
   if (sh) {
     if (req.headers.authorization !== "Bearer ya29.ci") return send(res, 401, { error: { message: "unauthenticated" } });
     if (sh[1] !== SHARED) return send(res, 403, { error: { message: "The caller does not have permission" } });
     if (sh[2]) { sheet.set(json.requests[0].addSheet.properties.title, []); return send(res, 200, {}); }
-    if (!sh[3]) return send(res, 200, { properties: { title: "CI leads" }, sheets: [...sheet.keys()].map((t) => ({ properties: { title: t } })) });
-    const append = sh[3].endsWith(":append");
-    const m = decodeURIComponent(append ? sh[3].slice(0, -7) : sh[3]).match(/^'(.+)'!A(\d*)(?::[A-Z](\d*))?$/);
+    if (sh[3]) {
+      for (const d of json.data) {
+        const m = d.range.match(/^'(.+)'!([A-Z])(\d+):[A-Z]\d+$/);
+        const g = sheet.get(m[1]);
+        const row = (g[Number(m[3]) - 1] ??= []);
+        const start = m[2].charCodeAt(0) - 65;
+        while (row.length < start) row.push("");
+        d.values[0].forEach((v, i) => { row[start + i] = v; });
+      }
+      return send(res, 200, {});
+    }
+    if (!sh[4]) return send(res, 200, { properties: { title: "CI leads" }, sheets: [...sheet.keys()].map((t) => ({ properties: { title: t } })) });
+    const append = sh[4].endsWith(":append");
+    const m = decodeURIComponent(append ? sh[4].slice(0, -7) : sh[4]).match(/^'(.+)'!A(\d*)(?::[A-Z](\d*))?$/);
     const grid = sheet.get(m[1].replace(/''/g, "'")) ?? [];
     const from = m[2] ? Number(m[2]) : null;
     if (append) { grid.push(json.values[0]); return send(res, 200, { updates: { updatedRange: `'${m[1]}'!A${grid.length}:L${grid.length}` } }); }
     if (req.method === "PUT") { grid[from - 1] = json.values[0]; return send(res, 200, {}); }
     if (from) return send(res, 200, { values: grid[from - 1] ? [[grid[from - 1][0]]] : [] });
-    return send(res, 200, { values: grid.map((g) => [g[0]]) });
+    if (decodeURIComponent(sh[4]).endsWith("A:A")) return send(res, 200, { values: grid.map((g) => [g[0]]) });
+    return send(res, 200, { values: grid.map((g) => { const r = [...g]; while (r.length && !r[r.length - 1]) r.pop(); return r; }) });
   }
   if (url.pathname === "/__tags") return send(res, 200, Object.fromEntries([...tags].map(([k, v]) => [k, [...v]])));
   // The stand-in Claude: not a GHL call, so not counted with them.

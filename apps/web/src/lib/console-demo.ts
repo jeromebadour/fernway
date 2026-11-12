@@ -95,6 +95,7 @@ function sheetView(now: number): SheetView {
     link: { spreadsheetId: "1HpXr4bQ9mTz7wLkVn2sYc8dFg0aJe5uRiOq3NhB6tCv", title: "Harbor Physio leads 2026", url: "https://docs.google.com/spreadsheets/d/1HpXr4bQ9mTz7wLkVn2sYc8dFg0aJe5uRiOq3NhB6tCv/edit",
       madeBy: "Jonas Berg", since: iso(since), lastOkAt: iso(mine[0]?.updated ?? now), lastError: null },
     rows: { written: mine.length, waiting: 1, givenUp: 0 },
+    in: { route: "contact", routeLabel: "Contact form", readAt: iso(now - 34_000), error: null, leads30: 23 },
     latest: mine.slice(0, 8).map((l, i) => ({ shipmentId: l.id, waybill: l.waybill, who: who(l), row: mine.length + 1 - i, at: iso(l.updated + 3_000) })),
   };
 }

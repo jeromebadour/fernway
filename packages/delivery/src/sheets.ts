@@ -2,9 +2,11 @@
 // "Fernway leads", kept up to date as the lead moves (signed for, held, resent, scored). Fernway signs in to Google as
 // its own service account (GOOGLE_SHEETS_KEY, a JSON key): the owner shares the sheet with that address, so Fernway
 // reaches only the sheets shared with it. Values are written RAW, so a lead's text is never read as a formula.
-import { createSign } from "node:crypto";
-import { and, asc, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
-import { formatWaybill } from "@fernway/core";
+import { createHash, createSign } from "node:crypto";
+import { and, asc, desc, eq, gt, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { formatWaybill, parseWaybill } from "@fernway/core";
+import { ingestLead, type Deps } from "./engine.js";
+import { readable } from "./track.js";
 import type { Db } from "./db.js";
 import { audit, type Actor } from "./console.js";
 import type { Role } from "./schema.js";
@@ -14,6 +16,10 @@ export const SHEETS_API = "https://sheets.googleapis.com";
 export const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
 export const SHEET_TAB = "Fernway leads";
 export const SHEET_HEADER = ["Waybill", "Picked up (UTC)", "Name", "Email", "Phone", "Company", "Route", "From", "State", "Score", "Claude's read", "Updated (UTC)"];
+export const IN_TAB = "Leads in";
+export const IN_HEADER = ["First name", "Last name", "Email", "Phone", "Company", "Website", "Message", "Waybill (Fernway)", "State (Fernway)", "Note (Fernway)"];
+/** At most this many new rows become leads in one read (a pasted list of 1,000 goes through in five minutes). */
+export const IN_PER_READ = 200;
 export const SHEET_WAITS_MIN = [1, 5, 15, 60, 240];
 const LAST_COL = "L";
 
@@ -42,8 +48,12 @@ export type Sheets = {
   email: string;
   /** The sheet's title, or why it can't be reached (not shared, no such sheet). */
   title(id: string): Promise<SheetAnswer>;
-  /** Makes the "Fernway leads" tab with its header row, unless it is there. */
-  prepare(id: string): Promise<SheetAnswer>;
+  /** Makes a tab with its header row unless it is there ("Fernway leads" by default); the header is rewritten. */
+  prepare(id: string, tab?: string, header?: string[]): Promise<SheetAnswer>;
+  /** Every row of a tab, from row 1 (Google leaves empty rows at the end out; empty cells at a row's end too). */
+  read(id: string, tab: string): Promise<{ ok: true; rows: string[][] } | { ok: false; status: number | null; why: string }>;
+  /** Writes several ranges in one call (values:batchUpdate), RAW. */
+  write(id: string, data: { range: string; values: string[][] }[]): Promise<SheetAnswer>;
   append(id: string, row: string[]): Promise<SheetAnswer & { row?: number }>;
   update(id: string, rowNumber: number, row: string[]): Promise<SheetAnswer>;
   /** Where a waybill's row is now (people sort, insert and delete rows), from column A; null when it is gone. */
@@ -97,18 +107,27 @@ export function createSheets(opts: { key: ServiceKey; baseUrl?: string; tokenUrl
   return {
     email: opts.key.client_email,
     title: (id) => call("GET", `/v4/spreadsheets/${encodeURIComponent(id)}?fields=properties.title,sheets.properties.title`),
-    async prepare(id) {
+    async prepare(id, tab = SHEET_TAB, header = SHEET_HEADER) {
       const got = await call("GET", `/v4/spreadsheets/${encodeURIComponent(id)}?fields=sheets.properties.title`);
       if (!got.ok) return got;
       const tabs = ((got.json as { sheets?: { properties?: { title?: string } }[] }).sheets ?? []).map((s) => s.properties?.title);
-      if (!tabs.includes(SHEET_TAB)) {
+      if (!tabs.includes(tab)) {
         const made = await call("POST", `/v4/spreadsheets/${encodeURIComponent(id)}:batchUpdate`, {
-          requests: [{ addSheet: { properties: { title: SHEET_TAB, gridProperties: { frozenRowCount: 1 } } } }],
+          requests: [{ addSheet: { properties: { title: tab, gridProperties: { frozenRowCount: 1 } } } }],
         });
         if (!made.ok) return made;
       }
-      return call("PUT", `/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent(`${q(SHEET_TAB)}!A1:${LAST_COL}1`)}?valueInputOption=RAW`, { values: [SHEET_HEADER] });
+      const last = String.fromCharCode(64 + header.length);
+      return call("PUT", `/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent(`${q(tab)}!A1:${last}1`)}?valueInputOption=RAW`, { values: [header] });
     },
+    async read(id, tab) {
+      const r = await call("GET", `/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent(`${q(tab)}!A:J`)}`);
+      if (!r.ok) return r;
+      return { ok: true, rows: ((r.json as { values?: unknown[][] }).values ?? []).map((row) => row.map((c) => String(c ?? ""))) };
+    },
+    write: (id, data) => call("POST", `/v4/spreadsheets/${encodeURIComponent(id)}/values:batchUpdate`, {
+      valueInputOption: "RAW", data: data.map((d) => ({ range: d.range, values: d.values })),
+    }),
     async append(id, row) {
       const r = await call("POST", `/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent(`${q(SHEET_TAB)}!A:${LAST_COL}`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, { values: [row] });
       if (!r.ok) return r;
@@ -135,7 +154,7 @@ export function createSheets(opts: { key: ServiceKey; baseUrl?: string; tokenUrl
 // Linking a sheet (owners and admins).
 
 const stateWords: Record<string, string> = { picked_up: "Picked up", in_transit: "With GHL", waiting: "Waiting for a retry", signed: "Signed for", held: "Held", returned: "Returned" };
-const sourceWords: Record<string, string> = { form: "Website form", embed: "Embed form", wordpress: "WordPress", laravel: "Laravel", api: "API", import: "Import", demo: "Demo", stripe: "Stripe payment", workflow: "GHL workflow" };
+const sourceWords: Record<string, string> = { form: "Website form", embed: "Embed form", wordpress: "WordPress", laravel: "Laravel", api: "API", import: "Import", demo: "Demo", stripe: "Stripe payment", workflow: "GHL workflow", sheet: "Google Sheet" };
 
 export type LinkResult = { ok: true; title: string } | { ok: false; problems: string[] };
 
@@ -249,6 +268,8 @@ export type SheetView = {
   serviceEmail: string | null;
   link: { spreadsheetId: string; title: string; url: string; madeBy: string; since: string; lastOkAt: string | null; lastError: string | null } | null;
   rows: { written: number; waiting: number; givenUp: number };
+  /** Reading "Leads in": its route (null: off), the last read, what went wrong, and the leads it sent in 30 days. */
+  in: { route: string | null; routeLabel: string | null; readAt: string | null; error: string | null; leads30: number };
   latest: { shipmentId: number; waybill: string; who: string; row: number; at: string }[];
 };
 
@@ -261,8 +282,12 @@ export async function sheetView(db: Db, accountId: number, serviceEmail: string 
   }).from(sheetRows).where(eq(sheetRows.accountId, accountId));
   const latest = await db.select({ r: sheetRows, s: shipments }).from(sheetRows).innerJoin(shipments, eq(shipments.id, sheetRows.shipmentId))
     .where(and(eq(sheetRows.accountId, accountId), sql`${sheetRows.rowNumber} is not null`)).orderBy(desc(sheetRows.writtenAt)).limit(8);
+  const [routeRow] = l?.inRoute ? await db.select({ label: routes.label }).from(routes).where(and(eq(routes.accountId, accountId), eq(routes.key, l.inRoute))) : [];
+  const [from] = await db.select({ n: sql<number>`count(*)::int` }).from(shipments)
+    .where(and(eq(shipments.accountId, accountId), eq(shipments.source, "sheet"), gt(shipments.createdAt, sql`now() - interval '30 days'`)));
   return {
     serviceEmail,
+    in: { route: l?.inRoute ?? null, routeLabel: routeRow?.label ?? null, readAt: l?.inReadAt?.toISOString() ?? null, error: l?.inError ?? null, leads30: from?.n ?? 0 },
     link: l ? {
       spreadsheetId: l.spreadsheetId, title: l.title, url: `https://docs.google.com/spreadsheets/d/${l.spreadsheetId}/edit`, madeBy: l.madeBy,
       since: l.since.toISOString(), lastOkAt: l.lastOkAt?.toISOString() ?? null, lastError: l.lastError,
@@ -273,4 +298,109 @@ export async function sheetView(db: Db, accountId: number, serviceEmail: string 
       who: [s.contact.firstName, s.contact.lastName].filter(Boolean).join(" ") || s.contact.email || "No name", row: r.rowNumber!, at: r.writtenAt!.toISOString(),
     })),
   };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Google Sheets in: the tab "Leads in" of the linked sheet, read every minute.
+
+/** Turns reading "Leads in" on (on a route without a meeting time) or off. Owners and admins; audited. */
+export async function setSheetIn(db: Db, sheets: Sheets | null, m: Actor & { role: Role }, routeKey: string | null): Promise<{ ok: true } | { ok: false; problems: string[] }> {
+  if (m.role !== "owner" && m.role !== "admin") return { ok: false, problems: ["only the owner or an admin may change this"] };
+  const [l] = await db.select().from(sheetLinks).where(eq(sheetLinks.accountId, m.accountId));
+  if (!l) return { ok: false, problems: ["sheet: link a sheet first"] };
+  if (routeKey === null) {
+    if (l.inRoute) {
+      await db.update(sheetLinks).set({ inRoute: null, inError: null }).where(eq(sheetLinks.accountId, m.accountId));
+      await audit(db, m, "sheet.in.off", { kind: "sheet", id: l.title.slice(0, 80) }, "rows in Leads in are no longer read");
+    }
+    return { ok: true };
+  }
+  const [r] = await db.select({ key: routes.key, calendarId: routes.calendarId }).from(routes).where(and(eq(routes.accountId, m.accountId), eq(routes.key, routeKey)));
+  if (!r || r.calendarId) return { ok: false, problems: ["route: a route of this account without a meeting time"] };
+  if (!sheets) return { ok: false, problems: ["sheet: Google Sheets isn't set up on this server yet"] };
+  const p = await sheets.prepare(l.spreadsheetId, IN_TAB, IN_HEADER);
+  if (!p.ok) return { ok: false, problems: [p.status === 403 || p.status === 404 ? `sheet: Fernway can no longer open it. Share it with ${sheets.email} as an Editor` : `sheet: Google said ${p.status ?? "nothing"}: ${p.why}`] };
+  await db.update(sheetLinks).set({ inRoute: routeKey, inError: null }).where(eq(sheetLinks.accountId, m.accountId));
+  await audit(db, m, "sheet.in.on", { kind: "sheet", id: l.title.slice(0, 80) }, `rows in Leads in become leads on ${routeKey}`);
+  return { ok: true };
+}
+
+const inFields = ["firstName", "lastName", "email", "phone", "companyName", "website", "message"] as const;
+const fieldWords: Record<string, string> = { firstName: "First name", lastName: "Last name", email: "Email", phone: "Phone", companyName: "Company", website: "Website", message: "Message" };
+
+/** A row's lead: its cells A to G, trimmed, the empty ones left out. */
+export function contactOfRow(row: string[]): Record<string, string> {
+  const c: Record<string, string> = {};
+  inFields.forEach((f, i) => { const v = (row[i] ?? "").trim(); if (v) c[f] = v; });
+  return c;
+}
+
+/** One row is one lead: the same cells in the same sheet always give the same key (and so the same waybill). */
+export function rowKey(spreadsheetId: string, c: Record<string, string>): string {
+  const norm = inFields.map((f) => (f === "email" ? (c[f] ?? "").toLowerCase() : c[f] ?? ""));
+  return `sheet-${createHash("sha256").update(JSON.stringify([spreadsheetId, ...norm])).digest("hex").slice(0, 40)}`;
+}
+
+/** What Fernway writes after a refused row: each problem as the column it is about. */
+export const problemNote = (problems: string[]) =>
+  problems.map((p) => p.replace(/^contact\.(\w+): /, (_, f: string) => `${fieldWords[f] ?? f}: `).replace(/^contact: /, "")).join("; ").replace(/^./, (x) => x.toUpperCase());
+
+export type InRun = { sent: number; refreshed: number; refused: number };
+
+/** Reads every linked sheet's "Leads in": new rows become leads (at most IN_PER_READ a read), and each row's waybill,
+ *  state and note are written back only where they differ from what the row shows. */
+export async function readSheetsIn(c: { db: Db; sheets: Sheets; deps: Deps }): Promise<InRun> {
+  const run: InRun = { sent: 0, refreshed: 0, refused: 0 };
+  const links = await c.db.select().from(sheetLinks).where(isNotNull(sheetLinks.inRoute));
+  for (const l of links) {
+    const r = await c.sheets.read(l.spreadsheetId, IN_TAB);
+    if (!r.ok) {
+      const why = r.status === 403 || r.status === 404 ? "Fernway can no longer open the sheet, or its Leads in tab is gone" : `Google said ${r.status ?? "nothing"}: ${r.why}`;
+      await c.db.update(sheetLinks).set({ inError: why.slice(0, 300) }).where(eq(sheetLinks.accountId, l.accountId));
+      continue;
+    }
+    // The leads the rows already name, in one read.
+    const named = r.rows.slice(1).map((row) => parseWaybill(row[7] ?? "")).filter((w): w is NonNullable<typeof w> => !!w);
+    const known = new Map<string, typeof shipments.$inferSelect>();
+    if (named.length) {
+      const found = await c.db.select().from(shipments).where(and(eq(shipments.accountId, l.accountId), eq(shipments.source, "sheet"),
+        sql`(${shipments.waybillYear}, ${shipments.waybillSeq}) in (${sql.join(named.map((w) => sql`(${w.year}, ${w.seq})`), sql`, `)})`));
+      for (const s of found) known.set(formatWaybill({ year: s.waybillYear, seq: s.waybillSeq }), s);
+    }
+    const writes: { range: string; values: string[][] }[] = [];
+    let budget = IN_PER_READ;
+    for (let i = 1; i < r.rows.length; i++) {
+      const row = r.rows[i]!;
+      const n = i + 1;
+      const want = (wb: string, state: string, note: string) => {
+        if ((row[7] ?? "") === wb && (row[8] ?? "") === state && (row[9] ?? "") === note) return false;
+        writes.push({ range: `${q(IN_TAB)}!H${n}:J${n}`, values: [[wb, state, note]] });
+        return true;
+      };
+      const contact = contactOfRow(row);
+      if (Object.keys(contact).length === 0) continue;
+      const key = rowKey(l.spreadsheetId, contact);
+      const wb = (row[7] ?? "").trim();
+      if (wb) {
+        const p = parseWaybill(wb);
+        const s = p ? known.get(formatWaybill(p)) : undefined;
+        if (!s) { want(wb, row[8] ?? "", "Fernway has no lead with this waybill"); continue; }
+        const state = stateWords[s.state] ?? s.state;
+        const note = s.idempotencyKey !== key ? "Edited after it was sent: nothing new was sent"
+          : s.state === "held" ? (readable(s.holdReason) ?? "") : s.state === "returned" ? "GHL never answered; resend it from the console" : "";
+        if (want(formatWaybill({ year: s.waybillYear, seq: s.waybillSeq }), state, note)) run.refreshed++;
+        continue;
+      }
+      if (budget <= 0) continue;
+      budget--;
+      const res = await ingestLead(c.deps, l.accountId, { idempotencyKey: key, source: "sheet", route: l.inRoute!, contact });
+      if (!res.ok) { if (want("", "Not sent", problemNote(res.problems))) run.refused++; continue; }
+      want(res.waybill.number, stateWords[res.waybill.state] ?? res.waybill.state, res.duplicate ? "Same as an earlier row: one lead" : "");
+      if (!res.duplicate) run.sent++;
+    }
+    const w = writes.length ? await c.sheets.write(l.spreadsheetId, writes) : null;
+    await c.db.update(sheetLinks).set({ inReadAt: sql`now()`, inError: w && !w.ok ? `Google said ${w.status ?? "nothing"}: ${w.why}`.slice(0, 300) : null })
+      .where(eq(sheetLinks.accountId, l.accountId));
+  }
+  return run;
 }

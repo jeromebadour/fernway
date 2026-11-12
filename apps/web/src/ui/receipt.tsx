@@ -68,9 +68,7 @@ export function Receipt({ initial, token, to, fast }: { initial: TrackView; toke
         <div className={`wb-stamp rc-stamp ${s.cls}`}><s.G size={15} />{s.text}</div>
       </div>
       <div className="wb-route">
-        <div><p className="wb-label">From</p>{v.source === "api"
-          ? <p>Your code<span>Fernway API</span></p>
-          : <p>Website<span>Fernway&rsquo;s {v.route.toLowerCase()} form</span></p>}</div>
+        <div><p className="wb-label">From</p>{(() => { const f = fromOf(v.source, v.route); return <p>{f[0]}<span>{f[1]}</span></p>; })()}</div>
         <GRoute size={22} />
         <div><p className="wb-label">To</p><p>GoHighLevel<span>{to ?? "Fernway’s sandbox"} · {v.route}</span></p></div>
       </div>
@@ -113,4 +111,20 @@ export function Receipt({ initial, token, to, fast }: { initial: TrackView; toke
       </ol>
     </article>
   );
+}
+
+/** Where a lead came from, as the receipt's From: each way in its own words (not every lead is a website form). */
+function fromOf(source: string, route: string): [string, string] {
+  switch (source) {
+    case "api": return ["Your code", "Fernway API"];
+    case "embed": return ["A website", "Fernway embed form"];
+    case "import": return ["A file", "Fernway import tool"];
+    case "sheet": return ["A Google Sheet", "Its Leads in tab"];
+    case "workflow": return ["A GHL workflow", "Track with Fernway"];
+    case "wordpress": return ["WordPress", "Fernway for WordPress"];
+    case "laravel": return ["Laravel", "Fernway for Laravel"];
+    case "stripe": return ["Stripe", "A payment"];
+    case "demo": return ["The demo", "Break it"];
+    default: return ["Website", `Fernway\u2019s ${route.toLowerCase()} form`];
+  }
 }

@@ -29,6 +29,8 @@ const said: Record<string, { word: string; G: G; tone: string }> = {
   "score.off": { word: "Turned lead score off", G: GScore, tone: "hz" },
   "sheet.linked": { word: "Linked a Google Sheet", G: GSheet, tone: "ok" },
   "sheet.unlinked": { word: "Unlinked the Google Sheet", G: GSheet, tone: "hz" },
+  "sheet.in.on": { word: "Turned on Leads in", G: GSheet, tone: "ok" },
+  "sheet.in.off": { word: "Turned off Leads in", G: GSheet, tone: "hz" },
 };
 const groups: { k: AuditGroup | "all"; label: string }[] = [
   { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "score", label: "Lead score" }, { k: "sheet", label: "Google Sheets" }, { k: "ghl", label: "GHL" },

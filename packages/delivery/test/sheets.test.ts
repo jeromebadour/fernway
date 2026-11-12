@@ -7,7 +7,10 @@ import { http, HttpResponse } from "msw";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { deliverTry, ingestLead } from "../src/engine.js";
 import { auditLog, leadScores, sheetLinks, sheetRows, shipments } from "../src/schema.js";
-import { createSheets, linkSheet, rowOf, serviceKeyFrom, sheetIdFrom, sheetView, syncSheets, unlinkSheet, SHEET_HEADER, SHEET_TAB } from "../src/sheets.js";
+import {
+  contactOfRow, createSheets, linkSheet, problemNote, readSheetsIn, rowKey, rowOf, serviceKeyFrom, setSheetIn, sheetIdFrom, sheetView, syncSheets, unlinkSheet,
+  IN_HEADER, IN_TAB, SHEET_HEADER, SHEET_TAB,
+} from "../src/sheets.js";
 import { createDb, fakeConnection, fakeGhl, freshDatabase, seedAccount, testDeps } from "./support.js";
 
 const GOOGLE = "http://sheets.fake";
@@ -47,6 +50,17 @@ const google = [
       book.tabs.set(title, []);
       return HttpResponse.json({});
     }
+    if (what === "values:batchUpdate") {
+      for (const d of body!.data as { range: string; values: string[][] }[]) {
+        const m = d.range.match(/^'(.+)'!([A-Z])(\d+):[A-Z]\d+$/)!;
+        const g = book.tabs.get(m[1]!)!;
+        const row = (g[Number(m[3]) - 1] ??= []);
+        const start = m[2]!.charCodeAt(0) - 65;
+        while (row.length < start) row.push("");
+        d.values[0]!.forEach((v, i) => { row[start + i] = v; });
+      }
+      return HttpResponse.json({});
+    }
     if (!what) return HttpResponse.json({ properties: { title: book.title }, sheets: [...book.tabs.keys()].map((t) => ({ properties: { title: t } })) });
     const verb = r!.endsWith(":append") ? "append" : null;
     const rng = verb ? r!.slice(0, -":append".length) : r!;
@@ -58,7 +72,8 @@ const google = [
     }
     if (request.method === "PUT") { grid[from! - 1] = (body!.values as string[][])[0]!; return HttpResponse.json({}); }
     if (from) return HttpResponse.json({ values: grid[from - 1] ? [[grid[from - 1]![0]]] : [] });
-    return HttpResponse.json({ values: grid.map((g) => [g[0]]) });
+    if (decodeURIComponent(rng).endsWith("A:A")) return HttpResponse.json({ values: grid.map((g) => [g[0]]) });
+    return HttpResponse.json({ values: grid.map((g) => { const r = [...g]; while (r.length && !r[r.length - 1]) r.pop(); return r; }) });
   }),
 ];
 
@@ -176,5 +191,68 @@ describe("rows", () => {
     await syncSheets({ db: app.db, sheets });
     expect(grid()).toHaveLength(before);
     expect(await app.db.select().from(auditLog).where(eq(auditLog.action, "sheet.unlinked"))).toHaveLength(1);
+  });
+});
+
+describe("Leads in", () => {
+  const tab = () => books.get(ID)!.tabs.get(IN_TAB)!;
+  const deps = () => testDeps(app.db, conn).deps;
+  it("turns on only with a sheet linked and a route without a meeting time, makes the tab, audited", async () => {
+    expect(await setSheetIn(app.db, sheets, owner(), "trial")).toEqual({ ok: false, problems: ["sheet: link a sheet first"] });
+    books.get(ID)!.shared = true;
+    expect(await linkSheet(app.db, sheets, owner(), ID)).toMatchObject({ ok: true });
+    expect(await setSheetIn(app.db, sheets, { ...owner(), role: "member" }, "trial")).toMatchObject({ ok: false });
+    expect(await setSheetIn(app.db, sheets, owner(), "demo")).toEqual({ ok: false, problems: ["route: a route of this account without a meeting time"] });
+    expect(await setSheetIn(app.db, sheets, owner(), "trial")).toEqual({ ok: true });
+    expect(tab()).toEqual([IN_HEADER]);
+    expect(await app.db.select().from(auditLog).where(eq(auditLog.action, "sheet.in.on"))).toHaveLength(1);
+  });
+
+  it("sends each new row once, writes its waybill and state back, and says why a row was refused", async () => {
+    tab().push(["Ada", "Moss", "ada@fjordline.com", "", "Fjordline", "", "Twelve rowers want a trial"]);
+    tab().push(["Bo", "", "", "", "", "", "no email or phone"]);
+    tab().push(["Cy", "", "cy@nowhere", "", "", "", ""]);
+    tab().push([]);
+    tab().push(["ada", "moss", "ADA@fjordline.com", "", "Fjordline", "", "Twelve rowers want a trial"]);
+    const r = await readSheetsIn({ db: app.db, sheets, deps: deps() });
+    expect(r).toEqual({ sent: 2, refreshed: 0, refused: 2 });
+    const [ada] = await app.db.select().from(shipments).where(eq(shipments.source, "sheet"));
+    expect(ada!.contact).toEqual({ firstName: "Ada", lastName: "Moss", email: "ada@fjordline.com", companyName: "Fjordline", message: "Twelve rowers want a trial" });
+    const wb = tab()[1]![7]!;
+    expect(wb).toMatch(/^FW 26 \d{5}$/);
+    expect(tab()[1]!.slice(8, 10)).toEqual(["Picked up", ""]);
+    expect(tab()[2]!.slice(7, 10)).toEqual(["", "Not sent", "An email or a phone number, so GHL can match the contact"]);
+    expect(tab()[3]![9]).toBe("Email: a real email address");
+    // The same person typed again in another case is a different row, so a different lead; the same cells are one.
+    expect(tab()[5]![7]).not.toBe(wb);
+    // Read again: nothing new is sent, nothing is rewritten.
+    expect(await readSheetsIn({ db: app.db, sheets, deps: deps() })).toEqual({ sent: 0, refreshed: 0, refused: 0 });
+    expect(await app.db.select().from(shipments).where(eq(shipments.source, "sheet"))).toHaveLength(2);
+  });
+
+  it("follows the lead: signed for shows in the row; an edited row sends nothing and says so", async () => {
+    const [ada] = await app.db.select().from(shipments).where(eq(shipments.contact, { firstName: "Ada", lastName: "Moss", email: "ada@fjordline.com", companyName: "Fjordline", message: "Twelve rowers want a trial" }));
+    await deliverTry(deps(), ada!.id, 1);
+    expect(await readSheetsIn({ db: app.db, sheets, deps: deps() })).toMatchObject({ refreshed: 1 });
+    expect(tab()[1]![8]).toBe("Signed for");
+    tab()[1]![6] = "Actually twenty rowers";
+    expect(await readSheetsIn({ db: app.db, sheets, deps: deps() })).toMatchObject({ sent: 0 });
+    expect(tab()[1]![9]).toBe("Edited after it was sent: nothing new was sent");
+    expect(await app.db.select().from(shipments).where(eq(shipments.source, "sheet"))).toHaveLength(2);
+    // A fixed refused row goes through on the next read.
+    tab()[3]![2] = "cy@nowhere.io";
+    expect(await readSheetsIn({ db: app.db, sheets, deps: deps() })).toMatchObject({ sent: 1 });
+    expect(tab()[3]![7]).toMatch(/^FW 26/);
+  });
+
+  it("keeps the row's key to its cells and sheet, and turns off", async () => {
+    const c = contactOfRow([" Ada ", "", "A@B.co", "", "", "", ""]);
+    expect(c).toEqual({ firstName: "Ada", email: "A@B.co" });
+    expect(rowKey(ID, c)).toBe(rowKey(ID, { firstName: "Ada", email: "a@b.co" }));
+    expect(rowKey(ID, c)).not.toBe(rowKey("1OtherSheetAbcdefghijklmn", c));
+    expect(problemNote(["contact.phone: a phone number with country code, like +1 503 555 0142"])).toBe("Phone: a phone number with country code, like +1 503 555 0142");
+    expect(await setSheetIn(app.db, sheets, owner(), null)).toEqual({ ok: true });
+    tab().push(["Dee", "", "dee@example.org"]);
+    expect(await readSheetsIn({ db: app.db, sheets, deps: deps() })).toEqual({ sent: 0, refreshed: 0, refused: 0 });
   });
 });
