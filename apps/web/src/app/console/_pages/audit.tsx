@@ -1,7 +1,7 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { auditGroups, type AuditGroup } from "@fernway/delivery";
-import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GShield, GSignUp, GTrash, GUser } from "@/ui/glyphs";
+import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GShield, GSignUp, GTrash, GUser, GWidget } from "@/ui/glyphs";
 import { Pager } from "@/ui/pager";
 import { stamp } from "@/ui/when";
 
@@ -22,9 +22,12 @@ const said: Record<string, { word: string; G: G; tone: string }> = {
   "key.made": { word: "Made an API key", G: GKey, tone: "in" },
   "key.revoked": { word: "Revoked an API key", G: GKey, tone: "hz" },
   "plan.changed": { word: "Changed the plan", G: GCard, tone: "in" },
+  "form.made": { word: "Made an embed form", G: GWidget, tone: "in" },
+  "form.changed": { word: "Changed an embed form", G: GWidget, tone: "in" },
+  "form.revoked": { word: "Revoked an embed form", G: GWidget, tone: "hz" },
 };
 const groups: { k: AuditGroup | "all"; label: string }[] = [
-  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "ghl", label: "GHL" },
+  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "ghl", label: "GHL" },
   { k: "team", label: "Team" }, { k: "keys", label: "API keys" }, { k: "plan", label: "Plan" },
 ];
 
@@ -42,6 +45,7 @@ export async function Audit({ who, searchParams }: { who: ConsoleWho; searchPara
     if (r.targetKind === "lead") { const id = leads.get(r.targetId); return id ? <Link className="cn-wb" href={`${who.base}/lead/${id}`}>{r.targetId}</Link> : <code>{r.targetId}</code>; }
     if (r.targetKind === "route") return <Link className="ad-t" href={`${who.base}/routes#route-${r.targetId}`}><code>{r.targetId}</code></Link>;
     if (r.targetKind === "ghl") return <Link className="ad-t" href={`${who.base}/ghl`}><code>{r.targetId}</code></Link>;
+    if (r.targetKind === "form") return <Link className="ad-t" href={`${who.base}/forms`}>{r.targetId}</Link>;
     if (r.targetKind === "member") return <Link className="ad-t" href={`${who.base}/team`}>Team</Link>;
     return <code>{r.targetId}</code>;
   };

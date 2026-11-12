@@ -290,6 +290,30 @@ jobs:
           test "$(wf trigger $K "$(subscription DELETED http://fake-ghl:4010)")" = 200
           test "$(psql -At -c "select count(*) from workflow_triggers")" = 0
 
+      - name: Embed forms - one line of code, framed only by the owner's sites, a lead once per opened form
+        run: |
+          B=http://127.0.0.1:3103
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          K=fwf_ci2345abcdefghijklmn
+          psql -q -c "insert into embed_forms (account_id, key, label, route_key, fields, sites, made_by) values ($ACC, '$K', 'CI form', '$ROUTE', '{firstName,email,message}', '{shop.example.com,*.example.org}', 'CI')"
+          curl -sf $B/embed.js | grep -q "data-fernway-form"
+          # Framed only by the listed sites; an unknown key by none; every other page by none.
+          curl -sI "$B/f/$K" | grep -qi "^content-security-policy: frame-ancestors https://shop.example.com https://\*.example.org"
+          ! curl -sI "$B/f/$K" | grep -qi "^x-frame-options"
+          curl -sI "$B/f/fwf_nobodyaaaaaaaaaaaaaa" | grep -qi "frame-ancestors 'none'"
+          curl -sf "$B/f/$K" | grep -q "Delivered by Fernway"
+          curl -sf "$B/f/$K?site=copycat.io" | grep -q "open on this site"
+          send() { curl -s -o /tmp/r.json -w '%{http_code}' -H 'content-type: application/json' --data-raw "$2" "$B/api/embed/$1"; }
+          lead='{"opened":"3f2504e0-4f89-41d3-9a0c-0305e82c3301","contact":{"email":"embed-ci@example.com","firstName":"Ada","companyName":"not asked"}}'
+          test "$(send $K "$lead")" = 201; grep -q '"track":"/track/' /tmp/r.json
+          WB=$(node -pe 'require("/tmp/r.json").number')
+          test "$(send $K "$lead")" = 200; grep -q "\"number\":\"$WB\"" /tmp/r.json
+          test "$(send $K '{"opened":"3f2504e0-4f89-41d3-9a0c-0305e82c3302","trap":"bot","contact":{"email":"bot@example.com"}}')" = 400
+          test "$(psql -At -c "select source || ' ' || (contact ? 'companyName') from shipments where idempotency_key like 'embed-%' order by id desc limit 1")" = "embed false"
+          psql -q -c "update embed_forms set revoked_at = now() where key = '$K'"
+          test "$(send $K "${lead/3301/3303}")" = 404
+
       - name: Break it, through the real queue, never reaching a GHL
         # The demo account's leads run against the stand-in inside Fernway. Here the fake GHL server plays the real GHL,
         # so it proves none of Break it's calls ever leave Fernway.

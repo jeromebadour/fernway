@@ -9,11 +9,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // No page of Fernway's may be framed by another site (clickjacking), except its panel made to live inside GHL. GHL is
   // also reached on agencies' own white-label domains, so any https site may frame the panel: it shows nothing and can
-  // do nothing without GHL's sealed note about who is looking.
+  // do nothing without GHL's sealed note about who is looking. Embed forms (/f/<key>) are framed by the sites their owner
+  // listed: that header is set per form in src/proxy.ts.
   async headers() {
     return [
-      { source: "/((?!panel$).*)", headers: [{ key: "X-Frame-Options", value: "DENY" }, { key: "Content-Security-Policy", value: "frame-ancestors 'none'" }] },
+      { source: "/((?!panel$|f/).*)", headers: [{ key: "X-Frame-Options", value: "DENY" }, { key: "Content-Security-Policy", value: "frame-ancestors 'none'" }] },
       { source: "/panel", headers: [{ key: "Content-Security-Policy", value: "frame-ancestors https:" }] },
+      { source: "/embed.js", headers: [{ key: "Cache-Control", value: "public, max-age=300" }] },
     ];
   },
 };
