@@ -1,4 +1,5 @@
 import type { ConsoleWho } from "@/lib/console-data";
+import { ScoreChip } from "./score";
 import Link from "next/link";
 import { logStates, type LogState } from "@fernway/delivery";
 import { GFind, GManifest } from "@/ui/glyphs";
@@ -46,7 +47,7 @@ export async function Log({ who, searchParams }: { who: ConsoleWho; searchParams
         <p className="bl-empty"><GFind size={16} />{q ? <>No lead matches <b>{q}</b>{state ? " in this state" : ""}.</> : "No leads here yet."}</p>
       ) : (
         <table className="bl-table cn-log">
-          <thead><tr><th className="bl-num">#</th><th>Waybill</th><th>Lead</th><th>Route</th><th>From</th><th>State</th><th>Picked up</th></tr></thead>
+          <thead><tr><th className="bl-num">#</th><th>Waybill</th><th>Lead</th><th>Route</th><th>From</th><th>State</th><th>Score</th><th>Picked up</th></tr></thead>
           <tbody>
             {v.rows.map((r, i) => {
               const s = stateWord(r.state, r.tries);
@@ -61,6 +62,7 @@ export async function Log({ who, searchParams }: { who: ConsoleWho; searchParams
                     <span className={`bl-chip bl-chip-${s.tone}`}><s.G size={13} />{s.word}</span>
                     {r.reason && <em className="cn-reason">{r.reason}</em>}
                   </td>
+                  <td>{r.score ? <ScoreChip n={r.score} word={false} /> : <span className="ls-none">None</span>}</td>
                   <td className="cn-mono">{stamp(r.at, w)}</td>
                 </tr>
               );

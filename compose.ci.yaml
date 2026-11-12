@@ -21,3 +21,6 @@ services:
   worker:
     environment:
       FERNWAY_GHL_API: http://fake-ghl:4010
+      # Claude score against the stand-in Claude in fake-ghl.mjs.
+      ANTHROPIC_API_KEY: ci-claude-key
+      FERNWAY_CLAUDE_API: http://fake-ghl:4010

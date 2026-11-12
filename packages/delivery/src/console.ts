@@ -98,7 +98,9 @@ const statesOf: Record<LogState, ShipmentState[]> = {
 };
 
 export type LogRow = { shipmentId: number; waybill: string; who: string; email: string | null; company: string | null; route: string;
-  source: string; state: ShipmentState; tries: number; at: string; updatedAt: string; reason: string | null; lastStatus: number | null };
+  source: string; state: ShipmentState; tries: number; at: string; updatedAt: string; reason: string | null; lastStatus: number | null;
+  /** Claude's score (1 to 5), when the lead was scored. */
+  score: number | null };
 
 export async function syncLog(db: Db, accountId: number, f: { q?: string; state?: LogState; route?: string; page?: number }) {
   const where = [eq(shipments.accountId, accountId)];
@@ -120,16 +122,17 @@ export async function syncLog(db: Db, accountId: number, f: { q?: string; state?
   const rows = await db.select({
     s: shipments, route: routes.label,
     lastStatus: sql<number | null>`(select ${scans.answerStatus} from ${scans} where ${scans.shipmentId} = ${shipments.id} and ${scans.answerStatus} is not null order by ${scans.at} desc limit 1)`,
+    score: sql<number | null>`(select score from lead_scores where lead_scores.shipment_id = ${shipments.id} and lead_scores.state = 'scored')`,
   }).from(shipments).innerJoin(routes, eq(routes.id, shipments.routeId)).where(and(...where))
     .orderBy(desc(shipments.createdAt), desc(shipments.id)).limit(LOG_PAGE).offset((page - 1) * LOG_PAGE);
   const counts = await db.select({ state: shipments.state, n: count() }).from(shipments).where(eq(shipments.accountId, accountId)).groupBy(shipments.state);
   return {
     total: total?.n ?? 0, page, pages,
     counts: Object.fromEntries(logStates.map((k) => [k, counts.filter((c) => statesOf[k].includes(c.state)).reduce((a, c) => a + c.n, 0)])) as Record<LogState, number>,
-    rows: rows.map(({ s, route, lastStatus }): LogRow => ({
+    rows: rows.map(({ s, route, lastStatus, score }): LogRow => ({
       shipmentId: s.id, waybill: number(s), who: personOf(s.contact), email: s.contact.email ?? null, company: s.contact.companyName ?? null,
       route, source: s.source, state: s.state, tries: s.tries, at: s.createdAt.toISOString(), updatedAt: s.updatedAt.toISOString(),
-      reason: readable(s.holdReason), lastStatus: lastStatus === null ? null : Number(lastStatus),
+      reason: readable(s.holdReason), lastStatus: lastStatus === null ? null : Number(lastStatus), score: score === null ? null : Number(score),
     })),
   };
 }
@@ -197,7 +200,7 @@ export async function resendHeld(deps: Deps, a: Actor, reason: string): Promise<
 }
 
 export const AUDIT_PAGE = 15;
-export const auditGroups = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."] } as const;
+export const auditGroups = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."] } as const;
 export type AuditGroup = keyof typeof auditGroups;
 
 export async function auditView(db: Db, accountId: number, page = 1, group?: AuditGroup) {

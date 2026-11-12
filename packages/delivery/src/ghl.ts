@@ -42,6 +42,10 @@ export type GhlClient = {
   ): Promise<GhlAnswer & { sent: object }>;
   /** Adds the lead's message to the contact as a note (GHL's contacts have no free-text field). */
   addNote(conn: GhlConnection, contactId: string, body: string): Promise<GhlAnswer & { sent: object }>;
+  /** Adds tags to a contact (POST /contacts/{id}/tags); tags it already has stay. */
+  addTags(conn: GhlConnection, contactId: string, tags: string[]): Promise<GhlAnswer & { sent: object }>;
+  /** Takes tags off a contact (DELETE /contacts/{id}/tags); tags it doesn't have are no matter. */
+  removeTags(conn: GhlConnection, contactId: string, tags: string[]): Promise<GhlAnswer & { sent: object }>;
   /** Deletes a contact, opportunity or note ("contacts/<id>", "opportunities/<id>", "contacts/<id>/notes/<id>").
    *  True once GHL no longer has it (deleted now, or already gone: 404). */
   remove(conn: GhlConnection, path: string): Promise<{ gone: boolean; status: number | null }>;
@@ -68,7 +72,7 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
   const timeoutMs = opts.timeoutMs ?? 10_000;
   const doFetch = opts.fetch ?? fetch;
 
-  async function call(conn: GhlConnection, path: string, body: object, pickId: (json: unknown) => string | undefined) {
+  async function call(conn: GhlConnection, path: string, body: object, pickId: (json: unknown) => string | undefined, method: "POST" | "DELETE" = "POST") {
     let status: number | null = null;
     let text = "";
     let token: string;
@@ -84,7 +88,7 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
     const started = performance.now();
     try {
       const res = await doFetch(`${base}${path}`, {
-        method: "POST",
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
           Version: GHL_VERSION,
@@ -149,6 +153,13 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
         const v = j as { note?: { id?: string }; id?: string };
         return v?.note?.id ?? v?.id;
       });
+    },
+    // GHL answers a tag change with the contact's tags, not an id: a 2xx is enough.
+    addTags(conn, contactId, tags) {
+      return call(conn, `/contacts/${encodeURIComponent(contactId)}/tags`, { tags }, () => "tags");
+    },
+    removeTags(conn, contactId, tags) {
+      return call(conn, `/contacts/${encodeURIComponent(contactId)}/tags`, { tags }, () => "tags", "DELETE");
     },
     async remove(conn, path) {
       let status: number | null = null;

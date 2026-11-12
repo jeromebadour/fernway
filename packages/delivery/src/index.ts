@@ -24,3 +24,4 @@ export * from "./ghl-events.js";
 export * from "./ghl-sso.js";
 export * from "./workflows.js";
 export * from "./embed.js";
+export * from "./score.js";

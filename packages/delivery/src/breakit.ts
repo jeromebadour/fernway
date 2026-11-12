@@ -58,6 +58,12 @@ export function standInGhl(failure: Failure | null, tryNumber: number, resent: b
     async bookAppointment() {
       return ok(`breakit_a_${shipmentId}`, {});
     },
+    async addTags() {
+      return ok("tags", {});
+    },
+    async removeTags() {
+      return ok("tags", {});
+    },
     async remove() {
       return { gone: true, status: 200 };
     },

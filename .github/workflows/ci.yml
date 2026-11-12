@@ -241,7 +241,7 @@ jobs:
           curl -sI $B/ | grep -qi "^x-frame-options: DENY"
           curl -sI $B/console | grep -qi "frame-ancestors 'none'"
           curl -sI $B/panel | grep -qi "^content-security-policy: frame-ancestors https:"
-          ! curl -sI $B/panel | grep -qi "^x-frame-options"
+          if curl -sI $B/panel | grep -qi "^x-frame-options"; then echo "STOPPED: must not match: curl -sI $B/panel | grep -qi '^x-frame-options'"; exit 1; fi
           # GHL seals who is looking the way CryptoJS does (salted AES-256-CBC, MD5 key derivation); this run seals its own.
           seal() { node -e 'const c=require("crypto");const s=c.randomBytes(8);let d=Buffer.alloc(0),b=Buffer.alloc(0);while(d.length<48){b=c.createHash("md5").update(Buffer.concat([b,Buffer.from(process.argv[2]),s])).digest();d=Buffer.concat([d,b])}const x=c.createCipheriv("aes-256-cbc",d.subarray(0,32),d.subarray(32,48));console.log(JSON.stringify(Buffer.concat([Buffer.from("Salted__"),s,x.update(process.argv[1]),x.final()]).toString("base64")))' "$1" "${2:-ci-ghl-shared-secret}"; }
           LOC=$(psql -At -c "select location_id from ghl_connections order by account_id limit 1")
@@ -307,7 +307,7 @@ jobs:
           curl -sf $B/embed.js | grep -q "data-fernway-form"
           # Framed only by the listed sites; an unknown key by none; every other page by none.
           curl -sI "$B/f/$K" | grep -qi "^content-security-policy: frame-ancestors https://shop.example.com https://\*.example.org"
-          ! curl -sI "$B/f/$K" | grep -qi "^x-frame-options"
+          if curl -sI "$B/f/$K" | grep -qi "^x-frame-options"; then echo "STOPPED: must not match: curl -sI '$B/f/$K' | grep -qi '^x-frame-options'"; exit 1; fi
           curl -sI "$B/f/fwf_nobodyaaaaaaaaaaaaaa" | grep -qi "frame-ancestors 'none'"
           curl -sf "$B/f/$K" | grep -q "Delivered by Fernway"
           curl -sf "$B/f/$K?site=copycat.io" | grep -q "open on this site"
@@ -320,6 +320,30 @@ jobs:
           test "$(psql -At -c "select source || ' ' || (contact ? 'companyName') from shipments where idempotency_key like 'embed-%' order by id desc limit 1")" = "embed false"
           psql -q -c "update embed_forms set revoked_at = now() where key = '$K'"
           test "$(send $K "${lead/3301/3303}")" = 404
+
+      - name: Claude score - a lead read without the person's name, email or phone, priced, then on the GHL contact as a note and tag
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          $W scoring $ACC on | grep -q "Claude score on"
+          $W send-test $ACC $ROUTE score-ci.person@northpine-ci.com | tee /tmp/sent.txt
+          ID=$(psql -At -c "select id from shipments where contact->>'email' = 'score-ci.person@northpine-ci.com' order by id desc limit 1")
+          for i in $(seq 1 30); do
+            test "$(psql -At -c "select state || ' ' || ghl_state from lead_scores where shipment_id = $ID")" = "scored written" && break; sleep 3
+          done
+          test "$(psql -At -c "select state || ' ' || score || ' ' || ghl_state from lead_scores where shipment_id = $ID")" = "scored 4 written"
+          # Claude was sent the domain, never the person's name, email address or phone.
+          curl -sf http://127.0.0.1:4010/__claude > /tmp/claude.json
+          grep -q "northpine-ci.com" /tmp/claude.json
+          if grep -q "score-ci.person" /tmp/claude.json; then echo "STOPPED: must not match: grep -q 'score-ci.person' /tmp/claude.json"; exit 1; fi
+          grep -q '"model":"claude-haiku-5-5"' /tmp/claude.json
+          grep -q '"json_schema"' /tmp/claude.json
+          CID=$(psql -At -c "select ghl_contact_id from shipments where id = $ID")
+          curl -sf http://127.0.0.1:4010/__tags | node -e 'const t=JSON.parse(require("fs").readFileSync(0));const c=process.argv[1];if(JSON.stringify(t[c])!==JSON.stringify(["fernway-score-4"]))process.exit(1)' "$CID"
+          $W claude-spend | grep -qF '1 calls, $0.0001 of $8.00'
+          $W scoring $ACC off | grep -q "Claude score off"
+          test "$(psql -At -c "select count(*) from audit_log where action in ('score.on', 'score.off')")" = 2
 
       - name: The Python import tool sends a messy CSV through the real API, twice, and the second run sends nothing new
         run: |

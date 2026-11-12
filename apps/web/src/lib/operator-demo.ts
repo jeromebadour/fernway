@@ -56,6 +56,7 @@ export function demoWatches(): Watch[] {
     { key: "restore_test", label: "Restore test", state: "ok", reading: "passed 3 days ago", limit: "passed within 8 days" },
     { key: "email", label: "Alert emails", state: "ok", reading: "none given up, 24 h", limit: "none given up" },
     { key: "payments", label: "Payments", state: "warn", reading: "1 past due", limit: "none past due" },
+    { key: "claude", label: "Claude score", state: "ok", reading: "$1.84 of $8.00 this month", limit: "under 80% of the cap, none given up" },
   ];
 }
 

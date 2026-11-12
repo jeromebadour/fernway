@@ -354,3 +354,75 @@ a.wb-go.fm-btn { text-decoration: none; }
 .ef-sites textarea { font: 500 14px/1.6 var(--font-mono); min-height: 84px; }
 .ef-card, .ef-code { min-width: 0; max-width: 100%; box-sizing: border-box; }
 .ef-code pre { max-width: 100%; box-sizing: border-box; }
+
+/* Lead score: each score keeps one hue (5 delivered green, 4 action mint, 3 input blue, 2 held amber, 1 the "ends" red). */
+.ls-s5 { --tone: var(--ok); } .ls-s4 { --tone: var(--go); } .ls-s3 { --tone: var(--input); } .ls-s2 { --tone: var(--hazard); } .ls-s1 { --tone: var(--stop); }
+.ls-head-do { display: flex; align-items: center; gap: 12px; }
+.ls-head-do .bl-chip { margin: 0; }
+.ls-pips { display: inline-flex; gap: 3px; }
+.ls-pips i { width: 6px; height: 10px; background: rgba(170, 196, 225, 0.16); }
+.ls-pips i.on { background: var(--tone); }
+.ls-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
+.ls-tile { display: grid; gap: 6px; padding: 18px 20px 16px; background: linear-gradient(180deg, var(--kraft-2), var(--kraft));
+  border: 1px solid rgba(190,210,232,0.14); border-top: 3px solid var(--tone); }
+.ls-tile-k { display: flex; align-items: center; gap: 9px; font: 600 12px var(--font-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.ls-tile b { font: 700 40px/1.05 var(--font-mono); letter-spacing: -0.03em; color: var(--paper); }
+.ls-tile-l { font-size: 13.5px; color: var(--muted); }
+.ls-facts { margin-top: 20px; }
+.ls-two { margin-top: 40px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ls-p { margin: 0 0 14px; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
+.ls-p b { color: var(--paper); font-weight: 600; }
+.ls-small { margin-top: 14px; font-size: 13.5px; }
+.ls-tags { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 6px; }
+.ls-tags li { display: grid; grid-template-columns: 150px auto 1fr; align-items: center; gap: 12px; padding: 8px 12px; background: var(--kraft);
+  border: 1px solid var(--line); border-left: 2px solid var(--tone); }
+.ls-tags code { font: 500 13px var(--font-mono); color: var(--paper); }
+.ls-tags span:last-child { font-size: 13.5px; color: var(--muted); }
+.ls-k { display: flex; align-items: center; gap: 7px; margin: 0 0 8px; font: 500 10.5px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.ls-k svg { color: var(--input); }
+.ls-yes svg { color: var(--ok); } .ls-no svg { color: var(--stop); }
+.ls-note { margin: 0; padding: 14px 16px; background: var(--kraft); border: 1px solid var(--line); border-left: 2px solid var(--ok);
+  font: 400 13px/1.6 var(--font-mono); color: #cfd8e3; white-space: pre-wrap; }
+.ls-sent { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+.ls-sent > div { padding: 14px 16px; background: var(--kraft); border: 1px solid var(--line); }
+.ls-sent ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; color: var(--paper); }
+.ls-sent > div:last-child { border-top: 2px solid var(--stop); }
+.ls-sent > div:first-child { border-top: 2px solid var(--ok); }
+.ls-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 9px; border: 1px solid var(--line); border-left: 2px solid var(--tone);
+  font: 500 12.5px var(--font-body); color: var(--paper); white-space: nowrap; }
+.ls-chip b { font: 700 13px var(--font-mono); color: var(--tone); }
+.ls-none { font: 500 12.5px var(--font-mono); color: var(--faint); }
+.ls-read { color: var(--paper); font-size: 14px; line-height: 1.45; }
+.ls-read em { display: block; margin-top: 3px; font-style: normal; font: 500 12px var(--font-mono); color: var(--muted); }
+.ls-card { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); display: grid; gap: 10px; }
+.ls-card .ls-chip { width: max-content; }
+.ls-card-sum { margin: 0; color: var(--paper); font-size: 14.5px; line-height: 1.5; }
+.ls-card-sig { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: #cfd8e3; font-size: 13.5px; }
+.ls-card-meta { margin: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.ls-card-meta code { font: 500 12px var(--font-mono); color: var(--paper); }
+.ls-card-meta span { font: 500 11.5px var(--font-mono); color: var(--faint); }
+.ls-wait { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.ls-wait svg { color: var(--input); }
+.ls-not { color: var(--hazard); }
+@media (max-width: 1000px) {
+  .ls-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ls-two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .ls-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ls-tile b { font-size: 30px; }
+  .ls-sent { grid-template-columns: minmax(0, 1fr); }
+  .ls-tags li { grid-template-columns: 1fr auto; }
+  .ls-tags span:last-child { grid-column: 1 / -1; }
+  .ls-head-do { flex-wrap: wrap; }
+  /* Sync log: waybill and score on the first line, the source beside the route, the time last. */
+  .cn-log td:nth-child(7) { grid-area: 1 / 3; text-align: right; }
+  .cn-log td:nth-child(5) { grid-area: 3 / 3; text-align: right; }
+  .cn-log td:nth-child(8) { grid-area: 5 / 2 / 6 / 4; }
+  /* Latest scores: waybill and score on the first line, then when, who and Claude's read. */
+  .ls-table td:nth-child(3) { grid-area: 1 / 2; }
+  .ls-table td:nth-child(5) { grid-area: 1 / 3; text-align: right; }
+  .ls-table td:nth-child(2) { grid-area: 2 / 2 / 3 / 4; }
+  .ls-table td:nth-child(4) { grid-area: 3 / 2 / 4 / 4; }
+  .ls-table td:nth-child(6) { grid-area: 4 / 2 / 5 / 4; }
+}

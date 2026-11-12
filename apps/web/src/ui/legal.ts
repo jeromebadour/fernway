@@ -11,7 +11,7 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.8",
+  version: "1.9",
   effective: "12 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
@@ -52,6 +52,7 @@ export const privacy: LegalDoc = {
         "**GHL workflows:** an account's own GoHighLevel workflows can send a contact through Fernway, and can start when one of its leads is held, returned or signed for. Fernway then sends that workflow the lead's waybill, receipt link, contact details and route, inside the same GoHighLevel sub-account and nowhere else. Fernway keeps which workflows asked, until they stop, and a record of each send for 30 days.",
         "**Embed forms:** an account can put a Fernway form on its own website or funnel. What a visitor types there goes to that account\'s GoHighLevel the same way as any other lead, and the visitor gets a receipt link. The form sets no cookie. Fernway keeps each form\'s settings until its owner revokes it.",
         "**Imports:** Fernway\'s import tool runs on the account\'s own computer. It reads a file of contacts there, tidies and merges it there, and sends each contact through the account\'s own API key, the same way as any other lead. The file itself never reaches Fernway.",
+        "**Lead score:** an account can turn on Claude's lead score. Each new lead is then read by Claude, Anthropic's AI, which is sent only the business's name, the route, where the lead came from, the company, website, the email's domain, whether a phone number or a meeting was given, and the message; never the person's name, email address or phone number. Fernway keeps Claude's score, its one-line read and reasons with the lead, and adds them to the GoHighLevel contact as a note and a tag. They go when the lead goes.",
         "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
         "The [Your record](/account/record) page in the account area shows all of this beside what GoHighLevel holds, and downloads it as a file.",
       ],
@@ -80,6 +81,7 @@ export const privacy: LegalDoc = {
         "**Jerome Badour**, who runs Fernway and its GoHighLevel account, and reads what arrives there.",
         "**Fernway's staff**, in Fernway's own operator console, to keep the service running: an account's name, its people (name, email, role, last seen), plan and invoices, GHL connection and lead counts. Not the leads' own details. Staff sign in with two-step sign-in, and everything they change is recorded.",
         "**Stripe**, for plans and their invoices, as described above.",
+        "**Anthropic** (Anthropic, PBC), whose Claude reads a new lead when its account turned lead score on, as described above, and only the parts named there. Under Anthropic's commercial terms it does not train its models on what it is sent.",
         "**Resend** (Resend, Inc.), which delivers Fernway's emails: confirming your address, a password reset, an invite to join a team, and the alerts you keep on. It handles each email's address and content to deliver it.",
         "**The hosting provider** (Contabo), whose server stores Fernway's database. It provides the machine; it does not use the data.",
         "**Cloudflare R2**, which stores the nightly backup copy. The copy is encrypted on our server before it leaves, so Cloudflare holds it without being able to read it.",
@@ -92,7 +94,7 @@ export const privacy: LegalDoc = {
       clauses: [
         "Fernway's database runs on one server in **Singapore**. Connections to it are encrypted (HTTPS).",
         "The encrypted backup copy is stored by Cloudflare R2 in **Europe**.",
-        "What reaches GoHighLevel, Stripe or Resend is held in their own systems.",
+        "What reaches GoHighLevel, Stripe, Resend or Anthropic is held in their own systems.",
       ],
     },
     {
@@ -134,7 +136,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 adds the import tool. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 added the import tool; version 1.9 adds lead score. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

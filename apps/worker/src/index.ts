@@ -28,6 +28,11 @@ import {
   purgeExpired,
   shipments,
   sweep,
+  createClaude,
+  noteScores,
+  scoreDue,
+  writeScoresToGhl,
+  MONTH_CAP_USD,
   type Deps,
 } from "@fernway/delivery";
 import { eq } from "drizzle-orm";
@@ -143,6 +148,26 @@ setInterval(() => {
     .catch((e) => console.error(`worker: workflow triggers failed: ${e.message}`));
 }, TRIGGERS_MS);
 
+// Claude score, every 20 s: new leads of accounts that turned it on are noted, scored (never past the month's cap),
+// and each score written to its GHL contact once the lead is signed for. Only with Fernway's own Claude key.
+if (process.env.ANTHROPIC_API_KEY) {
+  const claude = createClaude({ apiKey: process.env.ANTHROPIC_API_KEY, baseUrl: process.env.FERNWAY_CLAUDE_API || undefined });
+  const capUsd = Number(process.env.CLAUDE_MONTH_CAP_USD || MONTH_CAP_USD);
+  let scoring = false;
+  setInterval(() => {
+    if (scoring) return;
+    scoring = true;
+    noteScores(db, [demoAccount])
+      .then(() => scoreDue({ db, claude, capUsd }))
+      .then((r) => (r.scored || r.retry || r.failed || r.skipped) && console.log(`worker: Claude scores ${r.scored}, to retry ${r.retry}, failed ${r.failed}, not scored ${r.skipped}`))
+      .then(() => writeScoresToGhl({ db, ghl: deps.ghl, connectionFor: deps.connectionFor }))
+      .then((r) => (r.written || r.retry || r.failed) && console.log(`worker: scores written to GHL ${r.written}, to retry ${r.retry}, failed ${r.failed}`))
+      .catch((e) => console.error(`worker: Claude score failed: ${e.message}`))
+      .finally(() => { scoring = false; });
+  }, 20_000);
+  console.log(`worker ${commit}: Claude score on (${claude.model}, cap $${capUsd} a month)`);
+}
+
 // Old sign-ins and spent email links go after their time (the Privacy Policy says how long), every hour.
 setInterval(() => {
   forgetOldSignIns(db)
@@ -163,7 +188,7 @@ const WATCH_MS = 60_000;
 setInterval(async () => {
   try {
     const m = await machine("/");
-    const w = (await watch(db, { at: new Date().toISOString(), ...m, redisBytes: null, webCommit: "", workerCommit: commit, workerBeatAt: new Date().toISOString(), jobs: null }))
+    const w = (await watch(db, { at: new Date().toISOString(), ...m, redisBytes: null, webCommit: "", workerCommit: commit, workerBeatAt: new Date().toISOString(), jobs: null }, Date.now(), Number(process.env.CLAUDE_MONTH_CAP_USD || MONTH_CAP_USD)))
       .filter((x) => x.key !== "worker");
     const r = await recordIncidents(db, w);
     if (r.opened || r.closed) console.log(`worker: incidents opened ${r.opened}, closed ${r.closed}`);

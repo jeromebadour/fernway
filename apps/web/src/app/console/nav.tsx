@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GGrid, GManifest, GNodes, GRecord, GRoute, GUser, GWidget } from "@/ui/glyphs";
+import { GGrid, GManifest, GNodes, GRecord, GRoute, GScore, GUser, GWidget } from "@/ui/glyphs";
 
 const sections = [
   { href: "", label: "Delivery board", G: GGrid },
   { href: "/log", label: "Sync log", G: GManifest },
   { href: "/routes", label: "Routes", G: GRoute },
   { href: "/forms", label: "Embed forms", G: GWidget },
+  { href: "/score", label: "Lead score", G: GScore },
   { href: "/ghl", label: "GHL connection", G: GNodes },
   { href: "/team", label: "Team", G: GUser },
   { href: "/audit", label: "Audit log", G: GRecord },

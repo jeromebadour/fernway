@@ -1,4 +1,4 @@
-import { leadView, trackToken } from "@fernway/delivery";
+import { leadView, scoreOf, trackToken } from "@fernway/delivery";
 import { delivery } from "@/lib/connect";
 import { appWho, json } from "@/lib/ghl-app";
 
@@ -10,5 +10,7 @@ export async function GET(request: Request) {
   if (!who) return json(401, { ok: false });
   const id = Number(new URL(request.url).searchParams.get("id"));
   const v = Number.isInteger(id) && id > 0 ? await leadView(delivery().db, who.accountId, id) : null;
-  return v ? json(200, { ok: true, lead: v, receipt: `/track/${trackToken(delivery().cfg.key, v.shipmentId)}` }) : json(404, { ok: false });
+  if (!v) return json(404, { ok: false });
+  const score = await scoreOf(delivery().db, who.accountId, v.shipmentId);
+  return json(200, { ok: true, lead: v, score, receipt: `/track/${trackToken(delivery().cfg.key, v.shipmentId)}` });
 }

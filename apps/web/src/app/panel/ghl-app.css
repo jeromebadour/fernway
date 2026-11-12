@@ -80,7 +80,7 @@ html, body { background: #f2f4f7; color: #101828; }
 .ga-at { font-size: 13px; }
 @media (max-width: 860px) {
   .ga-tiles { grid-template-columns: repeat(2, 1fr); }
-  .ga th:nth-child(3), .ga td:nth-child(3), .ga th:nth-child(5), .ga td:nth-child(5) { display: none; }
+  .ga th:nth-child(3), .ga td:nth-child(3), .ga th:nth-child(6), .ga td:nth-child(6) { display: none; }
   .ga-reasons li { grid-template-columns: 1fr; gap: 4px; }
 }
 @media (max-width: 560px) {
@@ -94,10 +94,26 @@ html, body { background: #f2f4f7; color: #101828; }
   .ga tbody tr:last-child { border-bottom: 0; }
   .ga tbody td { padding: 0; border: 0; }
   .ga td:nth-child(1) { grid-area: 1 / 1; } .ga td:nth-child(4) { grid-area: 1 / 2; text-align: right; }
-  .ga td:nth-child(2) { grid-area: 2 / 1; } .ga td:nth-child(6) { grid-area: 2 / 2; align-self: end; }
+  .ga td:nth-child(2) { grid-area: 2 / 1; } .ga td:nth-child(5) { grid-area: 2 / 2; text-align: right; align-self: end; }
+  .ga td:nth-child(7) { grid-area: 3 / 2; justify-self: end; }
   .ga td:nth-child(4) .ga-why { display: none; }
   .ga-reasons li button { justify-self: start; }
   .ga-lead-head h1 { font-size: 20px; }
   .ga-scans li { grid-template-columns: 28px 1fr; }
   .ga-at { grid-column: 2; }
 }
+
+/* Lead score, in the same five hues as the console, darkened for a light ground. */
+.ga-s5 { --tone: var(--ok); } .ga-s4 { --tone: #0f7f72; } .ga-s3 { --tone: var(--in); } .ga-s2 { --tone: var(--hz); } .ga-s1 { --tone: #b4513f; }
+.ga-pips { display: inline-flex; gap: 2px; }
+.ga-pips i { width: 5px; height: 9px; background: #eaecf0; }
+.ga-pips i.on { background: var(--tone); }
+.ga-score { display: inline-flex; align-items: center; gap: 6px; }
+.ga-score b { font: 600 13px "JetBrains Mono", monospace; color: var(--tone); }
+.ga-scorecard { padding: 14px 18px; margin-bottom: 12px; border-left: 3px solid var(--tone); }
+.ga-scorecard p { margin: 0 0 6px; }
+.ga-scorecard ul { margin: 0 0 8px; padding-left: 18px; color: #344054; }
+.ga-scorecard code { font: 500 12.5px "JetBrains Mono", monospace; color: #101828; }
+.ga-score-big { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px !important; }
+.ga-score-big b { font: 600 18px "JetBrains Mono", monospace; color: var(--tone); }
+.ga-score-big span { color: var(--mute); }

@@ -1,6 +1,6 @@
 // Typed view of db/migrations (Drizzle). The SQL migrations are the source of truth; test/schema.test.ts proves this
 // file still matches the real tables, column by column.
-import { bigint, boolean, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, date, integer, jsonb, numeric, pgTable, primaryKey, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 export const accounts = pgTable("accounts", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -15,6 +15,8 @@ export const accounts = pgTable("accounts", {
   periodEnd: timestamp("period_end", { withTimezone: true }),
   cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
   customerShipmentId: bigint("customer_shipment_id", { mode: "number" }),
+  /** Claude score on since then (leads picked up after it are scored); null when off. */
+  scoreSince: timestamp("score_since", { withTimezone: true }),
 });
 
 export const planKeys = ["starter", "growth", "scale"] as const;
@@ -238,9 +240,9 @@ export const alerts = pgTable("alerts", {
 
 export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
   "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed",
-  "form.made", "form.changed", "form.revoked"] as const;
+  "form.made", "form.changed", "form.revoked", "score.on", "score.off"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form";
+export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score";
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   accountId: bigint("account_id", { mode: "number" }).notNull(),
@@ -360,4 +362,41 @@ export const embedForms = pgTable("embed_forms", {
   madeBy: text("made_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+export type ScoreState = "waiting" | "scored" | "skipped" | "failed";
+export type ScoreGhlState = "waiting" | "written" | "skipped" | "failed";
+
+/** Claude's read of one lead: its score (1 to 5), a line and up to three reasons, what it cost, and its note in GHL. */
+export const leadScores = pgTable("lead_scores", {
+  shipmentId: bigint("shipment_id", { mode: "number" }).primaryKey(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  state: text("state").$type<ScoreState>().notNull().default("waiting"),
+  score: smallint("score"),
+  summary: text("summary"),
+  signals: text("signals").array().notNull().default([]),
+  model: text("model"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  costUsd: numeric("cost_usd", { precision: 12, scale: 6 }),
+  tries: smallint("tries").notNull().default(0),
+  nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
+  lastError: text("last_error"),
+  scoredAt: timestamp("scored_at", { withTimezone: true }),
+  ghlState: text("ghl_state").$type<ScoreGhlState>().notNull().default("waiting"),
+  ghlNoteId: text("ghl_note_id"),
+  ghlTries: smallint("ghl_tries").notNull().default(0),
+  ghlNextAt: timestamp("ghl_next_at", { withTimezone: true }).notNull().defaultNow(),
+  ghlError: text("ghl_error"),
+  ghlWrittenAt: timestamp("ghl_written_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** What Fernway spent on Claude in one calendar month (UTC). */
+export const claudeSpend = pgTable("claude_spend", {
+  month: date("month").primaryKey(),
+  calls: integer("calls").notNull().default(0),
+  inputTokens: bigint("input_tokens", { mode: "number" }).notNull().default(0),
+  outputTokens: bigint("output_tokens", { mode: "number" }).notNull().default(0),
+  spentUsd: numeric("spent_usd", { precision: 12, scale: 6 }).notNull().default("0"),
 });

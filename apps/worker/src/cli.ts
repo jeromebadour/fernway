@@ -17,6 +17,8 @@
 //                                               product and monthly price per plan, and the customer portal
 //   staff-owner <email>                         makes that Fernway user the operator console's owner (the first
 //                                               staff; more are added in the console). Opens with two-step on.
+//   scoring <account> on|off                    Claude score for that account's new leads (the console does the same)
+//   claude-spend                                what Fernway spent on Claude this month, against its cap
 //   fake-connect <account>                      CI and local pictures only: ties the account to the fake GHL
 //                                               (scripts/fake-ghl.mjs); refuses unless FERNWAY_GHL_API is set
 import { formatWaybill, parseWaybill } from "@fernway/core";
@@ -41,7 +43,10 @@ import {
   routes,
   scans,
   seal,
+  setScoring,
   shipments,
+  spendThisMonth,
+  MONTH_CAP_USD,
   signValue,
   staff,
   users,
@@ -196,6 +201,21 @@ try {
       if (r.ok) console.log(`picked up ${r.waybill.number}; the worker sends it now. Read it with: waybill "${r.waybill.number}"`);
       break;
     }
+    case "scoring": {
+      const acc = accountArg(args[0]);
+      const on = args[1] === "on" ? true : args[1] === "off" ? false : fail("on or off, e.g. scoring 1 on");
+      const [a] = await db.select({ name: accounts.name }).from(accounts).where(eq(accounts.id, acc));
+      if (!a) fail(`no account ${acc}`);
+      await setScoring(db, { accountId: acc, userId: null, name: "Fernway (setup tool)", role: "owner" }, on);
+      console.log(`account ${acc} (${a!.name}): Claude score ${on ? "on; leads picked up from now are scored" : "off"}`);
+      break;
+    }
+    case "claude-spend": {
+      const s = await spendThisMonth(db);
+      const cap = Number(process.env.CLAUDE_MONTH_CAP_USD ?? MONTH_CAP_USD);
+      console.log(`${s.month.slice(0, 7)}: ${s.calls} calls, $${s.spentUsd.toFixed(4)} of $${cap.toFixed(2)}`);
+      break;
+    }
     case "waybill": {
       const n = parseWaybill(args.join(" ")) ?? fail('a waybill number, e.g. waybill "FW 26 00002"');
       const [s] = await db.select().from(shipments).where(and(eq(shipments.waybillYear, n.year), eq(shipments.waybillSeq, n.seq)));
@@ -211,7 +231,7 @@ try {
       break;
     }
     default:
-      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog");
+      fail("commands: account, connect-link, pipelines, calendars, route, send-test, waybill, apikey, apikeys, revoke-apikey, stripe-catalog, staff-owner, scoring, claude-spend, fake-connect");
   }
 } finally {
   await pool.end();

@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, shipmentByWaybill, syncLog, teamView, trackToken,
+  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, scoreOf, scoreView, shipmentByWaybill, syncLog, teamView, trackToken,
   type AuditGroup, type LogState, type Role,
 } from "@fernway/delivery";
 import type { When } from "@/ui/when";
@@ -18,6 +18,8 @@ export type ConsoleData = {
   receipt(id: number): string | null;
   routes(): ReturnType<typeof routesView>;
   forms(): ReturnType<typeof formsView>;
+  score(): ReturnType<typeof scoreView>;
+  scoreOf(id: number): ReturnType<typeof scoreOf>;
   choices(): Promise<Choices>;
   connection(): ReturnType<typeof connectionView>;
   ghlEvents(): ReturnType<typeof ghlEventsFor>;
@@ -44,6 +46,8 @@ export async function consoleWho(back: string): Promise<ConsoleWho> {
       receipt: (sid) => `/track/${trackToken(cfg.key, sid)}`,
       routes: () => routesView(db, id),
       forms: () => formsView(db, id),
+      score: () => scoreView(db, id),
+      scoreOf: (sid) => scoreOf(db, id, sid),
       choices: () => ghlChoices(id),
       connection: () => connectionView(db, id),
       ghlEvents: () => ghlEventsFor(db, id),

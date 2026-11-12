@@ -1,9 +1,10 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GBuilding, GCalendar, GCheck, GStage, GTrash, GClock, GGlobe, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
+import { GScore, GBuilding, GCalendar, GCheck, GStage, GTrash, GClock, GGlobe, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
 import { day, time } from "@/ui/when";
 import { ResendButton } from "../actions";
+import { ScoreChip, usd } from "./score";
 import { stateWord } from "../states";
 
 
@@ -29,6 +30,7 @@ export async function Lead({ who, params }: { who: ConsoleWho; params: Promise<{
   const { id } = await params;
   const v = /^\d+$/.test(id) ? await who.data.lead(Number(id)) : null;
   if (!v) notFound();
+  const sc = await who.data.scoreOf(v.shipmentId);
   const w = who.when;
   const s = stateWord(v.state, v.tries);
   const c = v.contact;
@@ -80,6 +82,25 @@ export async function Lead({ who, params }: { who: ConsoleWho; params: Promise<{
             {v.meeting && <div><dt><GClock size={14} />Meeting</dt><dd>{day(v.meeting, w)}, {time(v.meeting, w)}</dd></div>}
           </dl>
           {c.message && <div className="cn-msg"><p className="cn-msg-k"><GNote size={14} />Message</p><p>{c.message}</p></div>}
+          {sc && (
+            <div className="ls-card">
+              <p className="cn-msg-k"><GScore size={14} />Lead score</p>
+              {sc.state === "scored" && sc.score ? (
+                <>
+                  <ScoreChip n={sc.score} />
+                  <p className="ls-card-sum">{sc.summary}</p>
+                  {sc.signals.length > 0 && <ul className="ls-card-sig">{sc.signals.map((x) => <li key={x}>{x}</li>)}</ul>}
+                  <p className="ls-card-meta">
+                    {sc.ghl === "written" ? <>On the GHL contact: a note and the tag <code>{sc.tag}</code></>
+                      : sc.ghl === "waiting" ? <>Goes to the GHL contact once the lead is signed for</>
+                      : <>Not on the GHL contact{sc.ghlError ? `: ${sc.ghlError}` : ""}</>}
+                    <span>Claude {sc.model === "claude-haiku-5-5" ? "Haiku 5.5" : sc.model} · {usd(sc.costUsd ?? 0)}{sc.scoredAt ? ` · ${time(sc.scoredAt, w)}` : ""}</span>
+                  </p>
+                </>
+              ) : sc.state === "waiting" ? <p className="ls-card-sum ls-wait"><GClock size={14} />Claude is reading it.</p>
+                : <p className="ls-card-sum ls-not">Not scored: {sc.why ?? "Claude could not read it"}.</p>}
+            </div>
+          )}
           <dl className="cn-ids">
             <div><dt>Your id for it</dt><dd>{v.idempotencyKey}</dd></div>
             <div><dt>GHL contact</dt><dd>{v.ghl.contactId ?? "Not yet"}</dd></div>
