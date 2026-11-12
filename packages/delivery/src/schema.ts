@@ -237,9 +237,10 @@ export const alerts = pgTable("alerts", {
 });
 
 export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
-  "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed"] as const;
+  "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed",
+  "form.made", "form.changed", "form.revoked"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan";
+export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form";
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   accountId: bigint("account_id", { mode: "number" }).notNull(),
@@ -338,4 +339,25 @@ export const triggerSends = pgTable("trigger_sends", {
   givenUpAt: timestamp("given_up_at", { withTimezone: true }),
   lastStatus: smallint("last_status"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const embedFields = ["firstName", "lastName", "email", "phone", "companyName", "message"] as const;
+export type EmbedField = (typeof embedFields)[number];
+export const embedThemes = ["light", "dark", "auto"] as const;
+export type EmbedTheme = (typeof embedThemes)[number];
+
+/** A Fernway form for any website: its public key, its route, its fields and where it may be shown. */
+export const embedForms = pgTable("embed_forms", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  accountId: bigint("account_id", { mode: "number" }).notNull(),
+  key: text("key").notNull(),
+  label: text("label").notNull(),
+  routeKey: text("route_key").notNull(),
+  fields: text("fields").array().$type<EmbedField[]>().notNull(),
+  theme: text("theme").$type<EmbedTheme>().notNull().default("light"),
+  button: text("button").notNull().default("Send"),
+  sites: text("sites").array().notNull().default([]),
+  madeBy: text("made_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });

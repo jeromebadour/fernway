@@ -321,3 +321,36 @@ a.wb-go.fm-btn { text-decoration: none; }
   .gh-events li { grid-template-columns: 18px minmax(0, 1fr); }
   .gh-ev-n, .gh-events li > .cn-mono { grid-column: 2; }
 }
+
+/* Embed forms: each form a card with its code to copy; the dialog's choices as chips, never dropdowns. */
+.ef-do { margin-left: auto; display: inline-flex; align-items: center; gap: 18px; }
+.ef-card .rt-head .rt-change { margin-left: 0; }
+.ef-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 28px; margin: 18px 0 0; }
+.ef-facts dt { display: flex; align-items: center; gap: 6px; font: 500 10.5px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.ef-facts dt svg { color: var(--input); }
+.ef-facts dd { margin: 6px 0 0; font: 500 14.5px var(--font-body); color: var(--paper); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ef-facts dd a { color: var(--paper); }
+.ef-facts dd code { font: 500 13px var(--font-mono); color: var(--input); }
+.ef-site { padding: 2px 7px; border: 1px solid var(--line); }
+.ef-code { margin-top: 18px; border: 1px solid var(--line); background: #0a1019; }
+.ef-code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 500 13px/1.6 var(--font-mono); color: #cfd8e3; white-space: pre; }
+.ef-code-do { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 16px 14px; }
+.ef-code-do .fm-btn { height: 38px; font-size: 14px; }
+.ef-pick { border: 0; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ef-pick legend { margin-bottom: 8px; }
+.ef-chip { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; cursor: pointer; font: 500 14px var(--font-body); color: #cfd8e3; border: 1px solid var(--line); }
+.ef-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.ef-chip svg { color: var(--muted); }
+.ef-chip code { font: 600 12.5px var(--font-mono); color: var(--input); }
+.ef-chip.ef-on { color: var(--paper); border-color: var(--go); background: rgba(92,200,184,0.08); }
+.ef-chip.ef-on svg { color: var(--go); }
+.ef-chip.ef-fixed { cursor: default; }
+.ef-chip:has(input:focus-visible) { outline: 2px solid var(--go); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .ef-card .rt-head { flex-wrap: wrap; }
+  .ef-do { margin-left: 0; width: 100%; }
+}
+.ef-sites { margin-top: 20px; }
+.ef-sites textarea { font: 500 14px/1.6 var(--font-mono); min-height: 84px; }
+.ef-card, .ef-code { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.ef-code pre { max-width: 100%; box-sizing: border-box; }

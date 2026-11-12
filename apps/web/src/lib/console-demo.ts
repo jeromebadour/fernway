@@ -193,6 +193,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "member.invited", targetKind: "invite", targetId: "oskar.lund@harborphysio.com", detail: "as member", at: at(1440) },
     { who: "Sara Okafor", action: "member.joined", targetKind: "member", targetId: "3", detail: "as member", at: at(4 * 1440) },
     { who: "Jonas Berg", action: "member.invited", targetKind: "invite", targetId: "sara.okafor@harborphysio.com", detail: "as member", at: at(5 * 1440) },
+    { who: "Jonas Berg", action: "form.made", targetKind: "form", targetId: "Corporate wellness funnel", detail: "contact · 4 fields · any site", at: at(9 * 1440 - 50) },
     { who: "Jonas Berg", action: "key.revoked", targetKind: "key", targetId: "fw_p3x8d1wz_", detail: "", at: at(8 * 1440) },
     { who: "Jonas Berg", action: "route.changed", targetKind: "route", targetId: "booking", detail: "tags booking, website", at: at(9 * 1440) },
     { who: "Jonas Berg", action: "route.made", targetKind: "route", targetId: "assessment", detail: "Free assessment; tags assessment; stage New assessment; calendar Free assessment", at: at(12 * 1440) },
@@ -205,7 +206,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "plan.changed", targetKind: "plan", targetId: "growth", detail: "Growth, $49 a month", at: at(41 * 1440 + 30) },
   ];
 };
-const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."] };
+const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."] };
 
 export function demoConsoleWho(): ConsoleWho {
   const now = Date.now();
@@ -215,6 +216,14 @@ export function demoConsoleWho(): ConsoleWho {
     lead: async (id) => leadView(now, id),
     receipt: () => null,
     routes: async () => routesView(now),
+    forms: async () => [
+      { id: 1, key: "fwf_hq3m7xk2pd5vbn4tr8ca", label: "Harbor Physio website", routeKey: "booking", routeLabel: "Booking requests",
+        fields: ["firstName", "lastName", "email", "phone", "message"], theme: "light", button: "Request a booking", sites: ["harborphysio.com", "*.harborphysio.com"],
+        madeBy: "Maya Lindqvist", createdAt: iso(now - 40 * 1440 * MIN), leads30: 412, lastLeadAt: iso(now - 7 * MIN) },
+      { id: 2, key: "fwf_w2nz6cj4ru7lfa3kte5y", label: "Corporate wellness funnel", routeKey: "contact", routeLabel: "Contact form",
+        fields: ["firstName", "email", "companyName", "message"], theme: "dark", button: "Talk to us", sites: [],
+        madeBy: "Jonas Berg", createdAt: iso(now - 9 * 1440 * MIN), leads30: 38, lastLeadAt: iso(now - 3 * 60 * MIN) },
+    ],
     choices: async () => ({
       pipelines: [
         { id: "pipe_patients", name: "Patients", stages: [{ id: "stage_new", name: "New booking" }, { id: "stage_assessed", name: "New assessment" }, { id: "stage_plan", name: "Treatment plan" }] },
