@@ -45,6 +45,7 @@ final class Settings {
 		register_setting( 'fernway', 'fernway_route', array( 'type' => 'string', 'sanitize_callback' => array( self::class, 'clean_route' ), 'default' => '' ) );
 		register_setting( 'fernway', 'fernway_country', array( 'type' => 'string', 'sanitize_callback' => array( self::class, 'clean_country' ), 'default' => 'US' ) );
 		register_setting( 'fernway', 'fernway_area', array( 'type' => 'string', 'sanitize_callback' => array( self::class, 'clean_area' ), 'default' => '' ) );
+		register_setting( 'fernway', 'fernway_hours', array( 'type' => 'string', 'sanitize_callback' => array( self::class, 'clean_hours' ), 'default' => '' ) );
 	}
 
 	/** https only; plain http only for a Fernway on this same machine (a developer's own copy). */
@@ -83,6 +84,17 @@ final class Settings {
 	public static function clean_area( $v ): string {
 		preg_match_all( '/[0-9]{3,5}/', (string) $v, $m );
 		return implode( ', ', array_unique( $m[0] ) );
+	}
+
+	/** The hours a booking form offers, in the site's time zone: "8-16" (from 8:00, last start before 16:00), or empty for any. */
+	public static function clean_hours( $v ): string {
+		if ( ! preg_match( '/^\s*(\d{1,2})\s*-\s*(\d{1,2})\s*$/', (string) $v, $m ) || (int) $m[1] >= (int) $m[2] || (int) $m[2] > 24 ) {
+			if ( '' !== trim( (string) $v ) ) {
+				add_settings_error( 'fernway_hours', 'fernway_hours', __( 'Hours offered: two hours of the day, like 8-16.', 'fernway' ) );
+			}
+			return '';
+		}
+		return (int) $m[1] . '-' . (int) $m[2];
 	}
 
 	/** The connection test: is the key live, and what is the default route? Result shown once on the page. */
@@ -170,6 +182,11 @@ final class Settings {
 						<label for="fernway_area"><?php esc_html_e( 'Service area (optional)', 'fernway' ); ?></label>
 						<input type="text" id="fernway_area" name="fernway_area" value="<?php echo esc_attr( (string) get_option( 'fernway_area', '' ) ); ?>" placeholder="983, 984" />
 						<span class="fw-hint"><?php esc_html_e( 'ZIP codes or their first digits. An address outside them is still sent; the form tells the visitor you\'ll confirm.', 'fernway' ); ?></span>
+					</p>
+					<p class="fw-field">
+						<label for="fernway_hours"><?php esc_html_e( 'Hours offered (optional)', 'fernway' ); ?></label>
+						<input type="text" id="fernway_hours" name="fernway_hours" value="<?php echo esc_attr( (string) get_option( 'fernway_hours', '' ) ); ?>" placeholder="8-16" class="fw-short" />
+						<span class="fw-hint"><?php esc_html_e( 'For booking forms, in this site\'s time zone: only times from the first hour, starting before the second, are offered, whatever the calendar allows.', 'fernway' ); ?></span>
 					</p>
 					<details class="fw-more">
 						<summary><?php esc_html_e( 'Fernway address', 'fernway' ); ?></summary>

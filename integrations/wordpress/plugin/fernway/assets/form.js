@@ -15,7 +15,8 @@
 		try { new Intl.DateTimeFormat([], { timeZone: tz }); return tz; } catch { return undefined; }
 	};
 	var timeOf = function (iso, tz) {
-		return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: zoneOf(tz) });
+		// "8:00 am", as the receipt writes it.
+		return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: zoneOf(tz) }).replace(/\s?([AaPp])\.?[Mm]\.?$/, function (_, x) { return " " + x.toLowerCase() + "m"; });
 	};
 	var dayOf = function (iso, tz) {
 		var parts = new Intl.DateTimeFormat([], { weekday: "short", day: "numeric", timeZone: zoneOf(tz) }).formatToParts(new Date(iso));

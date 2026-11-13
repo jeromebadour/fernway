@@ -661,6 +661,18 @@ jobs:
           # A time that was taken in between is refused in words, and the log says why.
           test "$(send '(253) 555-0199' ci-wp-0002)" = 409
           python3 -c "import json; p=json.load(open('/tmp/sent.json'))['problems']; assert 'took that time' in p['slot'], p"
+          # Hours offered (8 to 4, the site's time): the page offers no time outside them, and a time outside is refused.
+          wp option update fernway_hours 8-16 > /dev/null; wp transient delete --all > /dev/null
+          curl -sf $B/roof-check/ > /tmp/rc2.html
+          python3 - <<'PY'
+          import re, datetime, zoneinfo
+          page = open("/tmp/rc2.html").read(); la = zoneinfo.ZoneInfo("America/Los_Angeles")
+          times = [datetime.datetime.fromisoformat(v.replace("Z", "+00:00")).astimezone(la) for v in re.findall(r'data-(?:am|pm)="([^"]+)"', page)]
+          assert times and all(8 <= t.hour < 16 for t in times), [t.isoformat() for t in times if not 8 <= t.hour < 16]
+          PY
+          test "$(send '(253) 555-0177' ci-wp-0003)" = 422
+          python3 -c "import json; p=json.load(open('/tmp/sent.json'))['problems']; assert p['slot'].startswith(\"We don't book at that time\"), p"
+          wp option update fernway_hours "" > /dev/null
           # The connection test's calls, and the log emptied of anything over 30 days old.
           wp eval 'echo Fernway\Client::call("GET", "/api/v1/leads/FW-00-00000")["status"];' | grep -qx 404
           wp eval 'update_option("fernway_log", array_merge(Fernway\Log::all(), [["at"=>time()-40*DAY_IN_SECONDS,"route"=>"old","outcome"=>"sent","status"=>201,"number"=>"","problem"=>"","page"=>""]])); Fernway\Log::purge(); echo count(array_filter(Fernway\Log::all(), fn($e) => $e["route"]==="old"));' | grep -qx 0

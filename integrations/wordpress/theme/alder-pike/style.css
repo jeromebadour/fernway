@@ -60,6 +60,8 @@ body { -webkit-font-smoothing: antialiased; }
 .ap-mark .wp-block-site-tagline { font-family: var(--ap-mono); font-size: 11.5px; color: var(--ap-dim); margin: 2px 0 0; }
 .ap-bar .wp-block-navigation { font-size: 15px; font-weight: 500; color: #c9ccc6; gap: 30px; }
 .ap-bar .wp-block-navigation a:hover { color: var(--ap-paper); text-decoration: none; }
+.ap-bar .wp-block-navigation a:focus { outline: none; }
+.ap-bar .wp-block-navigation a:focus-visible { color: var(--ap-paper); box-shadow: 0 3px 0 var(--ap-orange); }
 .wp-block-navigation__responsive-container-open {
 	border: 1.5px solid var(--ap-line); padding: 10px 14px; color: var(--ap-paper); font-weight: 600; font-size: 15px;
 }
@@ -196,7 +198,58 @@ body { -webkit-font-smoothing: antialiased; }
 	--fw-font: var(--wp--preset--font-family--archivo);
 	--fw-mono: var(--wp--preset--font-family--plex-mono);
 }
-.fernway .fw-day input:checked + span b { color: var(--wp--preset--color--safety); }
+
+/* The form as a work order, the same ruled cells as the receipt's number row: a small label on top of each cell, what
+   the visitor types below it. Where they are typing gets an orange bar on the left, never a box. */
+.fernway .fw-fields { gap: 1px; background: var(--fw-line); border: 1px solid var(--fw-line); }
+.fernway .fw-field { position: relative; background: var(--fw-surface); padding: 9px 14px 7px; gap: 2px; transition: background .12s; }
+.fernway .fw-field .fw-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal;
+	font-family: var(--fw-mono); font-size: 11.5px; color: var(--fw-muted); }
+.fernway .fw-box, .fernway .fw-box:focus-within { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.fernway .fw-box > .fw-i { width: 16px; height: 16px; opacity: .55; }
+.fernway .fw-box input, .fernway .fw-box textarea { font-size: 16px; padding: 3px 0 4px; }
+.fernway .fw-box input::placeholder, .fernway .fw-box textarea::placeholder { color: transparent; }
+.fernway .fw-field:focus-within { background: #fff; box-shadow: inset 4px 0 0 var(--fw-accent); }
+.fernway .fw-field:focus-within .fw-label { color: var(--fw-ink); }
+.fernway .fw-field:focus-within .fw-box > .fw-i { opacity: 1; }
+.fernway .fw-field:hover:not(:focus-within) { background: #f3f1ea; }
+.fernway .is-bad.fw-field, .fernway .is-bad .fw-box { box-shadow: none; }
+.fernway .fw-field.is-bad { box-shadow: inset 4px 0 0 var(--fw-bad); background: #fbf3ef; }
+.fernway .fw-field.is-bad .fw-label { color: var(--fw-bad); }
+.fernway .fw-field .fw-problem { padding-bottom: 3px; }
+
+/* The day and half-day: two rows of the same cells. The day picked is marked with the orange bar and a heavier number;
+   a full day is crossed out, not hidden, so the visitor sees why. */
+.fernway .fw-slot { grid-column: 1 / -1; background: var(--fw-surface); padding: 10px 14px 14px; margin: 0; }
+.fernway .fw-slot legend { float: left; width: 100%; font-size: 11.5px; margin-bottom: 8px; }
+.fernway .fw-days, .fernway .fw-halves { clear: both; gap: 1px; background: var(--fw-line); border: 1px solid var(--fw-line); }
+.fernway .fw-halves { margin-top: 10px; }
+.fernway .fw-day span, .fernway .fw-half span { border: 0; background: var(--fw-surface); color: var(--fw-muted); transition: background .12s; }
+.fernway .fw-day span { font-family: var(--fw-mono); font-size: 11.5px; padding: 9px 4px 10px; }
+.fernway .fw-day b { font-family: var(--fw-font); font-size: 20px; font-weight: 500; line-height: 1.15; margin-top: 2px; color: var(--fw-ink); }
+.fernway .fw-half span { padding: 10px 12px 11px; font-size: 15px; color: var(--fw-ink); }
+.fernway .fw-half .fw-from { font-family: var(--fw-mono); font-size: 11.5px; margin-top: 2px; }
+.fernway .fw-day:hover span, .fernway .fw-half:hover span { background: #fff; }
+.fernway .fw-day input:checked + span, .fernway .fw-half input:checked + span {
+	background: #fff; border: 0; color: var(--fw-ink); box-shadow: inset 0 -4px 0 var(--fw-accent); font-weight: 400; }
+.fernway .fw-day input:checked + span b { color: var(--fw-ink); font-weight: 700; }
+.fernway .fw-half input:checked + span { font-weight: 700; }
+.fernway .fw-day input:focus-visible + span, .fernway .fw-half input:focus-visible + span { outline: 2px solid var(--fw-ink); outline-offset: -4px; }
+.fernway .fw-slot.is-bad { box-shadow: inset 4px 0 0 var(--fw-bad); }
+
+/* The area note sits in the label row, so it never takes room from the address being typed. */
+.fernway .fw-field .fw-area { position: absolute; top: 9px; right: 14px; font-family: var(--fw-mono); font-size: 11.5px; }
+.fernway .fw-field:has(textarea) .fw-box > .fw-i { margin-top: 7px; }
+.fernway .fw-box textarea { min-height: 58px; }
+/* Five days stay one row on a phone: narrower cells, never a gap. */
+@media (max-width: 600px) {
+	.fernway .fw-days { grid-template-columns: repeat(5, 1fr); }
+	.fernway .fw-day span { padding: 8px 0 9px; font-size: 11px; }
+	.fernway .fw-day b { font-size: 18px; }
+}
+
+/* A short form (the call-back in the hero) keeps the same cells. */
+.fernway.fw-compact .fw-fields { border-color: var(--fw-line); }
 .ap-card-body .fernway { background: transparent; }
 .ap-book .fernway, .ap-rc .fernway { height: auto; }
 .ap-book > .wp-block-column:first-child { display: flex; flex-direction: column; }

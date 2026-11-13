@@ -73,6 +73,8 @@ wp theme delete --all --quiet 2>/dev/null || true
 # The roof-check form books on its own route; Tacoma, Puyallup and the towns around start with 983 or 984.
 wp option update fernway_route roof-check --quiet
 wp option update fernway_area "983, 984" --quiet
+# A crew works 8 to 4, Tacoma time: the form offers no time outside it, whatever the calendar allows.
+wp option update fernway_hours 8-16 --quiet
 echo "   theme $(wp theme list --status=active --field=name), plugins: $(wp plugin list --status=active --field=name | paste -sd ' ')"
 
 echo "== nginx and the certificate"
