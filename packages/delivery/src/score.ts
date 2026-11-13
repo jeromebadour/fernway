@@ -119,7 +119,9 @@ export function createClaude(opts: { apiKey: string; baseUrl?: string; model?: s
           method: "POST",
           headers: { "x-api-key": opts.apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
           body: JSON.stringify({
-            model, max_tokens: MAX_TOKENS, system: SYSTEM,
+            // Haiku 5.5 thinks by default, and thinking counts against max_tokens: a richer lead thought past 400 and
+            // was cut off before any answer. Sorting a lead into 1 to 5 needs no thinking, so it is off.
+            model, max_tokens: MAX_TOKENS, system: SYSTEM, thinking: { type: "disabled" },
             messages: [{ role: "user", content: `<lead>\n${JSON.stringify(input, null, 2)}\n</lead>` }],
             output_config: { format: { type: "json_schema", schema: SCHEMA } },
           }),

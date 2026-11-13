@@ -100,7 +100,7 @@ describe("scoring", () => {
     expect(r).toEqual({ scored: 1, retry: 0, failed: 0, skipped: 0 });
     const ask = claudeAsks[0]!;
     expect(ask.key).toBe("sk-ant-test");
-    expect(ask.body).toMatchObject({ model: "claude-haiku-5-5", max_tokens: 400, output_config: { format: { type: "json_schema", schema: SCHEMA } } });
+    expect(ask.body).toMatchObject({ model: "claude-haiku-5-5", max_tokens: 400, thinking: { type: "disabled" }, output_config: { format: { type: "json_schema", schema: SCHEMA } } });
     const text = JSON.stringify(ask.body.messages);
     expect(text).toContain("<lead>");
     expect(text).toContain("northpine-dental.com");
