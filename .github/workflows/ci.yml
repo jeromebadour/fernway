@@ -411,6 +411,21 @@ jobs:
           test "$(psql -At -c "select count(*) from webhook_deliveries where state = 'delivered'")" = 2
           test "$(psql -At -c "select count(*) from audit_log where action = 'hook.made'")" = 1
 
+      - name: Make - the hot leads blueprint parses and holds placeholders, never a secret
+        run: |
+          python3 - <<'PY'
+          import json, re
+          raw = open("integrations/make/fernway-hot-leads.blueprint.json").read()
+          b = json.loads(raw)
+          for p in ("PASTE_FERNWAY_SECRET_HERE", "PASTE_RESEND_KEY_HERE", "PASTE_SPREADSHEET_ID_HERE"):
+              assert raw.count(p) == 1, p
+          assert not re.search(r"whsec_|\bre_[A-Za-z0-9]{8,}", raw), "a secret in the blueprint"
+          ids = [m["id"] for m in b["flow"]]
+          assert len(ids) == len(set(ids)) == 13, ids
+          f = {m["id"]: m.get("filter", {}).get("name") for m in b["flow"]}
+          assert f[10] and f[11], f
+          PY
+
       - name: n8n - the hot leads workflow imports into the pinned n8n, answers a signed call 200 and an unsigned one 400
         run: |
           version=$(grep -oP '^version=\K.*' integrations/n8n/setup.sh)
