@@ -20,7 +20,7 @@
 	];
 
 	wp.blocks.registerBlockType("fernway/form", {
-		edit: function (props) {
+		edit: function Edit(props) {
 			var a = props.attributes;
 			var set = props.setAttributes;
 			var labels = a.labels || {};

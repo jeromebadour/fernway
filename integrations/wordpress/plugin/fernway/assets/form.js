@@ -12,7 +12,7 @@
 
 	// Times at a house are the business's times: shown in the site's time zone, whatever the visitor's device says.
 	var zoneOf = function (tz) {
-		try { new Intl.DateTimeFormat([], { timeZone: tz }); return tz; } catch (e) { return undefined; }
+		try { new Intl.DateTimeFormat([], { timeZone: tz }); return tz; } catch { return undefined; }
 	};
 	var timeOf = function (iso, tz) {
 		return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: zoneOf(tz) });
@@ -26,7 +26,7 @@
 	function setup(root) {
 		root.classList.add("has-js");
 		var w = {};
-		try { w = JSON.parse(root.dataset.words || "{}"); } catch (e) { w = {}; }
+		try { w = JSON.parse(root.dataset.words || "{}"); } catch { w = {}; }
 		var form = root.querySelector(".fw-form");
 		if (root.dataset.number) poll(root, 0);
 		if (!form) return;
@@ -149,7 +149,7 @@
 	}
 
 	function wire(root, w) {
-		if (!w) { try { w = JSON.parse(root.dataset.words || "{}"); } catch (e) { w = {}; } }
+		if (!w) { try { w = JSON.parse(root.dataset.words || "{}"); } catch { w = {}; } }
 		var copy = root.querySelector(".fw-copy");
 		// Without a script this link opens the receipt; with one it copies the link, which is what a visitor wants to keep.
 		if (copy && navigator.clipboard) {
