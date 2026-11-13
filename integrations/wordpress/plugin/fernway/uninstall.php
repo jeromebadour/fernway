@@ -9,7 +9,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-foreach ( array( 'fernway_url', 'fernway_api_key', 'fernway_route', 'fernway_country', 'fernway_area', 'fernway_log' ) as $option ) {
+foreach ( array( 'fernway_url', 'fernway_api_key', 'fernway_route', 'fernway_country', 'fernway_area', 'fernway_hours', 'fernway_log' ) as $option ) {
 	delete_option( $option );
 }
 global $wpdb;

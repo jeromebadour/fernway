@@ -75,7 +75,7 @@ final class Form {
 		$first = array();
 		foreach ( $cache as $iso ) {
 			$t = date_create_immutable( $iso );
-			if ( ! $t ) {
+			if ( ! $t || ! self::in_hours( $t ) ) {
 				continue;
 			}
 			$local = $t->setTimezone( $tz );
@@ -96,6 +96,16 @@ final class Form {
 			$out[ $k ] = array( 'am' => $first[ $k ]['am'] ?? null, 'pm' => $first[ $k ]['pm'] ?? null );
 		}
 		return $out;
+	}
+
+	/** Whether a time is inside the hours the site offers (Settings, Fernway), in the site's time zone. */
+	public static function in_hours( \DateTimeInterface $t ): bool {
+		$hours = (string) get_option( 'fernway_hours', '' );
+		if ( ! preg_match( '/^(\d{1,2})-(\d{1,2})$/', $hours, $m ) ) {
+			return true;
+		}
+		$h = (int) ( new \DateTimeImmutable( '@' . $t->getTimestamp() ) )->setTimezone( wp_timezone() )->format( 'G' );
+		return $h >= (int) $m[1] && $h < (int) $m[2];
 	}
 
 	/** Signs a waybill number for this site, so the receipt can be read back only by whoever sent it. */
@@ -131,6 +141,12 @@ final class Form {
 			$in['slot'] = (string) ( $days[ (string) $in['fw_day'] ][ 'am' === $in['fw_half'] ? 'am' : 'pm' ] ?? '' );
 		}
 		$lead = Lead::from_form( $in, $settings['fields'], (string) get_option( 'fernway_country', 'US' ) );
+		// A time from outside the hours offered (an old page, or a hand-made post) is refused like a taken one.
+		$when = $lead['slot'] ? date_create_immutable( (string) $lead['slot'] ) : false;
+		if ( $lead['ok'] && $when && ! self::in_hours( $when ) ) {
+			$lead['ok']               = false;
+			$lead['problems']['slot'] = __( 'We don\'t book at that time. Please pick a morning or an afternoon from the list.', 'fernway' );
+		}
 		if ( ! $lead['ok'] ) {
 			return array( 'ok' => false, 'status' => 422, 'problems' => $lead['problems'] );
 		}
