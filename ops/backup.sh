@@ -58,8 +58,7 @@ if [ -n "$n8n" ]; then
   # n8n's export stops with an error when there is nothing to export: a new n8n with no workflow yet is not a failure.
   if [ "$(docker exec "$n8n" n8n list:workflow 2>/dev/null | grep -c '|')" = 0 ]; then
     echo "backup: n8n has no workflows yet, nothing to export"
-    exit 0
-  fi
+  else
   docker exec "$n8n" sh -c 'rm -rf /tmp/n8n-export && mkdir -p /tmp/n8n-export/workflows /tmp/n8n-export/credentials \
     && n8n export:workflow --all --separate --output=/tmp/n8n-export/workflows/ >/dev/null \
     && { n8n export:credentials --all --separate --output=/tmp/n8n-export/credentials/ >/dev/null 2>&1 || true; } \
@@ -71,4 +70,7 @@ if [ -n "$n8n" ]; then
   find "$ndir" -maxdepth 1 -name 'n8n-*.tar' -mmin +$((keep_days * 24 * 60)) -delete
   echo "backup: $nname, $(stat -c %s "$ndir/$nname") bytes, $(tar -tf "$ndir/$nname" | grep -c '^./workflows/.') workflows"
   if offsite_ready; then offsite_upload "$ndir/$nname" "$ndir" n8n || exit 1; fi
+  fi
 fi
+# Alder & Pike, the WordPress demo (integrations/wordpress/box), when it runs on the box: its own script.
+"$here/backup-alderpike.sh"

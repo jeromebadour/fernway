@@ -104,7 +104,7 @@ print("PASSED" if ok else "NOT PASSED")') || stop "could not read CI from GitHub
 
   echo "== the box's tools and timers"
   install -d -m 755 "$tools"
-  install -m 755 "$app/ops/backup.sh" "$app/ops/restore-test.sh" "$tools/" || stop "could not install the backup tools"
+  install -m 755 "$app/ops/backup.sh" "$app/ops/backup-alderpike.sh" "$app/ops/restore-test.sh" "$tools/" || stop "could not install the backup tools"
   install -m 644 "$app/ops/offsite.sh" "$app/ops/record.sh" "$tools/" || stop "could not install the backup tools"
   install -m 644 "$app"/ops/systemd/fernway-*.service "$app"/ops/systemd/fernway-*.timer /etc/systemd/system/ \
     || stop "could not install the timers"

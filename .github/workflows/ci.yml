@@ -575,7 +575,8 @@ jobs:
           node --check $WPDIR/plugin/fernway/assets/form.js; node --check $WPDIR/plugin/fernway/blocks/form/editor.js
           python3 -c "import json; json.load(open('$WPDIR/theme/alder-pike/theme.json')); json.load(open('$WPDIR/plugin/fernway/blocks/form/block.json'))"
           # WordPress and MariaDB on the runner's own network, so WordPress reaches Fernway at 127.0.0.1:3103 as a server would.
-          docker run -d --name wpdb --network host -e MARIADB_DATABASE=wp -e MARIADB_USER=wp -e MARIADB_PASSWORD=wp -e MARIADB_RANDOM_ROOT_PASSWORD=1 mariadb:11.4
+          docker run -d --name wpdb --network host --label com.docker.compose.project=alderpike --label com.docker.compose.service=db \
+            -e MARIADB_DATABASE=wp -e MARIADB_USER=wp -e MARIADB_PASSWORD=wp -e MARIADB_ROOT_PASSWORD=ci-root mariadb:11.4
           docker run -d --name wp --network host -e WORDPRESS_DB_HOST=127.0.0.1:3306 -e WORDPRESS_DB_USER=wp -e WORDPRESS_DB_PASSWORD=wp -e WORDPRESS_DB_NAME=wp \
             -v $WPDIR/theme/alder-pike:/var/www/html/wp-content/themes/alder-pike:ro -v $WPDIR/plugin/fernway:/var/www/html/wp-content/plugins/fernway:ro \
             -v $WPDIR/site:/opt/site:ro wordpress:php8.3-apache
@@ -667,7 +668,26 @@ jobs:
           wp plugin install elementor --activate > /dev/null
           wp eval '$w = \Elementor\Plugin::instance()->elements_manager->create_element_instance(["elType"=>"widget","widgetType"=>"fernway_form","id"=>"ci00001","settings"=>["route"=>"callback","fields"=>["name","phone"],"submit"=>"Call me back"]]); ob_start(); $w->print_element(); echo ob_get_clean();' > /tmp/el.html
           grep -q 'class="fernway fw-full' /tmp/el.html; grep -q "Call me back" /tmp/el.html
+          # The box's nightly backup of the site, then a real restore: the database dropped, brought back from the backup,
+          # and the site serving the same pages again.
+          sudo ALDERPIKE_BACKUP_DIR=/tmp/ap-backups ops/backup-alderpike.sh | tee /tmp/ap-backup.txt
+          grep -Eq '^backup: alderpike-[0-9]{8}-[0-9]{6}\.tar, [0-9]+ bytes, 1 kept$' /tmp/ap-backup.txt
+          T=$(sudo ls /tmp/ap-backups/ | grep '^alderpike-.*\.tar$'); sudo tar -tf /tmp/ap-backups/$T | sort | tr '\n' ' ' | grep -qx 'uploads.tar.gz wp.sql.gz '
+          PAGES=$(wp post list --post_type=page --format=count)
+          docker exec wpdb mariadb -uroot -pci-root -e 'DROP DATABASE wp'
+          test "$(curl -s -o /dev/null -w '%{http_code}' $B/)" = 500
+          sudo tar -xOf /tmp/ap-backups/$T wp.sql.gz | gunzip | docker exec -i wpdb mariadb -uroot -pci-root
+          test "$(wp post list --post_type=page --format=count)" = "$PAGES"
+          curl -sf $B/ | grep -q "Know what your roof"; curl -sf $B/roof-check/ | grep -q 'name="fw_day"'
           docker rm -f wp wpdb > /dev/null
+          # The box's own files: the compose file reads whole, and Nginx accepts the site, its proxy and its limits.
+          printf '%s\n' WP_DB_IMAGE=mariadb:11.4 WP_IMAGE=wordpress:php8.3-apache WP_CLI_IMAGE=wordpress:cli-php8.3 WP_DB_PASSWORD=a WP_DB_ROOT_PASSWORD=b \
+            WP_AUTH_KEY=1 WP_SECURE_AUTH_KEY=2 WP_LOGGED_IN_KEY=3 WP_NONCE_KEY=4 WP_AUTH_SALT=5 WP_SECURE_AUTH_SALT=6 WP_LOGGED_IN_SALT=7 WP_NONCE_SALT=8 > /tmp/ap.env
+          docker compose -f $WPDIR/box/compose.yaml --env-file /tmp/ap.env --profile tools config -q
+          docker run --rm -v $PWD/ops/nginx/fernway-log.conf:/etc/nginx/conf.d/fernway-log.conf:ro \
+            -v $WPDIR/box/alderpike-limits.conf:/etc/nginx/conf.d/alderpike-limits.conf:ro -v $WPDIR/box/alderpike-app.conf:/etc/nginx/snippets/alderpike-app.conf:ro \
+            -v $WPDIR/box/nginx-alderpike:/etc/nginx/conf.d/alderpike.conf:ro nginx:stable nginx -t
+          bash -n $WPDIR/box/setup.sh; bash -n $WPDIR/box/connect.sh
 
       - name: Accounts, end to end (switched on for this step only; production keeps them off)
         run: |

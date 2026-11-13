@@ -1,0 +1,25 @@
+# alderpike.jeromebadour.com: the Alder & Pike WordPress demo on port 3105. certbot adds HTTPS and the redirect
+# (setup.sh). The log has no IP address (Fernway's own format, conf.d/fernway-log.conf); 14 days like the rest.
+# The sign-in page is limited per address (zone in conf.d/alderpike-limits.conf); XML-RPC is closed (nothing here uses
+# it, and it is the usual door for password guessing); PHP never runs from the uploads folder.
+server {
+  listen 80;
+  listen [::]:80;
+  server_name alderpike.jeromebadour.com;
+  access_log /var/log/nginx/alderpike.access.log fernway;
+  client_max_body_size 16m;
+
+  location = /xmlrpc.php { return 403; }
+  location ~* ^/wp-content/uploads/.*\.php$ { return 403; }
+  location ~ /\.(?!well-known) { return 404; }
+
+  location = /wp-login.php {
+    limit_req zone=alderpike_login burst=5 nodelay;
+    limit_req_status 429;
+    include snippets/alderpike-app.conf;
+  }
+
+  location / {
+    include snippets/alderpike-app.conf;
+  }
+}
