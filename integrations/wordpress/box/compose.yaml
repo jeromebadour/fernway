@@ -1,0 +1,81 @@
+# Alder & Pike, the WordPress demo site running Fernway for WordPress (plan step 9), on Fernway's box. Its own project,
+# apart from Fernway's stack: WordPress on 127.0.0.1:3105 only, reached through Nginx at https://alderpike.jeromebadour.com;
+# MariaDB with no port at all. Set up and updated by setup.sh; secrets in /srv/alderpike/.env (root only).
+# The theme and the plugin are the deployed Fernway repo's own copies, read-only, so a Fernway deploy updates them.
+name: alderpike
+x-wp-env: &wp-env
+  WORDPRESS_DB_HOST: db
+  WORDPRESS_DB_NAME: wp
+  WORDPRESS_DB_USER: wp
+  WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:?set by setup.sh}
+  WORDPRESS_AUTH_KEY: ${WP_AUTH_KEY:?set by setup.sh}
+  WORDPRESS_SECURE_AUTH_KEY: ${WP_SECURE_AUTH_KEY:?set by setup.sh}
+  WORDPRESS_LOGGED_IN_KEY: ${WP_LOGGED_IN_KEY:?set by setup.sh}
+  WORDPRESS_NONCE_KEY: ${WP_NONCE_KEY:?set by setup.sh}
+  WORDPRESS_AUTH_SALT: ${WP_AUTH_SALT:?set by setup.sh}
+  WORDPRESS_SECURE_AUTH_SALT: ${WP_SECURE_AUTH_SALT:?set by setup.sh}
+  WORDPRESS_LOGGED_IN_SALT: ${WP_LOGGED_IN_SALT:?set by setup.sh}
+  WORDPRESS_NONCE_SALT: ${WP_NONCE_SALT:?set by setup.sh}
+  # Behind Nginx: the port listens on the box only and Nginx replaces any X-Real-IP a visitor sends, so the visitor's
+  # own address is safe to take from it (the plugin's send limit counts per address). HTTPS as Nginx saw it.
+  # No editing of PHP from the admin; core keeps its own security updates.
+  WORDPRESS_CONFIG_EXTRA: |
+    if ( ! empty( $$_SERVER['HTTP_X_REAL_IP'] ) ) { $$_SERVER['REMOTE_ADDR'] = $$_SERVER['HTTP_X_REAL_IP']; }
+    if ( ( $$_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '' ) === 'https' ) { $$_SERVER['HTTPS'] = 'on'; }
+    define( 'WP_HOME', 'https://alderpike.jeromebadour.com' );
+    define( 'WP_SITEURL', 'https://alderpike.jeromebadour.com' );
+    define( 'FORCE_SSL_ADMIN', true );
+    define( 'DISALLOW_FILE_EDIT', true );
+    define( 'WP_AUTO_UPDATE_CORE', 'minor' );
+    define( 'WP_POST_REVISIONS', 20 );
+x-code: &code
+  - /srv/alderpike/html:/var/www/html
+  - /srv/fernway/app/integrations/wordpress/theme/alder-pike:/var/www/html/wp-content/themes/alder-pike:ro
+  - /srv/fernway/app/integrations/wordpress/plugin/fernway:/var/www/html/wp-content/plugins/fernway:ro
+  - /srv/fernway/app/integrations/wordpress/site:/opt/site:ro
+services:
+  db:
+    image: ${WP_DB_IMAGE:?set by setup.sh}
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wp
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: ${WP_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD:?set by setup.sh}
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes: ["/srv/alderpike/db:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      start_period: 60s
+      timeout: 5s
+      retries: 5
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+  wp:
+    image: ${WP_IMAGE:?set by setup.sh}
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["127.0.0.1:3105:80"]
+    environment: *wp-env
+    volumes: *code
+    healthcheck:
+      # PHP itself asks (the image has no curl): any answer below 500 from the sign-in page means Apache, PHP and the
+      # database are up.
+      test: ["CMD", "php", "-r", "$$c = stream_context_create(['http' => ['header' => 'X-Forwarded-Proto: https', 'follow_location' => 0, 'ignore_errors' => true]]); @file_get_contents('http://127.0.0.1/wp-login.php', false, $$c); exit(preg_match('#^HTTP/\\S+ [234]#', $$http_response_header[0] ?? '') ? 0 : 1);"]
+      interval: 20s
+      start_period: 60s
+      timeout: 5s
+      retries: 5
+    logging: *logs
+  # WordPress's own command line, for setup.sh and by hand: docker compose ... run --rm cli wp <command>
+  cli:
+    image: ${WP_CLI_IMAGE:?set by setup.sh}
+    profiles: [tools]
+    user: "33:33"
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      <<: *wp-env
+      HOME: /tmp
+    volumes: *code
