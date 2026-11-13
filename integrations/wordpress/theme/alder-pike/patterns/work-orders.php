@@ -1,0 +1,21 @@
+<?php
+/**
+ * Title: Work orders
+ * Slug: alder-pike/work-orders
+ * Categories: alder-pike
+ * Description: The four services as tickets, each tied to a line on the report card.
+ *
+ * @package AlderPike
+ */
+?>
+<!-- wp:group {"align":"full","className":"ap-band","layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull ap-band">
+<!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
+<div class="wp-block-group alignwide"><!-- wp:group {"className":"ap-head","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between","verticalAlignment":"bottom"}} -->
+<div class="wp-block-group ap-head"><!-- wp:group {"className":"ap-head-t","layout":{"type":"default"}} -->
+<div class="wp-block-group ap-head-t"><!-- wp:paragraph {"className":"ap-kick"} --><p class="ap-kick"><?php esc_html_e( 'The work, after the report', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:heading --><h2 class="wp-block-heading"><?php echo wp_kses_post( __( 'Work orders', 'alder-pike' ) ); ?></h2><!-- /wp:heading --></div>
+<!-- /wp:group --><!-- wp:paragraph --><p><?php esc_html_e( 'Each one starts from a line on your report card, so you always know why it\'s on the list.', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div>
+<!-- /wp:group --><!-- wp:columns {"align":"wide","className":"ap-tickets"} --><div class="wp-block-columns alignwide ap-tickets"><!-- wp:column {"className":"ap-ticket"} --><div class="wp-block-column ap-ticket"><!-- wp:paragraph {"className":"ap-ticket-n"} --><p class="ap-ticket-n"><?php esc_html_e( 'Work order · repair', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Leak repairs', 'alder-pike' ); ?></h3><!-- /wp:heading --><!-- wp:paragraph --><p><?php esc_html_e( 'Flashing, boots, valleys, skylights. Most done in a day.', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-ticket-price"} --><p class="ap-ticket-price"><?php esc_html_e( 'from $280 · crew on call 7 days', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div><!-- /wp:column --><!-- wp:column {"className":"ap-ticket"} --><div class="wp-block-column ap-ticket"><!-- wp:paragraph {"className":"ap-ticket-n"} --><p class="ap-ticket-n"><?php esc_html_e( 'Work order · replace', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Full replacement', 'alder-pike' ); ?></h3><!-- /wp:heading --><!-- wp:paragraph --><p><?php esc_html_e( 'Tear-off to new deck where needed, architectural shingles or metal.', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-ticket-price"} --><p class="ap-ticket-price"><?php esc_html_e( 'quote after the report', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div><!-- /wp:column --><!-- wp:column {"className":"ap-ticket"} --><div class="wp-block-column ap-ticket"><!-- wp:paragraph {"className":"ap-ticket-n"} --><p class="ap-ticket-n"><?php esc_html_e( 'Work order · claim', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Insurance claims', 'alder-pike' ); ?></h3><!-- /wp:heading --><!-- wp:paragraph --><p><?php esc_html_e( 'We send your insurer the report card and photos, and meet the adjuster.', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-ticket-price"} --><p class="ap-ticket-price"><?php esc_html_e( 'no charge for paperwork', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div><!-- /wp:column --><!-- wp:column {"className":"ap-ticket"} --><div class="wp-block-column ap-ticket"><!-- wp:paragraph {"className":"ap-ticket-n"} --><p class="ap-ticket-n"><?php esc_html_e( 'Work order · gutter', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Gutters and moss', 'alder-pike' ); ?></h3><!-- /wp:heading --><!-- wp:paragraph --><p><?php esc_html_e( 'Rehang, reseal, zinc strips. The C and B lines most roofs have.', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-ticket-price"} --><p class="ap-ticket-price"><?php esc_html_e( 'from $190', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div><!-- /wp:column --></div><!-- /wp:columns --></div>
+<!-- /wp:group -->
+</div>
+<!-- /wp:group -->

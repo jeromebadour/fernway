@@ -564,6 +564,111 @@ jobs:
           curl -s $B/docs/api | grep -q "idempotencyKey"
           curl -s $B/docs/api | grep -q "routes/{route}/slots"
 
+      - name: WordPress - the Alder & Pike theme and Fernway for WordPress, on WordPress and MariaDB, book a roof check into the fake GHL
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          $W route 1 roof-check "Roof check" pipe_sales stage_booked roof-check calendar=cal_demo | grep -q "books on calendar"
+          $W route 1 callback "Call back" pipe_sales stage_booked callback | grep -q "route callback"
+          KEY=$($W apikey 1 "WordPress CI" | tail -1)
+          WPDIR=$PWD/integrations/wordpress
+          for f in $(find $WPDIR -name '*.php'); do php -l "$f" > /dev/null; done
+          node --check $WPDIR/plugin/fernway/assets/form.js; node --check $WPDIR/plugin/fernway/blocks/form/editor.js
+          python3 -c "import json; json.load(open('$WPDIR/theme/alder-pike/theme.json')); json.load(open('$WPDIR/plugin/fernway/blocks/form/block.json'))"
+          # WordPress and MariaDB on the runner's own network, so WordPress reaches Fernway at 127.0.0.1:3103 as a server would.
+          docker run -d --name wpdb --network host -e MARIADB_DATABASE=wp -e MARIADB_USER=wp -e MARIADB_PASSWORD=wp -e MARIADB_RANDOM_ROOT_PASSWORD=1 mariadb:11.4
+          docker run -d --name wp --network host -e WORDPRESS_DB_HOST=127.0.0.1:3306 -e WORDPRESS_DB_USER=wp -e WORDPRESS_DB_PASSWORD=wp -e WORDPRESS_DB_NAME=wp \
+            -v $WPDIR/theme/alder-pike:/var/www/html/wp-content/themes/alder-pike:ro -v $WPDIR/plugin/fernway:/var/www/html/wp-content/plugins/fernway:ro \
+            -v $WPDIR/site:/opt/site:ro wordpress:php8.3-apache
+          for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/wp-login.php)" = 200 ] && break; sleep 2; done
+          wp() { docker run --rm --network host --volumes-from wp --user 33:33 -e WORDPRESS_DB_HOST=127.0.0.1:3306 -e WORDPRESS_DB_USER=wp -e WORDPRESS_DB_PASSWORD=wp -e WORDPRESS_DB_NAME=wp -e HOME=/tmp wordpress:cli-php8.3 wp "$@"; }
+          for i in $(seq 1 20); do wp core install --url=http://127.0.0.1 --title="Alder & Pike" --admin_user=ci --admin_password=ci-admin-pass --admin_email=ci@example.com --skip-email && break; sleep 3; done
+          echo "WordPress $(wp core version)"
+          wp plugin activate fernway
+          wp option update fernway_url http://127.0.0.1:3103
+          wp option update fernway_api_key "$KEY" > /dev/null
+          wp option update fernway_route roof-check
+          wp option update fernway_area "983, 984"
+          wp eval-file /opt/site/setup.php | tee /tmp/setup.txt; grep -q "site ready" /tmp/setup.txt
+          # The setup is safe to run again: every page is kept as it is.
+          wp eval-file /opt/site/setup.php | grep -c "kept" | grep -qx 5
+          B=http://127.0.0.1
+          curl -sf $B/ > /tmp/home.html
+          grep -q "Know what your roof" /tmp/home.html; grep -q 'class="fernway fw-compact' /tmp/home.html; grep -q "Call me back" /tmp/home.html
+          curl -sf $B/roof-check/ > /tmp/rc.html
+          grep -q 'class="fernway fw-full' /tmp/rc.html; grep -q 'name="fw_day"' /tmp/rc.html
+          curl -s -o /dev/null -w '%{http_code}' $B/no-such-page/ | grep -qx 404; curl -s $B/no-such-page/ | grep -q "This page has a leak"
+          # The form as the page drew it: its signed settings, and the first free morning or afternoon.
+          python3 - <<'PY'
+          import html, re, json
+          page = open("/tmp/rc.html").read()
+          form = page[page.index('class="fernway fw-full'):]
+          val = lambda n: html.unescape(re.search(r'name="%s" value="([^"]*)"' % n, form).group(1))
+          slots = [v for v in re.findall(r'data-(?:am|pm)="([^"]*)"', form) if v]
+          json.dump({"fw_settings": val("fw_settings"), "fw_settings_sig": val("fw_settings_sig"), "slot": slots[0], "other": slots[1]}, open("/tmp/form.json", "w"))
+          PY
+          send() { python3 - "$@" <<'PY'
+          import json, sys, urllib.parse, urllib.request
+          f = json.load(open("/tmp/form.json")); phone, key = sys.argv[1], sys.argv[2]
+          body = urllib.parse.urlencode({"fw_settings": f["fw_settings"], "fw_settings_sig": f["fw_settings_sig"], "fw_key": key, "slot": f["slot"],
+            "address": "14 Cedar Ln, Tacoma, WA 98406", "name": "Dana Whitfield", "phone": phone, "email": "dana@example.com", "message": "Old roof"}).encode()
+          req = urllib.request.Request("http://127.0.0.1/wp-json/fernway/v1/send", data=body, headers={"Content-Type": "application/x-www-form-urlencoded"})
+          try: r = urllib.request.urlopen(req); code, out = r.status, json.load(r)
+          except urllib.error.HTTPError as e: code, out = e.code, json.load(e)
+          json.dump(out, open("/tmp/sent.json", "w")); print(code)
+          PY
+          }
+          # A short phone number is caught by the plugin, in words, before anything reaches Fernway.
+          test "$(send '253 555 01' ci-wp-0001)" = 422
+          python3 -c "import json; p=json.load(open('/tmp/sent.json'))['problems']; assert p['phone']=='Two digits short: a US number has 10.', p"
+          test "$(send '(253) 555-0142' ci-wp-0001)" = 201
+          N=$(python3 -c "import json; print(json.load(open('/tmp/sent.json'))['number'])"); T=$(python3 -c "import json; print(json.load(open('/tmp/sent.json'))['sig'])")
+          echo "$N" | grep -Eq '^FW [0-9]{2} [0-9]{5}$'
+          # The receipt follows the lead to signed for; another number, or a wrong signature, gets nothing.
+          for i in $(seq 1 30); do curl -sG $B/wp-json/fernway/v1/receipt --data-urlencode "n=$N" --data-urlencode "t=$T" > /tmp/r.json; python3 -c "import json,sys; sys.exit(0 if not json.load(open('/tmp/r.json'))['moving'] else 1)" && break; sleep 1; done
+          grep -q "Signed for" /tmp/r.json
+          test "$(curl -s -o /dev/null -w '%{http_code}' -G $B/wp-json/fernway/v1/receipt --data-urlencode "n=$N" --data-urlencode "t=000000000000000000000000")" = 404
+          # The booking is in the fake GHL's calendar, and the address in the contact's own fields.
+          curl -s 127.0.0.1:4010/__calls | python3 -c "import json,sys; d=json.load(sys.stdin); assert {'method':'POST','path':'/calendars/events/appointments'} in d"
+          curl -s 127.0.0.1:4010/__contacts | python3 -c "
+          import json,sys; c=[x for x in json.load(sys.stdin) if x.get('email')=='dana@example.com'][-1]
+          assert (c['address1'],c['city'],c['state'],c['postalCode'],c['country'],c['phone'])==('14 Cedar Ln','Tacoma','WA','98406','US','+12535550142'), c"
+          # The calendar file carries Fernway's own meeting time.
+          curl -sfG $B/wp-json/fernway/v1/calendar --data-urlencode "n=$N" --data-urlencode "t=$T" | grep -q "^DTSTART:"
+          # The same send again (a double click, a retry) is the same lead; the log says so, and holds no visitor data.
+          test "$(send '(253) 555-0142' ci-wp-0001)" = 201
+          test "$(python3 -c "import json; print(json.load(open('/tmp/sent.json'))['number'])")" = "$N"
+          wp option get fernway_log --format=json > /tmp/log.json
+          python3 -c "
+          import json; l=json.load(open('/tmp/log.json')); assert [e['outcome'] for e in l[:2]]==['duplicate','sent'], l[:2]
+          assert 'dana' not in json.dumps(l).lower() and '555' not in json.dumps(l), 'visitor data in the log'"
+          # Without JavaScript: a plain post, then back to the page with a signed receipt.
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          f = json.load(open("/tmp/form.json"))
+          body = urllib.parse.urlencode({"action": "fernway_send", "fw_id": "f1", "fw_settings": f["fw_settings"], "fw_settings_sig": f["fw_settings_sig"],
+            "fw_day": "", "slot": f["other"], "address": "1 Main St, Puyallup, WA 98371", "name": "Sam Ortega", "phone": "253 555 0188"}).encode()
+          class Stop(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *a): return None
+          op = urllib.request.build_opener(Stop)
+          req = urllib.request.Request("http://127.0.0.1/wp-admin/admin-post.php", data=body, headers={"Referer": "http://127.0.0.1/roof-check/"})
+          try: op.open(req); raise SystemExit("no redirect")
+          except urllib.error.HTTPError as e:
+              loc = e.headers["Location"]; assert e.code == 302 and "fernway_sent=FW" in loc and "#fernway-f1" in loc, loc
+              page = urllib.request.urlopen(loc.split("#")[0]).read().decode()
+              assert "See you" in page and "Sam" in page, "the server did not draw the receipt"
+          PY
+          # A time that was taken in between is refused in words, and the log says why.
+          test "$(send '(253) 555-0199' ci-wp-0002)" = 409
+          python3 -c "import json; p=json.load(open('/tmp/sent.json'))['problems']; assert 'took that time' in p['slot'], p"
+          # The connection test's calls, and the log emptied of anything over 30 days old.
+          wp eval 'echo Fernway\Client::call("GET", "/api/v1/leads/FW-00-00000")["status"];' | grep -qx 404
+          wp eval 'update_option("fernway_log", array_merge(Fernway\Log::all(), [["at"=>time()-40*DAY_IN_SECONDS,"route"=>"old","outcome"=>"sent","status"=>201,"number"=>"","problem"=>"","page"=>""]])); Fernway\Log::purge(); echo count(array_filter(Fernway\Log::all(), fn($e) => $e["route"]==="old"));' | grep -qx 0
+          # Elementor: the same form as a widget.
+          wp plugin install elementor --activate > /dev/null
+          wp eval '$w = \Elementor\Plugin::instance()->elements_manager->create_element_instance(["elType"=>"widget","widgetType"=>"fernway_form","id"=>"ci00001","settings"=>["route"=>"callback","fields"=>["name","phone"],"submit"=>"Call me back"]]); ob_start(); $w->print_element(); echo ob_get_clean();' > /tmp/el.html
+          grep -q 'class="fernway fw-full' /tmp/el.html; grep -q "Call me back" /tmp/el.html
+          docker rm -f wp wpdb > /dev/null
+
       - name: Accounts, end to end (switched on for this step only; production keeps them off)
         run: |
           FERNWAY_ACCOUNTS=on FERNWAY_MAIL_OUTBOX=on $COMPOSE up -d --no-build web
