@@ -52,7 +52,10 @@ describe("the board", () => {
     expect(b.firstTryShare).toBe(0.5);
     expect(b.medianSignMs).toBeGreaterThan(1000);
     expect(b.perHour).toHaveLength(24);
-    expect(b.perHour.at(-1)!.signed).toBe(2);
+    // Signed 58 s ago: in the first minute of an hour that is the hour before, so both bars count (found by CI at 23:00:07).
+    const signedIn = (bars: typeof b.perHour) => bars.reduce((n, h) => n + h.signed, 0);
+    expect(signedIn(b.perHour)).toBe(2);
+    expect(signedIn(b.perHour.slice(-2))).toBe(2);
     expect(b.holdReasons[0]).toMatchObject({ reason: "The email address is invalid", count: 2 });
     expect(b.oldestWaiting).toMatchObject({ waybill: expect.stringMatching(/^FW 26 7\d{4}$/) });
     expect(b.recent.every((r) => r.route === "Booking requests")).toBe(true);
