@@ -680,13 +680,14 @@ jobs:
           test "$(wp post list --post_type=page --format=count)" = "$PAGES"
           curl -sf $B/ | grep -q "Know what your roof"; curl -sf $B/roof-check/ | grep -q 'name="fw_day"'
           docker rm -f wp wpdb > /dev/null
-          # The box's own files: the compose file reads whole, and Nginx accepts the site, its proxy and its limits.
+          # The box's own files: the compose file reads whole, and Nginx accepts the site, its proxy and its limits (the site
+          # read last, as sites-enabled is on the box, after conf.d's log format and zone).
           printf '%s\n' WP_DB_IMAGE=mariadb:11.4 WP_IMAGE=wordpress:php8.3-apache WP_CLI_IMAGE=wordpress:cli-php8.3 WP_DB_PASSWORD=a WP_DB_ROOT_PASSWORD=b \
             WP_AUTH_KEY=1 WP_SECURE_AUTH_KEY=2 WP_LOGGED_IN_KEY=3 WP_NONCE_KEY=4 WP_AUTH_SALT=5 WP_SECURE_AUTH_SALT=6 WP_LOGGED_IN_SALT=7 WP_NONCE_SALT=8 > /tmp/ap.env
           docker compose -f $WPDIR/box/compose.yaml --env-file /tmp/ap.env --profile tools config -q
           docker run --rm -v $PWD/ops/nginx/fernway-log.conf:/etc/nginx/conf.d/fernway-log.conf:ro \
             -v $WPDIR/box/alderpike-limits.conf:/etc/nginx/conf.d/alderpike-limits.conf:ro -v $WPDIR/box/alderpike-app.conf:/etc/nginx/snippets/alderpike-app.conf:ro \
-            -v $WPDIR/box/nginx-alderpike:/etc/nginx/conf.d/alderpike.conf:ro nginx:stable nginx -t
+            -v $WPDIR/box/nginx-alderpike:/etc/nginx/conf.d/zz-alderpike.conf:ro nginx:stable nginx -t
           bash -n $WPDIR/box/setup.sh; bash -n $WPDIR/box/connect.sh
 
       - name: Accounts, end to end (switched on for this step only; production keeps them off)
