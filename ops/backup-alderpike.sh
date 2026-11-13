@@ -20,7 +20,8 @@ rm -rf "$wpart"; install -d -m 700 "$wpart"
 # The root password stays inside the container: the dump runs there, with the container's own environment.
 docker exec "$wpdb" sh -c 'exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction --routines --databases wp' \
   | gzip > "$wpart/wp.sql.gz" || { rm -rf "$wpart"; echo "backup: Alder & Pike's database could not be dumped" >&2; exit 1; }
-gzip -t "$wpart/wp.sql.gz" && zgrep -q '^CREATE TABLE `wp_options`' "$wpart/wp.sql.gz" \
+# Counted, not grep -q: an early stop breaks the pipe, and pipefail would call a good dump bad.
+gzip -t "$wpart/wp.sql.gz" && [ "$(zcat "$wpart/wp.sql.gz" | grep -c '^CREATE TABLE `wp_options`')" = 1 ] \
   && zcat "$wpart/wp.sql.gz" | tail -1 | grep -q '^-- Dump completed' \
   || { rm -rf "$wpart"; echo "backup: Alder & Pike's dump is not whole" >&2; exit 1; }
 tar -C /srv/alderpike/html/wp-content -czf "$wpart/uploads.tar.gz" uploads 2>/dev/null \
