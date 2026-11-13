@@ -1,0 +1,35 @@
+/* Settings, Fernway: WordPress's own admin look, with Fernway's colours where they carry a meaning. */
+.fw-admin h1 { display: flex; align-items: center; gap: 10px; }
+.fw-admin h1 .dashicons { color: #1f6f63; font-size: 26px; width: 26px; height: 26px; }
+.fw-admin .fw-lede { font-size: 14px; max-width: 760px; color: #50575e; }
+.fw-admin .fw-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; max-width: 1160px; margin-top: 16px; }
+.fw-admin .fw-card { background: #fff; border: 1px solid #c3c4c7; padding: 18px 22px; }
+.fw-admin .fw-card h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 14px; }
+.fw-admin .fw-card h2 .dashicons { color: #1f6f63; }
+.fw-admin .fw-card h2.fw-sub { margin-top: 26px; }
+.fw-admin .fw-field { display: grid; gap: 4px; margin: 0 0 16px; }
+.fw-admin .fw-field label { font-weight: 600; }
+.fw-admin .fw-field input[type=text], .fw-admin .fw-field input[type=password], .fw-admin .fw-field input[type=url] { width: 100%; max-width: 440px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.fw-admin .fw-field input.fw-short { width: 64px; text-transform: uppercase; }
+.fw-admin .fw-pair { grid-template-columns: auto 1fr; align-items: end; column-gap: 14px; }
+.fw-admin .fw-pair > span:first-child { display: grid; gap: 4px; }
+.fw-admin .fw-hint { color: #646970; font-size: 12.5px; }
+.fw-admin .fw-more summary { cursor: pointer; color: #2271b1; margin-bottom: 8px; }
+.fw-admin .button { display: inline-flex; align-items: center; gap: 6px; }
+.fw-admin .button .dashicons { font-size: 17px; width: 17px; height: 17px; line-height: 17px; margin: 0; vertical-align: middle; }
+.fw-admin .fw-test { max-width: 1160px; background: #fff; border: 1px solid #c3c4c7; border-left: 4px solid #1f6f63; padding: 10px 16px; margin: 14px 0 0; }
+.fw-admin .fw-test p { display: flex; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; }
+.fw-admin .fw-test-ok .dashicons { color: #3f7a38; }
+.fw-admin .fw-test-bad .dashicons { color: #b04a2c; }
+.fw-admin .fw-log { max-width: 1116px; margin-top: 20px; }
+.fw-admin .fw-log table { margin-top: 10px; }
+.fw-admin .fw-num { width: 32px; color: #646970; }
+.fw-admin .fw-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+.fw-admin .fw-empty { color: #646970; font-style: italic; }
+.fw-admin .fw-out { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; }
+.fw-admin .fw-out-sent { background: #e3f1e0; color: #2a5a25; }
+.fw-admin .fw-out-duplicate { background: #e4edf5; color: #2b5079; }
+.fw-admin .fw-out-taken { background: #fbefd5; color: #7a5410; }
+.fw-admin .fw-out-limited { background: #fbefd5; color: #7a5410; }
+.fw-admin .fw-out-refused, .fw-admin .fw-out-unreachable { background: #f8e2db; color: #8a3a22; }
+@media (max-width: 960px) { .fw-admin .fw-grid { grid-template-columns: 1fr; } }

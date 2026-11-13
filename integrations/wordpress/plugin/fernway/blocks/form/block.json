@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "fernway/form",
+	"title": "Fernway form",
+	"category": "widgets",
+	"icon": "feedback",
+	"description": "A form whose leads reach GoHighLevel through Fernway, each with a waybill and a receipt.",
+	"keywords": [ "lead", "contact", "booking", "gohighlevel", "crm" ],
+	"textdomain": "fernway",
+	"attributes": {
+		"route": { "type": "string", "default": "" },
+		"fields": { "type": "array", "default": [ "name", "email", "phone", "message" ], "items": { "type": "string" } },
+		"title": { "type": "string", "default": "" },
+		"submitLabel": { "type": "string", "default": "" },
+		"note": { "type": "string", "default": "" },
+		"variant": { "type": "string", "enum": [ "full", "compact" ], "default": "full" },
+		"labels": { "type": "object", "default": {} }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "fernway-form-editor",
+	"style": "fernway-form",
+	"viewScript": "fernway-form-view"
+}

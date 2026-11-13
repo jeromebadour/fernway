@@ -1,0 +1,289 @@
+/*
+Theme Name: Alder & Pike
+Theme URI: https://github.com/jeromebadour/fernway/tree/main/integrations/wordpress/theme/alder-pike
+Author: Jerome Badour
+Author URI: https://jeromebadour.com
+Description: A block theme made from scratch for Alder & Pike, an invented Tacoma roofer: the demo site for Fernway for WordPress. Every roof gets a report card. Words and pictures are edited in the Site Editor.
+Requires at least: 6.7
+Tested up to: 7.1
+Requires PHP: 8.1
+Version: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: alder-pike
+Tags: block-theme, full-site-editing, dark, one-column, custom-colors
+*/
+
+/* The look of Alder & Pike beyond what theme.json can say: the report card, grades, the ladder, tickets. Sentence
+   case everywhere; nothing is set in capitals. */
+
+:root {
+	--ap-coal: var(--wp--preset--color--coal);
+	--ap-slate: var(--wp--preset--color--slate);
+	--ap-line: var(--wp--preset--color--slate-2);
+	--ap-paper: var(--wp--preset--color--paper);
+	--ap-muted: var(--wp--preset--color--muted);
+	--ap-dim: var(--wp--preset--color--dim);
+	--ap-orange: var(--wp--preset--color--safety);
+	--ap-rain: var(--wp--preset--color--rain);
+	--ap-mono: var(--wp--preset--font-family--plex-mono);
+	--ap-cut: polygon(0 0, 100% 0, 100% 70%, calc(100% - 12px) 100%, 0 100%);
+}
+
+body { -webkit-font-smoothing: antialiased; }
+:where(.wp-site-blocks) > * { margin-block-start: 0; }
+
+/* Buttons: the cut corner, like a work-order tag. */
+.wp-element-button, .wp-block-button__link { clip-path: var(--ap-cut); display: inline-flex; align-items: center; gap: 9px; }
+.wp-block-button.is-style-outline > .wp-block-button__link {
+	clip-path: none; background: transparent; color: var(--ap-paper); border: 1.5px solid var(--ap-line); padding: 12px 18px; font-weight: 600;
+}
+.wp-block-button.is-style-outline > .wp-block-button__link:hover { border-color: var(--ap-paper); }
+.ap-arrow .wp-block-button__link::after {
+	content: ""; width: 16px; height: 16px; flex: none;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h10M8 4l4 4-4 4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+	        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h10M8 4l4 4-4 4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Header: the demo band, the hazard stripe, the bar. */
+.ap-demo { background: #0f1214; color: var(--ap-dim); font-family: var(--ap-mono); font-size: 11.5px; letter-spacing: .02em; text-align: center; padding: 8px 16px; margin: 0; }
+.ap-demo p { margin: 0; }
+.ap-demo strong { color: var(--ap-paper); font-weight: 500; }
+.ap-header > * { margin-block-start: 0 !important; }
+.ap-stripe { height: 6px; background: repeating-linear-gradient(-45deg, var(--ap-orange) 0 14px, var(--ap-coal) 14px 28px); }
+.ap-bar { padding-top: 26px; padding-bottom: 10px; gap: 30px; }
+.ap-mark { display: flex; gap: 12px; align-items: center; margin-right: auto; }
+.ap-mark .wp-block-site-logo img { display: block; }
+.ap-mark .wp-block-site-title { font-weight: 700; font-size: 22px; letter-spacing: -.01em; line-height: 1.1; margin: 0; }
+.ap-mark .wp-block-site-title a { color: var(--ap-paper); }
+.ap-mark .wp-block-site-tagline { font-family: var(--ap-mono); font-size: 11.5px; color: var(--ap-dim); margin: 2px 0 0; }
+.ap-bar .wp-block-navigation { font-size: 15px; font-weight: 500; color: #c9ccc6; gap: 30px; }
+.ap-bar .wp-block-navigation a:hover { color: var(--ap-paper); text-decoration: none; }
+.wp-block-navigation__responsive-container-open {
+	border: 1.5px solid var(--ap-line); padding: 10px 14px; color: var(--ap-paper); font-weight: 600; font-size: 15px;
+}
+.wp-block-navigation__responsive-container.is-menu-open { background: var(--ap-coal) !important; color: var(--ap-paper) !important; padding: 26px 20px; }
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item { font-size: 22px; font-weight: 600; }
+
+/* Labels above headings: small, mono, orange, never capitals. */
+.ap-kick { font-family: var(--ap-mono); font-size: 13px; letter-spacing: .02em; color: var(--ap-orange); margin: 0 0 14px; }
+.ap-lede { font-size: var(--wp--preset--font-size--lede); color: var(--ap-muted); max-width: 560px; }
+.ap-muted { color: var(--ap-muted); }
+
+/* Sections. */
+.ap-band { border-top: 1px solid var(--ap-slate); padding-top: var(--wp--preset--spacing--50); padding-bottom: var(--wp--preset--spacing--50); }
+.ap-head { justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 40px; }
+.ap-head > .wp-block-group:first-child h2 { margin: 0; }
+.ap-head > p { max-width: 440px; color: var(--ap-muted); margin: 0; }
+
+/* Hero. */
+.ap-hero { padding-top: 40px; padding-bottom: 72px; gap: 56px; }
+.ap-hero h1 { margin: 0 0 22px; }
+.ap-hero h1 mark, .ap-band h2 mark, .ap-page h1 mark { background: none; color: var(--ap-orange); }
+
+/* The storm countdown. */
+.ap-storm { border: 1.5px solid var(--ap-line); padding: 18px 20px; max-width: 540px; gap: 20px; align-items: flex-end; margin-top: 26px; }
+.ap-storm .ap-days { flex: none; white-space: nowrap; font-weight: 700; font-size: var(--wp--preset--font-size--figure); line-height: .9; color: var(--ap-rain); margin: 0; letter-spacing: -.01em; }
+.ap-storm .ap-days-label { color: var(--ap-paper); font-weight: 600; font-size: 15px; margin: 0 0 4px; }
+.ap-storm p.ap-storm-note { font-size: 13px; color: #9aa19c; line-height: 1.4; margin: 0; }
+.ap-storm figure { margin: 8px 0 0; }
+
+/* The report card: a sheet of paper on the dark page. */
+.ap-card { background: var(--ap-paper); color: var(--ap-coal); }
+.ap-card :where(h2, h3, h4, p, li) { color: var(--ap-coal); }
+.ap-card-head { justify-content: space-between; align-items: center; gap: 12px; padding: 16px 22px; border-bottom: 2px solid var(--ap-coal); }
+.ap-card-head h3, .ap-card-head p:first-child { font-size: 19px; font-weight: 700; margin: 0; }
+.ap-card-head p.ap-card-meta { font-family: var(--ap-mono); font-size: 11.5px; margin: 0; }
+.ap-card-body { padding: 16px 22px 20px; }
+.ap-card-foot { font-size: 12.5px; color: #4a514d; }
+
+/* The roof drawing with its graded tags laid over it. */
+.ap-roof { position: relative; background: var(--wp--preset--color--paper-2); margin: 0; }
+.ap-roof > figure { margin: 0; }
+.ap-roof > figure img { display: block; width: 100%; height: auto; }
+.ap-roof .ap-tag { position: absolute; margin: 0 !important; display: flex; gap: 8px !important; align-items: center; font-family: var(--ap-mono); font-size: 12px; background: var(--ap-paper); border: 1.5px solid var(--ap-coal); padding: 5px 9px 5px 5px; white-space: nowrap; color: var(--ap-coal); }
+.ap-roof .ap-tag:nth-of-type(1) { left: 69%; top: 36%; }
+.ap-roof .ap-tag:nth-of-type(2) { left: 18%; top: 46%; }
+.ap-roof .ap-tag:nth-of-type(3) { left: 3%; top: 80%; }
+.ap-roof .ap-tag:nth-of-type(4) { left: 53%; top: 72%; }
+
+/* Grades: the letter in its colour. Written as text so the owner edits it like any word. */
+.ap-tag p, .ap-row > p, .ap-line-t p { margin: 0 !important; }
+.ap-grade { margin: 0 !important; line-height: 1; display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; font-weight: 700; font-size: 15px; color: var(--ap-coal); font-style: normal; background: var(--wp--preset--color--grade-good); }
+.ap-grade-c { background: var(--wp--preset--color--grade-watch); }
+.ap-grade-d, .ap-grade-f { background: var(--wp--preset--color--grade-bad); }
+.ap-grade-none { background: var(--ap-muted); }
+
+/* A whole report card: one row per part. */
+.ap-rows { background: var(--ap-paper); color: var(--ap-coal); }
+.ap-row { display: grid !important; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #cfccc3; margin: 0 !important; }
+.ap-row:last-child { border-bottom: 0; }
+.ap-row > * { margin: 0 !important; }
+.ap-row .ap-grade { width: 38px; height: 38px; font-size: 22px; }
+.ap-row h3, .ap-row h4 { font-size: 16.5px; color: var(--ap-coal); margin: 0 0 2px; }
+.ap-row p { font-size: 13.5px; color: #4a514d; line-height: 1.4; margin: 0; }
+.ap-row p.ap-when { font-family: var(--ap-mono); font-size: 12.5px; white-space: nowrap; color: var(--ap-coal); }
+
+/* Photos beside the report. */
+.ap-photos { gap: 12px; }
+.ap-photos figure { margin: 0; position: relative; border: 1.5px solid var(--ap-line); }
+.ap-photos figure img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.ap-photos figcaption { position: absolute; left: 8px; bottom: 8px; margin: 0; font-family: var(--ap-mono); font-size: 11px; background: rgba(15, 18, 20, .85); color: var(--ap-paper); padding: 4px 7px; }
+.ap-total { border: 1.5px solid var(--ap-orange); padding: 16px 18px; gap: 16px; justify-content: space-between; align-items: center; }
+.ap-total p { margin: 0; font-size: 13.5px; color: var(--ap-muted); }
+.ap-total p.ap-price { font-size: 30px; font-weight: 700; color: var(--ap-orange); line-height: 1; }
+
+/* The ladder: how a check works. */
+.ap-ladder { border-left: 4px solid var(--ap-line); border-right: 4px solid var(--ap-line); gap: 0 !important; }
+.ap-ladder > .wp-block-column { padding: 26px 24px 28px; border-right: 2px dashed var(--ap-line); margin: 0 !important; }
+.ap-ladder > .wp-block-column:last-child { border-right: 0; }
+.ap-step-n { font-family: var(--ap-mono); font-size: 12.5px; color: var(--ap-orange); margin: 0; }
+.ap-ladder h3 { margin: 10px 0 8px; }
+.ap-ladder p { color: var(--ap-muted); font-size: 14.5px; }
+.ap-chip { display: inline-block; font-family: var(--ap-mono); font-size: 12px; color: var(--ap-rain); border: 1px solid var(--ap-line); padding: 4px 8px; margin-top: 14px; }
+
+/* Rain by month. */
+.ap-season { gap: 40px; align-items: flex-end; }
+.ap-count { border: 1.5px solid var(--ap-line); padding: 22px; }
+.ap-count .ap-days { white-space: nowrap; font-weight: 700; font-size: 96px; line-height: .85; color: var(--ap-rain); margin: 0; letter-spacing: -.02em; }
+.ap-count p { color: var(--ap-muted); font-size: 14px; }
+.ap-chart { margin: 0; }
+.ap-chart svg { display: block; width: 100%; height: auto; }
+
+/* Work orders, as tickets with a folded corner. */
+.ap-tickets { gap: 16px !important; }
+.ap-ticket { background: var(--wp--preset--color--coal-2); border: 1.5px solid var(--ap-line); padding: 20px; position: relative; margin: 0 !important; }
+.ap-ticket::after { content: ""; position: absolute; right: -1.5px; top: -1.5px; width: 22px; height: 22px; background: linear-gradient(225deg, var(--ap-coal) 50%, var(--ap-line) 50% 54%, transparent 54%); }
+.ap-ticket .ap-ticket-n { font-family: var(--ap-mono); font-size: 12px; color: var(--ap-dim); margin: 0; }
+.ap-ticket h3 { margin: 8px 0; font-size: 20px; }
+.ap-ticket p { color: var(--ap-muted); font-size: 14px; }
+.ap-ticket p.ap-ticket-price { font-family: var(--ap-mono); font-size: 12.5px; color: var(--ap-paper); border-top: 1px dashed var(--ap-line); padding-top: 10px; margin-top: 16px; }
+
+/* Services: one row per work order, beside the report line it comes from. */
+.ap-service { border-top: 1px solid var(--ap-slate); padding: 44px 0; gap: 40px; }
+.ap-service .ap-from { font-family: var(--ap-mono); font-size: 13px; color: var(--ap-rain); margin: 0; }
+.ap-service h2 { font-size: 28px; margin: 8px 0 10px; }
+.ap-service p { color: var(--ap-muted); }
+.ap-ticks { list-style: none; padding: 0; margin: 6px 0 0; }
+.ap-ticks li { display: flex; gap: 10px; color: var(--ap-paper); font-size: 15px; padding: 7px 0; border-bottom: 1px dashed var(--ap-slate); }
+.ap-ticks li::before { content: ""; width: 14px; height: 14px; margin-top: 4px; flex: none; background: var(--wp--preset--color--grade-good);
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+	        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ap-steps { list-style: none; padding: 0; margin: 8px 0 0; border: 1.5px solid var(--ap-line); counter-reset: ap; }
+.ap-steps li { counter-increment: ap; display: flex; gap: 14px; padding: 11px 16px; border-bottom: 1px dashed var(--ap-line); color: var(--ap-paper); font-size: 15px; }
+.ap-steps li:last-child { border-bottom: 0; }
+.ap-steps li::before { content: counter(ap, decimal-leading-zero); font-family: var(--ap-mono); font-size: 12px; color: var(--ap-orange); padding-top: 2px; }
+.ap-line { padding: 16px 18px; }
+.ap-line .ap-line-k { font-family: var(--ap-mono); font-size: 12px; color: #5b625e; margin: 0; }
+.ap-line .ap-line-t { display: flex; gap: 12px; align-items: center; margin: 10px 0 8px; font-weight: 700; font-size: 15.5px; }
+.ap-line p { font-size: 13.5px; color: #4a514d; }
+.ap-line .ap-line-f { display: flex; justify-content: space-between; border-top: 1px solid #cfccc3; padding-top: 10px; margin-top: 12px; font-family: var(--ap-mono); font-size: 12px; color: var(--ap-coal); }
+
+/* The Fernway form, in Alder & Pike's colours: paper card, coal ink, safety-orange cut button. */
+.fernway {
+	--fw-surface: var(--wp--preset--color--paper);
+	--fw-ink: var(--wp--preset--color--coal);
+	--fw-muted: #4a514d;
+	--fw-line: #b9b8b1;
+	--fw-field: #ffffff;
+	--fw-accent: var(--wp--preset--color--safety);
+	--fw-accent-ink: var(--wp--preset--color--coal);
+	--fw-good-dot: #5f9e57;
+	--fw-next: var(--wp--preset--color--rain);
+	--fw-radius: 0;
+	--fw-button-shape: var(--ap-cut);
+	--fw-font: var(--wp--preset--font-family--archivo);
+	--fw-mono: var(--wp--preset--font-family--plex-mono);
+}
+.fernway .fw-day input:checked + span b { color: var(--wp--preset--color--safety); }
+.ap-card-body .fernway { background: transparent; }
+.ap-book .fernway, .ap-rc .fernway { height: auto; }
+.ap-book > .wp-block-column:first-child { display: flex; flex-direction: column; }
+
+/* Side boxes beside forms and receipts. */
+.ap-box { border: 1.5px solid var(--ap-line); padding: 20px; }
+.ap-box h3 { margin: 6px 0 10px; font-size: 19px; }
+.ap-box p, .ap-box li { color: var(--ap-muted); font-size: 14.5px; }
+.ap-plan { list-style: none; padding: 0; margin: 0; }
+.ap-plan li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--ap-slate); }
+.ap-plan li strong { color: var(--ap-paper); font-weight: 500; }
+
+/* About: crew and facts. */
+.ap-crew { gap: 16px !important; }
+.ap-member { border: 1.5px solid var(--ap-line); padding: 20px; margin: 0 !important; }
+.ap-member p.ap-initials { width: 56px; height: 56px; padding: 0 !important; display: grid; place-items: center; font-weight: 700; font-size: 20px; color: var(--ap-coal) !important; margin: 0 0 14px; line-height: 1; }
+.ap-member h3 { font-size: 17px; margin: 0; }
+.ap-member .ap-role { font-family: var(--ap-mono); font-size: 12.5px; color: var(--ap-dim); margin: 4px 0 10px; }
+.ap-member p { color: var(--ap-muted); font-size: 14px; }
+.ap-facts { border: 1.5px solid var(--ap-line); gap: 0 !important; }
+.ap-facts > .wp-block-column { padding: 20px 22px; border-right: 1px dashed var(--ap-line); margin: 0 !important; }
+.ap-facts > .wp-block-column:last-child { border-right: 0; }
+.ap-facts .ap-fact { font-weight: 700; font-size: 32px; color: var(--ap-rain); margin: 0; line-height: 1.1; }
+.ap-facts p { color: var(--ap-muted); font-size: 14px; margin: 0; }
+
+/* Footer. */
+.ap-footer { border-top: 1px solid var(--ap-slate); padding-top: 46px; padding-bottom: 40px; color: var(--ap-dim); font-size: 14px; }
+.ap-footer .wp-block-site-title { color: var(--ap-paper); }
+.ap-footer h2 { font-family: var(--ap-mono); font-size: 12.5px; font-weight: 500; letter-spacing: .02em; color: var(--ap-paper); margin: 0 0 12px; }
+.ap-footer ul { list-style: none; padding: 0; margin: 0; }
+.ap-footer li { margin: 7px 0; }
+.ap-footer a { color: var(--ap-dim); }
+.ap-footer a:hover { color: var(--ap-paper); }
+.ap-footbar { border-top: 1px solid var(--ap-slate); margin-top: 40px; padding-top: 18px; justify-content: space-between; gap: 20px; font-family: var(--ap-mono); font-size: 12px; }
+.ap-footbar p { margin: 0; }
+.ap-footbar strong { color: var(--ap-paper); font-weight: 500; }
+
+/* Page tops and the two-column page layouts. */
+.ap-page { padding-top: 48px; padding-bottom: 64px; }
+.ap-page h1 { font-size: var(--wp--preset--font-size--page); margin: 0 0 20px; max-width: 820px; }
+.ap-services { padding-bottom: 20px; }
+.ap-rc, .ap-about { gap: 48px; }
+.ap-nf { gap: 56px; padding: 24px 0 32px; }
+.ap-rc .ap-box + .ap-box, .ap-rc .ap-box { margin-bottom: 16px; }
+.ap-head-t { margin: 0; }
+.ap-total-l p:first-child { color: var(--ap-muted); }
+.ap-book { gap: 28px; align-items: stretch !important; }
+
+/* The sample receipt beside the booking form. */
+.ap-track { border: 1.5px dashed var(--ap-line); padding: 22px; height: 100%; }
+.ap-track h3 { margin: 8px 0 16px; }
+.ap-scan { display: grid !important; grid-template-columns: 18px 1fr auto; column-gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ap-slate); margin: 0 !important; }
+.ap-scan::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--wp--preset--color--grade-good); grid-row: 1 / span 2; margin-top: 5px; }
+.ap-scan > p { margin: 0 !important; }
+.ap-scan .ap-scan-t { font-weight: 600; font-size: 15px; grid-column: 2; }
+.ap-scan .ap-scan-d { color: var(--ap-dim); font-size: 13px; grid-column: 2; }
+.ap-scan .ap-scan-at { font-family: var(--ap-mono); font-size: 12px; color: var(--ap-dim); grid-column: 3; grid-row: 1; }
+.ap-track .ap-track-by { margin-top: 14px; font-size: 12.5px; color: var(--ap-dim); }
+.ap-track .ap-track-by strong { color: var(--ap-orange); font-weight: 600; }
+
+/* The pinned booking button on phones; booking pages hide it (body class from the page template). */
+.wp-block-buttons.ap-pinned { display: none !important; }
+
+@media (max-width: 820px) {
+	.ap-bar-book { display: none !important; }
+	.ap-mark .wp-block-site-title { white-space: nowrap; }
+	.ap-chart text { font-size: 30px; }
+	.ap-hero { padding-top: 26px; padding-bottom: 48px; gap: 34px; }
+	.ap-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 26px; }
+	.ap-roof .ap-tag { font-size: 10.5px; padding: 3px 6px 3px 3px; gap: 5px; }
+	.ap-roof .ap-tag .ap-grade { width: 18px; height: 18px; font-size: 12px; }
+	.ap-roof .ap-tag:nth-of-type(1) { left: auto; right: 2%; top: 30%; }
+	.ap-roof .ap-tag:nth-of-type(2) { left: 6%; top: 52%; }
+	.ap-card-head p.ap-card-meta { display: none; }
+	.ap-ladder { border-right: 0; }
+	.ap-ladder > .wp-block-column { border-right: 0; border-bottom: 2px dashed var(--ap-line); }
+	.ap-row { grid-template-columns: auto 1fr; }
+	.ap-row p.ap-when { grid-column: 2; color: #6b716d; }
+	.ap-service { padding: 34px 0; gap: 18px; }
+	.ap-facts > .wp-block-column { border-right: 0; border-bottom: 1px dashed var(--ap-line); }
+	.ap-footbar { flex-direction: column; }
+	.ap-page { padding-top: 30px; padding-bottom: 40px; }
+	.ap-head > p { max-width: none; }
+	.wp-block-buttons.ap-pinned { display: flex !important; position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; padding: 10px 16px 14px; background: rgba(15, 18, 20, .94); border-top: 1px solid var(--ap-line); margin: 0 !important; }
+	.ap-pinned .wp-block-button { width: 100%; }
+	.ap-pinned .wp-block-button__link { width: 100%; justify-content: center; }
+	body.ap-booking .wp-block-buttons.ap-pinned { display: none !important; }
+	body { padding-bottom: 72px; }
+	body.ap-booking { padding-bottom: 0; }
+}

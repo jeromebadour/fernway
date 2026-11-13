@@ -52,6 +52,8 @@ createServer(async (req, res) => {
   // Asking what it was asked is not a GHL call: it isn't counted.
   if (url.pathname === "/__calls") return send(res, 200, calls);
   if (url.pathname === "/__fired") return send(res, 200, fired);
+  // Every contact as it was last upserted, to check what reached GHL's own fields (an address, say).
+  if (url.pathname === "/__contacts") return send(res, 200, [...held.values()]);
   if (url.pathname === "/__claude") return send(res, 200, claude);
   // A receiver for Fernway's webhooks: keeps each call with its headers and raw body.
   if (url.pathname === "/__hooks") return send(res, 200, hooks);
