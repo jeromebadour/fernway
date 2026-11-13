@@ -1,6 +1,8 @@
-import { apiAccepted, ingestLead, trackToken, waybillPath } from "@fernway/delivery";
+import { apiAccepted, ingestLead, shipments, trackToken, waybillPath } from "@fernway/delivery";
+import { and, eq } from "drizzle-orm";
 import { delivery } from "@/lib/connect";
 import { answer, appUrl, caller, problem } from "@/lib/api";
+import { forgetTimes, routeKind, stillFree } from "@/lib/booking";
 import { intake } from "@/lib/intake";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +18,22 @@ export async function POST(request: Request) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return problem(422, "body: a lead is a JSON object");
   const said = (body as { source?: unknown }).source;
   if (said !== undefined && said !== "import") return problem(422, "source: leave it out (Fernway sets api), or import from an import tool");
+  // A booking: the time must still be free in GHL right now, or nothing is made (the same check the site's own forms make).
+  // A retry with the same idempotencyKey skips it: its time is taken by its own first send, and it gets that waybill back.
+  const { route, slot, idempotencyKey } = body as { route?: unknown; slot?: unknown; idempotencyKey?: unknown };
+  const seen = typeof idempotencyKey === "string" && (await intake().deps.db.select({ id: shipments.id }).from(shipments)
+    .where(and(eq(shipments.accountId, who.accountId), eq(shipments.idempotencyKey, idempotencyKey.trim()))).limit(1)).length > 0;
+  const booking = !seen && typeof route === "string" && typeof slot === "string" && (await routeKind(route, who.accountId)) === "booking";
+  if (booking) {
+    const free = await stillFree(route as string, slot as string, who.accountId);
+    if (free === null) return problem(503, "slot: GHL couldn't be reached to check the time; try again shortly");
+    if (!free) {
+      await forgetTimes(route as string, who.accountId);
+      return problem(409, "slot: that time was just taken; read the route's slots again and pick another");
+    }
+  }
   const r = await ingestLead(intake().deps, who.accountId, { ...body, source: said === "import" ? "import" : "api" });
+  if (booking && r.ok && !r.duplicate) await forgetTimes(route as string, who.accountId);
   if (!r.ok) return problem(422, ...r.problems);
 
   const number = r.waybill.number;

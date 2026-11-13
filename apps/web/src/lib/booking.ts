@@ -4,13 +4,23 @@ import { and, eq } from "drizzle-orm";
 import { intake } from "./intake";
 import { redis } from "./redis";
 
-// Free meeting times for a booking form on the public site, read from the GHL calendar its route names.
-// The page's list is kept 60 s (GHL's limits); the check at sending is always fresh.
+// Free meeting times for a booking route, read from the GHL calendar the route names: for the public site's own demo
+// form, and through the API (GET /api/v1/routes/{route}/slots) for any account's forms. A list is kept 60 s (GHL's
+// limits); the check at sending is always fresh.
 const WINDOW_DAYS = 14;
 const NOTICE_MS = 2 * 3_600_000;
 
-async function routeCalendar(routeKey: string) {
-  const { deps, accountId } = intake();
+export const SLOT_WINDOW_DAYS = WINDOW_DAYS;
+
+/** Does the account have this route, and does it book meetings? */
+export async function routeKind(routeKey: string, accountId: number): Promise<"none" | "plain" | "booking"> {
+  const [r] = await intake().deps.db.select({ calendarId: routes.calendarId }).from(routes)
+    .where(and(eq(routes.accountId, accountId), eq(routes.key, routeKey)));
+  return !r ? "none" : r.calendarId ? "booking" : "plain";
+}
+
+async function routeCalendar(routeKey: string, accountId = intake().accountId) {
+  const { deps } = intake();
   const [r] = await deps.db.select({ calendarId: routes.calendarId }).from(routes)
     .where(and(eq(routes.accountId, accountId), eq(routes.key, routeKey)));
   if (!r?.calendarId) return null;
@@ -21,8 +31,8 @@ async function routeCalendar(routeKey: string) {
 
 export type SlotList = { ok: true; slots: string[] } | { ok: false; reason: "closed" | "unreachable" };
 
-export async function freeTimes(routeKey: string): Promise<SlotList> {
-  const cal = await routeCalendar(routeKey);
+export async function freeTimes(routeKey: string, accountId?: number): Promise<SlotList> {
+  const cal = await routeCalendar(routeKey, accountId);
   if (!cal) return { ok: false, reason: "closed" };
   const key = `fernway:slots:${cal.calendarId}`;
   const cached = await redis().get(key);
@@ -40,8 +50,8 @@ export async function freeTimes(routeKey: string): Promise<SlotList> {
 }
 
 /** Is this exact time still free in GHL right now? Asked fresh, around that time only. */
-export async function stillFree(routeKey: string, iso: string): Promise<boolean | null> {
-  const cal = await routeCalendar(routeKey);
+export async function stillFree(routeKey: string, iso: string, accountId?: number): Promise<boolean | null> {
+  const cal = await routeCalendar(routeKey, accountId);
   const at = Date.parse(iso);
   if (!cal || Number.isNaN(at) || at < Date.now() + NOTICE_MS) return false;
   try {
@@ -52,7 +62,7 @@ export async function stillFree(routeKey: string, iso: string): Promise<boolean 
   }
 }
 
-export async function forgetTimes(routeKey: string) {
-  const cal = await routeCalendar(routeKey);
+export async function forgetTimes(routeKey: string, accountId?: number) {
+  const cal = await routeCalendar(routeKey, accountId);
   if (cal) await redis().del(`fernway:slots:${cal.calendarId}`);
 }

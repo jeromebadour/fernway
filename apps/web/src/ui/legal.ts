@@ -11,8 +11,8 @@ export const CONTACT_EMAIL = "privacy@jeromebadour.com";
 export const privacy: LegalDoc = {
   title: "Privacy Policy",
   intro: "What Fernway keeps when you send one of its forms or open an account, where it goes, how long it stays and how to have it removed sooner.",
-  version: "1.12",
-  effective: "12 November 2026",
+  version: "1.13",
+  effective: "13 November 2026",
   short: [
     "What you type in a form goes into Fernway's demo GoHighLevel account, and stays 30 days.",
     "An account keeps what it needs to sign you in and run your plan, until you delete it; deleting removes it everywhere.",
@@ -32,7 +32,7 @@ export const privacy: LegalDoc = {
       id: "what-we-keep",
       title: "What we keep",
       clauses: [
-        "**What you type in a form:** your name, email address, and, where the form asks for them, your phone number, company, website, message and the meeting time you picked. Only the fields you fill in are kept.",
+        "**What you type in a form:** your name, email address, and, where the form asks for them, your phone number, address, company, website, message and the meeting time you picked. Only the fields you fill in are kept.",
         "**Your lead's waybill:** its number, when it was picked up, and every step it took on its way into GoHighLevel (the scans), each with the time and what GoHighLevel answered.",
         "That is all. We do not keep your IP address with your lead, and we do not look up where you are.",
       ],
@@ -53,6 +53,7 @@ export const privacy: LegalDoc = {
         "**Embed forms:** an account can put a Fernway form on its own website or funnel. What a visitor types there goes to that account\'s GoHighLevel the same way as any other lead, and the visitor gets a receipt link. The form sets no cookie. Fernway keeps each form\'s settings until its owner revokes it.",
         "**Imports:** Fernway\'s import tool runs on the account\'s own computer. It reads a file of contacts there, tidies and merges it there, and sends each contact through the account\'s own API key, the same way as any other lead. The file itself never reaches Fernway.",
         "**Lead score:** an account can turn on Claude's lead score. Each new lead is then read by Claude, Anthropic's AI, which is sent only the business's name, the route, where the lead came from, the company, website, the email's domain, whether a phone number or a meeting was given, and the message; never the person's name, email address or phone number. Fernway keeps Claude's score, its one-line read and reasons with the lead, and adds them to the GoHighLevel contact as a note and a tag. They go when the lead goes.",
+        "**Addresses and booking times:** an account's own forms (its WordPress site, its own code) may send a lead's address, for work done at a place such as a roof or a kitchen. Fernway keeps it with the lead like any other field, shows it in the account's console, and sends it to the address fields of the GoHighLevel contact; it never appears on the public receipt and is never sent to Claude. To offer meeting times, Fernway reads the free times of the account's own GoHighLevel calendar and keeps the list for a minute; it keeps nothing about who looked.",
         "**Google Sheets:** an account can link one Google Sheet of its own. Each lead picked up after that is written there as a row (waybill, times, name, email, phone, company, route, where it came from, its state, and its lead score if it has one) and rewritten as it changes. Fernway reaches only sheets their owners shared with its own Google address, keeps which sheet is linked and where each lead's row is, and stops writing when the sheet is unlinked; the rows already written stay in the owner's sheet, under Google's terms and the owner's control. If the account also turns on **Leads in**, Fernway reads that tab of the same sheet every minute: each new row becomes a lead like any other (kept as above), and Fernway writes its waybill, state and a note back into the row.",
         "**Webhooks:** an account can add up to five addresses of its own that Fernway tells about its leads (picked up, signed for, held, returned, scored). Each call carries the lead's waybill, route, details as sent, GHL ids, receipt link and score, signed so the receiving system can check it came from Fernway. Fernway keeps each call, with what came back, for 30 days. Where those addresses send the lead next is up to the account.",
         "**The audit log:** what people did in the account (a resend, a route change, an invite, a key made or revoked, GHL connected or disconnected), with who did it and when. It stays with the account and goes when the account is deleted; a line keeps the name it was written with, even after that person leaves the team.",
@@ -139,7 +140,7 @@ export const privacy: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 added the import tool; version 1.9 added lead score; version 1.10 added Google Sheets; version 1.11 added reading leads from a sheet; version 1.12 adds webhooks. A new version and its date appear here before it applies.",
+        "Version 1.1 added accounts, payments and emails; version 1.2 added teams (invites and roles) and the audit log; version 1.3 said what Fernway's staff see; version 1.4 added what GHL tells Fernway; version 1.5 added Fernway inside GHL; version 1.6 added GHL workflows; version 1.7 added embed forms; version 1.8 added the import tool; version 1.9 added lead score; version 1.10 added Google Sheets; version 1.11 added reading leads from a sheet; version 1.12 added webhooks; version 1.13 adds addresses and booking times for an account's own forms. A new version and its date appear here before it applies.",
         `Questions, or a request about your data: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

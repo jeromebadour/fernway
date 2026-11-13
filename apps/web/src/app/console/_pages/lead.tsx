@@ -1,11 +1,18 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GScore, GBuilding, GCalendar, GCheck, GStage, GTrash, GClock, GGlobe, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
+import { GScore, GBuilding, GCalendar, GCheck, GStage, GTrash, GClock, GGlobe, GPin, GHand, GHold, GJump, GMail, GManifest, GNote, GOut, GPhone, GResend, GRoute, GScan, GUser } from "@/ui/glyphs";
 import { day, time } from "@/ui/when";
 import { ResendButton } from "../actions";
 import { ScoreChip, usd } from "./score";
 import { stateWord } from "../states";
+
+/** A lead's address on one line, as written: "14 Cedar Ln, Tacoma, WA 98406, US". */
+const addressLine = (a: { line1?: string; city?: string; state?: string; postalCode?: string; country?: string } | undefined) => {
+  if (!a) return undefined;
+  const region = [a.state, a.postalCode].filter(Boolean).join(" ");
+  return [a.line1, a.city, region, a.country].filter(Boolean).join(", ") || undefined;
+};
 
 
 const scanWord: Record<string, { what: string; G: typeof GScan; tone: string }> = {
@@ -51,6 +58,7 @@ export async function Lead({ who, params }: { who: ConsoleWho; params: Promise<{
   };
   const fields: [typeof GUser, string, string | undefined][] = [
     [GMail, "Email", c.email], [GPhone, "Phone", c.phone], [GBuilding, "Company", c.companyName], [GGlobe, "Website", c.website],
+    [GPin, "Address", addressLine(c.address)],
   ];
 
   return (

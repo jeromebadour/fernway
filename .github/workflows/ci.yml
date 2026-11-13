@@ -540,16 +540,29 @@ jobs:
           rself=$(j '["links"]["self"]')
           signed $R $rself
           curl -s 127.0.0.1:4010/__calls | python3 -c "import json,sys; d=json.load(sys.stdin)[$after:]; assert {'method':'POST','path':'/contacts/upsert'} in d, d"
+          # A booking route's free times, then a booking with an address: taken once, given back to a retry, refused to another.
+          slots() { curl -s -o /tmp/a.json -w '%{http_code}' -H "authorization: Bearer $R" $B/api/v1/routes/$1/slots; }
+          test "$(slots nope)" = 404; test "$(slots trial)" = 422; j '["problems"]' | grep -q "books no meetings"
+          test "$(slots demo)" = 200; at=$(j '["slots"][0]'); test -n "$at"
+          bk="ci-book-$(cat /proc/sys/kernel/random/uuid)"
+          booking() { echo "{\"idempotencyKey\":\"$1\",\"route\":\"demo\",\"slot\":\"$at\",\"contact\":{\"firstName\":\"Dana\",\"email\":\"dana@example.com\",\"address\":{\"line1\":\"14 Cedar Ln\",\"city\":\"Tacoma\",\"state\":\"WA\",\"postalCode\":\"98406\",\"country\":\"us\"}}}"; }
+          test "$(post $R "$(booking $bk)")" = 201; bself=$(j '["links"]["self"]')
+          signed $R $bself
+          test "$(j '["lead"]["meeting"]')" = "$at"
+          test "$(post $R "$(booking $bk)")" = 200; test "$(j '["duplicate"]')" = True
+          test "$(post $R "$(booking ci-book-other-$bk)")" = 409; j '["problems"]' | grep -q "just taken"
+          test "$(slots demo)" = 200; python3 -c "import json; d=json.load(open('/tmp/a.json')); assert '$at' not in d['slots'], d['slots'][:3]"
           # A revoked key stops at once.
           $W revoke-apikey "$(echo $R | cut -d_ -f2)" | grep -q revoked
           test "$(curl -s -o /dev/null -w '%{http_code}' -H "authorization: Bearer $R" $B$rself)" = 401
           # The OpenAPI file and the docs pages.
           curl -s $B/api/v1/openapi.json | python3 -c '
           import json,sys; d=json.load(sys.stdin)
-          assert d["openapi"]=="3.1.0" and set(d["paths"])=={"/api/v1/leads","/api/v1/leads/{number}"}, d["paths"].keys()
+          assert d["openapi"]=="3.1.0" and set(d["paths"])=={"/api/v1/leads","/api/v1/leads/{number}","/api/v1/routes/{route}/slots"}, d["paths"].keys()
           assert "contact" in d["paths"]["/api/v1/leads"]["post"]["requestBody"]["content"]["application/json"]["schema"]["properties"]'
           curl -s $B/docs | grep -q "Your first lead, in one request"
           curl -s $B/docs/api | grep -q "idempotencyKey"
+          curl -s $B/docs/api | grep -q "routes/{route}/slots"
 
       - name: Accounts, end to end (switched on for this step only; production keeps them off)
         run: |
