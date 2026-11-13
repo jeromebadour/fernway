@@ -219,6 +219,11 @@ export function createGhlClient(opts: { baseUrl?: string; timeoutMs?: number; fe
         phone: c.phone,
         companyName: c.companyName,
         website: c.website,
+        address1: c.address?.line1,
+        city: c.address?.city,
+        state: c.address?.state,
+        postalCode: c.address?.postalCode,
+        country: c.address?.country,
         tags,
         source: "Fernway",
       };

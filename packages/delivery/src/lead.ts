@@ -29,6 +29,18 @@ export const leadInput = z
         companyName: trimmed(120).optional().describe("Up to 120 characters."),
         website: trimmed(200).optional().describe("Up to 200 characters."),
         message: trimmed(2000).optional().describe("Up to 2,000 characters. Added to the contact in GHL as a note."),
+        address: z
+          .object({
+            line1: trimmed(200).optional().describe("Street and number, e.g. 14 Cedar Ln."),
+            city: trimmed(100).optional().describe("City, e.g. Tacoma."),
+            state: trimmed(100).optional().describe("State or region, e.g. WA."),
+            postalCode: trimmed(20).optional().describe("ZIP or postal code."),
+            country: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "a two-letter country code, like US").optional().describe("Two letters (ISO 3166), e.g. US."),
+          })
+          .strict()
+          .refine((a) => Object.values(a).some(Boolean), { message: "at least one part of the address" })
+          .optional()
+          .describe("Where the work is. Sent to the contact's own address fields in GHL."),
       })
       .strict()
       .describe("The person. Only these fields; anything else is refused.")

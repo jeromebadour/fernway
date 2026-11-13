@@ -204,7 +204,11 @@ export type LeadContact = {
   companyName?: string;
   website?: string;
   message?: string;
+  /** Where the work is (a roof, a kitchen, a lawn), sent to GHL's own address fields. */
+  address?: LeadAddress;
 };
+
+export type LeadAddress = { line1?: string; city?: string; state?: string; postalCode?: string; country?: string };
 
 export const ghlConnections = pgTable("ghl_connections", {
   accountId: bigint("account_id", { mode: "number" }).primaryKey(),

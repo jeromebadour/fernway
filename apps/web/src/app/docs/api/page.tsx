@@ -5,7 +5,7 @@ import { CodeBlock } from "@/ui/code-block";
 import { DocsFrame } from "@/ui/docs-frame";
 import { GDown, GManifest } from "@/ui/glyphs";
 
-export const metadata: Metadata = { title: "API reference · Fernway", description: "Fernway API v1: send a lead, track a lead." };
+export const metadata: Metadata = { title: "API reference · Fernway", description: "Fernway API v1: send a lead, track a lead, read a booking route's free times." };
 export const dynamic = "force-dynamic";
 
 // Everything below about requests and answers is read from the OpenAPI document, which is generated from the same
@@ -48,6 +48,7 @@ const sections = [
   { id: "limits", label: "Limits" },
   { id: "send", label: "POST /api/v1/leads" },
   { id: "get", label: "GET /api/v1/leads/{number}" },
+  { id: "slots", label: "GET /api/v1/routes/{route}/slots" },
   { id: "scans", label: "Scans" },
 ];
 
@@ -80,6 +81,7 @@ export default function ApiReference() {
   const doc = openApi(appUrl());
   const post = doc.paths["/api/v1/leads"].post as unknown as Op;
   const get = doc.paths["/api/v1/leads/{number}"].get as unknown as Op;
+  const slots = doc.paths["/api/v1/routes/{route}/slots"].get as unknown as Op;
   const base = appUrl();
 
   return (
@@ -87,7 +89,7 @@ export default function ApiReference() {
       <header className="dc-head">
         <p className="wb-eyebrow"><GManifest size={16} />Docs · API reference</p>
         <h1 className="fm-h1">Fernway API v1</h1>
-        <p className="wb-sec-lede">Two calls: send a lead, and track it. JSON in and out, at <code>{base}</code>. The same reference as a file: <a href="/api/v1/openapi.json"><GDown size={15} />OpenAPI 3.1</a>.</p>
+        <p className="wb-sec-lede">Three calls: send a lead, track it, and read a booking route&rsquo;s free times. JSON in and out, at <code>{base}</code>. The same reference as a file: <a href="/api/v1/openapi.json"><GDown size={15} />OpenAPI 3.1</a>.</p>
       </header>
 
       <section id="auth" className="dc-sec">
@@ -125,6 +127,18 @@ export default function ApiReference() {
         <CodeBlock label="200 answer" code={JSON.stringify(examples.lead817, null, 2)} />
         <h3>Answers</h3>
         <Responses op={get} />
+      </section>
+
+      <section id="slots" className="dc-sec">
+        <h2><span className="dc-verb dc-get">GET</span><code>/api/v1/routes/{"{route}"}/slots</code></h2>
+        <p className="dc-sum">{slots.summary}. {slots.description}</p>
+        <p>Show the times in your visitor&rsquo;s own time zone. If someone took the picked time in between, sending the lead answers <code>409</code> and nothing is made.</p>
+        <div className="dc-pair dc-pair-even">
+          <CodeBlock label="200 answer" code={JSON.stringify(examples.slots, null, 2)} />
+          <CodeBlock label="Then: a booking lead" code={JSON.stringify(examples.booking, null, 2)} />
+        </div>
+        <h3>Answers</h3>
+        <Responses op={slots} />
       </section>
 
       <section id="scans" className="dc-sec">

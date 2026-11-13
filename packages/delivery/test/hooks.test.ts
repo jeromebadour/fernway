@@ -114,6 +114,16 @@ describe("endpoints and deliveries", () => {
     expect(JSON.parse(heard.find((x) => JSON.parse(x.body).type === "lead.scored")!.body).data.score).toEqual({ score: 4, summary: "Wants a trial.", signals: ["Clear need"] });
   });
 
+  it("carries the lead's address as its own object", async () => {
+    const r = await ingestLead(testDeps(app.db, null).deps, acc, { idempotencyKey: "hook-address-0001", source: "form", route: "trial",
+      contact: { email: "dana@example.com", address: { line1: "14 Cedar Ln", city: "Tacoma", state: "WA" } } });
+    if (!r.ok) throw new Error(r.problems.join(", "));
+    await noteHookEvents(ctx());
+    await sendDueHooks(ctx());
+    const mine = heard.map((x) => JSON.parse(x.body)).find((b) => b.data?.waybill === r.waybill.number);
+    expect(mine.data.contact).toEqual({ email: "dana@example.com", address: { line1: "14 Cedar Ln", city: "Tacoma", state: "WA" } });
+  });
+
   it("tries a refused call again on the leads' clock with the same body, and keeps what came back", async () => {
     await send("second");
     await noteHookEvents(ctx());

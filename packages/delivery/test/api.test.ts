@@ -15,13 +15,21 @@ describe("the API's contract", () => {
     const contact = body.properties.contact as { properties: Record<string, unknown> };
     expect(Object.keys(contact.properties)).toContain("phone");
     expect(JSON.stringify(doc)).toContain('"operationId":"getLead"');
+    expect(Object.keys(contact.properties)).toContain("address");
+    const slots = doc.paths["/api/v1/routes/{route}/slots"].get;
+    expect(slots.operationId).toBe("getSlots");
+    expect(Object.keys(slots.responses).sort()).toEqual(["200", "401", "404", "422", "429", "503"]);
+    expect(Object.keys(doc.paths["/api/v1/leads"].post.responses)).toContain("409");
     expect(() => JSON.parse(JSON.stringify(doc))).not.toThrow();
   });
 });
 
 describe("the docs' examples", () => {
   it("are each real: they pass the schema they illustrate", async () => {
-    const { examples, apiAccepted, apiProblem, apiLead } = await import("../src/api.js");
+    const { examples, apiAccepted, apiProblem, apiLead, apiSlots } = await import("../src/api.js");
+    expect(apiLeadBody.safeParse(examples.booking).success).toBe(true);
+    expect(apiSlots.safeParse(examples.slots).success).toBe(true);
+    expect(apiProblem.safeParse(examples.taken).success).toBe(true);
     expect(apiLeadBody.safeParse(examples.lead).success).toBe(true);
     expect(apiAccepted.safeParse(examples.accepted).success).toBe(true);
     expect(apiProblem.safeParse(examples.refused).success).toBe(true);
@@ -34,5 +42,7 @@ describe("the docs' examples", () => {
     };
     for (const [k, v] of Object.entries(body.properties)) expect(v.description, k).toBeTruthy();
     for (const [k, v] of Object.entries(body.properties.contact!.properties!)) expect(v.description, k).toBeTruthy();
+    const address = body.properties.contact!.properties!.address as { properties: Record<string, { description?: string }> };
+    for (const [k, v] of Object.entries(address.properties)) expect(v.description, `address.${k}`).toBeTruthy();
   });
 });

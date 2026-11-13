@@ -70,6 +70,8 @@ export const GSignOut = (p: P) => (<S {...p}><path d="M9 3H3v14h6" /><path d="M7
 // Field kinds (each its own glyph, shown inside the field).
 export const GBuilding = (p: P) => (<S {...p}><rect x="4" y="2" width="12" height="16" /><path d="M7 6h2M11 6h2M7 10h2M11 10h2M9 18v-4h2v4" /></S>);
 export const GPhone = (p: P) => (<S {...p}><rect x="5" y="2" width="10" height="16" /><path d="M9 15h2" /></S>);
+/** A place: a lead's address. */
+export const GPin = (p: P) => (<S {...p}><path d="M10 18L4.5 10.5A6.5 6.5 0 1 1 15.5 10.5z" /><rect x="8.5" y="6.5" width="3" height="3" fill="currentColor" stroke="none" /></S>);
 export const GGlobe = (p: P) => (<S {...p}><rect x="2" y="2" width="16" height="16" /><path d="M2 10h16M10 2c-3 3-3 13 0 16M10 2c3 3 3 13 0 16" /></S>);
 export const GNote = (p: P) => (<S {...p}><path d="M3 3h14v10l-5 5H3z" /><path d="M12 18v-5h5" /><path d="M6 7h8M6 10h5" /></S>);
 export const GCaps = (p: P) => (<S {...p}><path d="M10 3l7 7h-4v4H7v-4H3z" /><path d="M7 17h6" /></S>);

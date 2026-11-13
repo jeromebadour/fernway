@@ -7,6 +7,7 @@
 // A delivery is tried again on the leads' own clock (8 tries over 24 hours) and kept 30 days with what was sent and
 // what came back. Endpoints must be https and public: an address that resolves to a private or local network is
 // refused at the moment of connecting (not only when made), so no endpoint can reach inside Fernway's box.
+import type { LeadContact } from "./schema.js";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { lookup as dnsLookup } from "node:dns";
 import { request as httpRequest } from "node:http";
@@ -165,7 +166,7 @@ export type HookPayload = {
   id: string; type: HookEvent | "fernway.test"; created: string;
   data: {
     waybill: string; state: string; route: { key: string; label: string }; source: string; receipt: string; reason: string | null;
-    contact: Record<string, string>; ghl: { contactId: string | null; opportunityId: string | null };
+    contact: LeadContact; ghl: { contactId: string | null; opportunityId: string | null };
     score: { score: number; summary: string | null; signals: string[] } | null; pickedUpAt: string; updatedAt: string;
   } | { message: string };
 };
@@ -174,7 +175,8 @@ type Ctx = { db: Db; key: Buffer; appUrl: string };
 
 function bodyFor(c: Ctx, id: string, type: HookEvent, s: typeof shipments.$inferSelect, route: { key: string; label: string },
   sc: { score: number | null; summary: string | null; signals: string[] } | null): HookPayload {
-  const contact = Object.fromEntries(Object.entries(s.contact).filter(([, v]) => typeof v === "string" && v !== "")) as Record<string, string>;
+  // Every field the lead came with, the address as its own object; empty strings left out.
+  const contact = Object.fromEntries(Object.entries(s.contact).filter(([k, v]) => (typeof v === "string" && v !== "") || (k === "address" && v && typeof v === "object"))) as LeadContact;
   return {
     id, type, created: new Date().toISOString(),
     data: {

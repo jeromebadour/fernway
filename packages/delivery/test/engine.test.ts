@@ -304,3 +304,29 @@ async function noteSetup() {
   const { deps, scheduled } = testDeps(handle.db, fakeConnection());
   return { ghl, deps, scheduled, accountId };
 }
+
+describe("an address", () => {
+  it("is checked at the door: tidied, two-letter country, only its own parts, not empty", async () => {
+    const { deps } = testDeps(handle.db, fakeConnection());
+    const ok = await ingestLead(deps, accountId, lead({ contact: { email: "dana@example.com", address: { line1: " 14 Cedar Ln ", city: "Tacoma", state: "WA", postalCode: "98406", country: "us" } } }));
+    if (!ok.ok) throw new Error(ok.problems.join("; "));
+    expect((await shipment(ok.waybill.id)).contact.address).toEqual({ line1: "14 Cedar Ln", city: "Tacoma", state: "WA", postalCode: "98406", country: "US" });
+    const bad = async (address: unknown) => {
+      const r = await ingestLead(deps, accountId, lead({ contact: { email: "dana@example.com", address } }));
+      return r.ok ? "accepted" : r.problems.join("; ");
+    };
+    expect(await bad({ line1: "14 Cedar Ln", country: "USA" })).toMatch(/^contact\.address\.country: a two-letter country code/);
+    expect(await bad({ line1: "14 Cedar Ln", county: "Pierce" })).toMatch(/county/);
+    expect(await bad({})).toMatch(/^contact\.address: at least one part of the address/);
+  });
+
+  it("goes to GHL's own address fields on the contact", async () => {
+    const { deps } = testDeps(handle.db, fakeConnection());
+    const r = await ingestLead(deps, accountId, lead({ contact: { email: "dana2@example.com", address: { line1: "14 Cedar Ln", city: "Tacoma", state: "WA", postalCode: "98406", country: "US" } } }));
+    if (!r.ok) throw new Error(r.problems.join("; "));
+    expect(await deliverTry(deps, r.waybill.id, 1)).toBe("signed");
+    const contactCall = ghl.requests.find((q) => q.path === "contact")!;
+    expect(contactCall.body).toMatchObject({ address1: "14 Cedar Ln", city: "Tacoma", state: "WA", postalCode: "98406", country: "US" });
+    expect(contactCall.body).not.toHaveProperty("address");
+  });
+});
