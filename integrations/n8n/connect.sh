@@ -46,13 +46,15 @@ json.dump([{"id": "fernwayGoogleSa1", "name": "Fernway Google service account", 
 PY
 unset key
 c=$("${n8[@]}" ps -q n8n)
-docker cp -q "$cred" "$c:/tmp/cred.json"; shred -u "$cred"
-docker exec -u node "$c" sh -c 'n8n import:credentials --input=/tmp/cred.json >/dev/null; rc=$?; rm -f /tmp/cred.json; exit $rc'
+# Streamed in as n8n's own user (a docker cp file is root's, 600: n8n can neither read nor remove it), read, removed.
+docker exec -i -u node "$c" sh -c 'umask 077; cat > /tmp/cred.json; n8n import:credentials --input=/tmp/cred.json >/dev/null; rc=$?; rm -f /tmp/cred.json; exit $rc' < "$cred" \
+  || { shred -u "$cred"; echo "   n8n could not import the credential"; exit 1; }
+shred -u "$cred"
 echo "   credential Fernway Google service account in n8n (encrypted with n8n's own key)"
 
 echo "== 4. the workflow"
-docker cp -q "$here/fernway-hot-leads.json" "$c:/tmp/wf.json"
-docker exec -u node "$c" sh -c 'n8n import:workflow --input=/tmp/wf.json >/dev/null && n8n publish:workflow --id=FernwayHotLeads1 >/dev/null; rc=$?; rm -f /tmp/wf.json; exit $rc'
+docker exec -i -u node "$c" sh -c 'cat > /tmp/wf.json; n8n import:workflow --input=/tmp/wf.json >/dev/null && n8n publish:workflow --id=FernwayHotLeads1 >/dev/null; rc=$?; rm -f /tmp/wf.json; exit $rc' < "$here/fernway-hot-leads.json" \
+  || { echo "   n8n could not import the workflow"; exit 1; }
 "${n8[@]}" up -d --force-recreate --quiet-pull >/dev/null 2>&1
 for _ in $(seq 1 40); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3104/healthz/readiness)" = 200 ] && break; sleep 3; done
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -d '{}')
