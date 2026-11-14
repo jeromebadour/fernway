@@ -742,10 +742,11 @@ jobs:
           SECRET=$($W hook 1 "Laravel CI" http://host.docker.internal:8899/fernway/webhook signed | tail -1)
           echo "$SECRET" | grep -Eq '^whsec_'
           PKG=$PWD/integrations/laravel
-          cd /tmp && composer create-project laravel/laravel lv "^13.0" --prefer-dist --no-interaction --no-progress -q
+          cd /tmp && composer create-project laravel/laravel lv "^13.0" --prefer-dist --no-interaction --no-progress
           cd lv
-          composer config repositories.fernway "{\"type\": \"path\", \"url\": \"$PKG\", \"options\": {\"symlink\": false}}"
-          composer require jeromebadour/fernway-laravel:@dev --no-interaction --no-progress -q
+          # The package from this repo, as the version it will be published as (a path repository can't read one from git here).
+          composer config repositories.fernway "{\"type\": \"path\", \"url\": \"$PKG\", \"options\": {\"symlink\": false, \"versions\": {\"jeromebadour/fernway-laravel\": \"1.0.0\"}}}"
+          composer require "jeromebadour/fernway-laravel:1.0.0" --no-interaction --no-progress
           printf '\nFERNWAY_URL=http://127.0.0.1:3103\nFERNWAY_KEY=%s\nFERNWAY_ROUTE=callback\nFERNWAY_WEBHOOK_SECRET=%s\nQUEUE_CONNECTION=sync\n' "$KEY" "$SECRET" >> .env
           # The app's own listeners, as an app would write them: each event as a line in a file.
           python3 - <<'PY'
