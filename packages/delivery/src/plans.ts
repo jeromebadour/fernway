@@ -1,4 +1,4 @@
-// What each account may use, from its plan (Kami 2026-11-10 03:30, the rates on /pricing). One place decides it; every
+// What each account may use, from its plan (2026-11-10 03:30, the rates on /pricing). One place decides it; every
 // gate asks here. Nothing is ever deleted by a plan: a feature the plan doesn't cover is refused when someone sets it up,
 // and paused (never removed) if it was set up before, so moving up brings it back as it was.
 //

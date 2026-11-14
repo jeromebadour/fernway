@@ -2,7 +2,7 @@
 # The off-box copy of Fernway's backups, sourced by ops/backup.sh and ops/restore-test.sh (as root on the box).
 #
 # Each dump is encrypted on the box with age before it leaves, so the copy in Cloudflare R2 can't be read there; only
-# the box's key (/srv/fernway/offsite-age.key, root only, with a copy on Kami's PC) opens it. The R2 key in
+# the box's key (/srv/fernway/offsite-age.key, root only, with a copy on the owner's own computer) opens it. The R2 key in
 # /srv/fernway/offsite.env (root only) works on one bucket only, from the box's address only.
 #
 # Off unless /srv/fernway/offsite.env exists. Tests point OFFSITE_REMOTE at a folder instead (":local:/tmp/offsite").

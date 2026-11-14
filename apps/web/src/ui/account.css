@@ -288,6 +288,7 @@
 .sc-copy svg { color: var(--go); }
 .sc-prove { margin-top: 22px; }
 .sc-ask { margin-top: 20px; }
+.sc-ask > .fm-field + fieldset { margin-top: 20px; }
 .sc-strip-wrap { margin-top: 18px; }
 .sc-strip { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 0; border: 1px solid rgba(134,194,143,0.4); }
 .sc-strip li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px dashed rgba(170,196,225,0.22); background: rgba(134,194,143,0.05); }
@@ -434,4 +435,6 @@
 .cf-t { margin: 0; font-weight: 600; color: var(--paper); }
 .cf-l { margin: 3px 0 0; font-size: 14px; color: #cfd8e3; }
 @media (max-width: 700px) { .cf { grid-template-columns: auto minmax(0, 1fr); } .cf .ac-confirm { grid-column: 1 / -1; } }
+/* On a phone a notice's button goes under its words, so the words keep the width. */
+@media (max-width: 700px) { .nt { grid-template-columns: auto minmax(0, 1fr); } .nt > a.fm-btn, .nt > button { grid-column: 2; justify-self: start; } }
 .bl-cf { margin-top: 16px; }

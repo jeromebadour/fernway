@@ -18,7 +18,7 @@ type FieldSpec = { key: Key; label: string; hint: string; type: "text" | "email"
 // What each field holds, for its glyph (ui/field.tsx).
 const kindOf: Record<Key, FieldKind> = { firstName: "name", lastName: "name", email: "email", phone: "phone", companyName: "company", website: "website", message: "message" };
 
-// Each field helps as you type (BUILD-RULES, Kami 2026-11-10): what it takes, an example, and only what it can hold.
+// Each field helps as you type (BUILD-RULES, 2026-11-10): what it takes, an example, and only what it can hold.
 export const fieldSet: Record<Key, FieldSpec> = Object.fromEntries(([
   { key: "firstName", label: "First name", hint: "", type: "text", required: true, placeholder: "e.g. Lena", autoComplete: "given-name", half: true, max: 80 },
   { key: "lastName", label: "Last name", hint: "", type: "text", placeholder: "e.g. Hartmann", autoComplete: "family-name", half: true, max: 80 },

@@ -1,7 +1,7 @@
 "use client";
 // "What a lost lead costs you": the visitor's own numbers, nothing invented. Every field starts at an example the
 // visitor is told to replace; the result is plain arithmetic shown step by step.
-// Fields help as you type (Kami 2026-11-10): the unit sits in the field ($, %, a month), only what the field can hold
+// Fields help as you type (2026-11-10): the unit sits in the field ($, %, a month), only what the field can hold
 // gets in (digits, one decimal point where a fraction makes sense), thousands are grouped as you type, a percentage
 // can't pass 100, the arrow keys step the value, and each field says in one line what to put in it.
 import { useState } from "react";

@@ -13,7 +13,7 @@ import { createDb, freshDatabase } from "./support.js";
 let database: Awaited<ReturnType<typeof freshDatabase>>;
 let app: ReturnType<typeof createDb>;
 let owner: ReturnType<typeof createDb>;
-let kami: Staff;
+let jerome: Staff;
 let mayaId: number, harbor: number;
 
 const box = (o: Partial<BoxReading> = {}): BoxReading => ({
@@ -30,7 +30,7 @@ beforeAll(async () => {
   if (!j.ok || !m.ok) throw new Error("sign-up");
   mayaId = m.userId; harbor = m.accountId;
   await app.db.insert(staff).values({ userId: j.userId, role: "owner" });
-  kami = { userId: j.userId, name: "Jerome Badour", role: "owner" };
+  jerome = { userId: j.userId, name: "Jerome Badour", role: "owner" };
 });
 afterAll(async () => {
   await app.pool.end(); await owner.pool.end();
@@ -39,24 +39,24 @@ afterAll(async () => {
 
 describe("staff", () => {
   it("opens the console only with two-step sign-in on", async () => {
-    expect(await staffOf(app.db, kami.userId)).toBeNull();
-    await app.db.update(users).set({ totpSealed: "v1.x.y.z", totpEnabledAt: new Date() }).where(eq(users.id, kami.userId));
-    expect(await staffOf(app.db, kami.userId)).toEqual(kami);
+    expect(await staffOf(app.db, jerome.userId)).toBeNull();
+    await app.db.update(users).set({ totpSealed: "v1.x.y.z", totpEnabledAt: new Date() }).where(eq(users.id, jerome.userId));
+    expect(await staffOf(app.db, jerome.userId)).toEqual(jerome);
     expect(await staffOf(app.db, mayaId)).toBeNull();
   });
 
   it("lets only the owner add, change and remove staff, each on the record", async () => {
     const support: Staff = { userId: mayaId, name: "Maya", role: "support" };
     expect((await addStaff(app.db, support, "x@y.com", "viewer")).ok).toBe(false);
-    expect(await addStaff(app.db, kami, "nobody@nowhere.com", "viewer")).toEqual({ ok: false, problems: ["email: no Fernway account has this email; they sign up first"] });
-    expect((await addStaff(app.db, kami, "MAYA@harborphysio.com", "owner")).ok).toBe(false);
-    expect(await addStaff(app.db, kami, "MAYA@harborphysio.com", "viewer")).toEqual({ ok: true });
-    expect((await addStaff(app.db, kami, "maya@harborphysio.com", "viewer")).ok).toBe(false);
-    expect(await setStaffRole(app.db, kami, mayaId, "support")).toEqual({ ok: true });
-    expect((await setStaffRole(app.db, kami, kami.userId, "viewer")).ok).toBe(false);
+    expect(await addStaff(app.db, jerome, "nobody@nowhere.com", "viewer")).toEqual({ ok: false, problems: ["email: no Fernway account has this email; they sign up first"] });
+    expect((await addStaff(app.db, jerome, "MAYA@harborphysio.com", "owner")).ok).toBe(false);
+    expect(await addStaff(app.db, jerome, "MAYA@harborphysio.com", "viewer")).toEqual({ ok: true });
+    expect((await addStaff(app.db, jerome, "maya@harborphysio.com", "viewer")).ok).toBe(false);
+    expect(await setStaffRole(app.db, jerome, mayaId, "support")).toEqual({ ok: true });
+    expect((await setStaffRole(app.db, jerome, jerome.userId, "viewer")).ok).toBe(false);
     const list = await staffList(app.db);
     expect(list.map((s) => [s.name, s.role, s.twoStep])).toEqual([["Jerome Badour", "owner", true], ["Maya Lindqvist", "support", false]]);
-    expect(await removeStaff(app.db, kami, mayaId)).toEqual({ ok: true });
+    expect(await removeStaff(app.db, jerome, mayaId)).toEqual({ ok: true });
     const log = await operatorAuditView(app.db);
     expect(log.rows.map((r) => [r.action, r.target, r.detail])).toEqual([
       ["staff.removed", "Maya Lindqvist", ""], ["staff.role", "Maya Lindqvist", "now support"], ["staff.added", "Maya Lindqvist", "as viewer"],
@@ -98,10 +98,10 @@ describe("watchers and incidents", () => {
     expect(v.rows).toHaveLength(1);
     expect(v.rows[0]).toMatchObject({ watcher: "disk", level: "down", first: "85% used", worst: "94% used", closedAt: null });
 
-    expect((await acknowledge(app.db, { ...kami, role: "viewer" }, v.rows[0]!.id, "")).ok).toBe(false);
-    expect(await acknowledge(app.db, kami, v.rows[0]!.id, "Old backups filling /srv; pruning")).toEqual({ ok: true });
-    expect((await acknowledge(app.db, kami, v.rows[0]!.id, "")).ok).toBe(false);
-    expect(await acknowledge(app.db, kami, v.rows[0]!.id, "Pruned to 14 days")).toEqual({ ok: true });
+    expect((await acknowledge(app.db, { ...jerome, role: "viewer" }, v.rows[0]!.id, "")).ok).toBe(false);
+    expect(await acknowledge(app.db, jerome, v.rows[0]!.id, "Old backups filling /srv; pruning")).toEqual({ ok: true });
+    expect((await acknowledge(app.db, jerome, v.rows[0]!.id, "")).ok).toBe(false);
+    expect(await acknowledge(app.db, jerome, v.rows[0]!.id, "Pruned to 14 days")).toEqual({ ok: true });
 
     expect(await recordIncidents(app.db, disk("ok", "61% used"))).toEqual({ opened: 0, closed: 1 });
     v = await incidentsView(app.db);
@@ -120,12 +120,12 @@ describe("accounts, queue and the overview", () => {
     expect((await accountsView(app.db, { q: "100%_" })).total).toBe(0);
 
     const before = (await accountDetail(app.db, harbor))!.trialEndsAt!;
-    const r = await extendTrial(app.db, kami, harbor);
+    const r = await extendTrial(app.db, jerome, harbor);
     expect(r.ok).toBe(true);
     if (r.ok) expect(Date.parse(r.endsAt) - Date.parse(before)).toBeGreaterThan(6.9 * 86_400_000);
     await app.db.update(accounts).set({ plan: "growth" }).where(eq(accounts.id, harbor));
-    expect((await extendTrial(app.db, kami, harbor)).ok).toBe(false);
-    expect((await extendTrial(app.db, { ...kami, role: "viewer" }, harbor)).ok).toBe(false);
+    expect((await extendTrial(app.db, jerome, harbor)).ok).toBe(false);
+    expect((await extendTrial(app.db, { ...jerome, role: "viewer" }, harbor)).ok).toBe(false);
     expect((await operatorAuditView(app.db)).rows[0]).toMatchObject({ action: "account.trial_extended", account: "Harbor Physio" });
   });
 
