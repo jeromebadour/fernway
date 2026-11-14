@@ -66,7 +66,7 @@ export function SiteFooter() {
         </div>
         <nav className="wb-foot-cols" aria-label="Footer">
           <div><p>Product</p><Link href="/#how">How a lead travels</Link><Link href="/delivery">How delivery works</Link><Link href="/demo">Book a demo</Link><Link href="/track">Track a lead</Link><Link href="/pricing">Pricing</Link><Link href="/break-it">Live demo</Link><Link href="/status">Status</Link></div>
-          <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link><Link href="/docs/wordpress">WordPress</Link></div>
+          <div><p>Developers</p><Link href="/docs">Docs</Link><Link href="/docs/api">API</Link><Link href="/docs/wordpress">WordPress</Link><Link href="/docs/laravel">Laravel</Link></div>
           <div><p>Fernway</p><Link href="/contact">Contact sales</Link><Link href="/about">About</Link><Link href="/changelog">Changelog</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div>
         </nav>
       </div>
