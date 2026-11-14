@@ -2,11 +2,11 @@ import Link from "next/link";
 import "@/ui/site.css";
 import { BuilderCard, JEROME } from "@/ui/builder";
 import { RetryClock } from "@/ui/retry-clock";
-import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
+import { SiteFooter, SiteHeader, signedIn, Thumb } from "@/ui/site";
 import { perLead, rates } from "@/ui/rates";
 import {
   GRoute, GScan, GManifest, GPrice, GKey, GCheck, GResend, GHand,
-  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GSheet, GHold, GShield, GOut,
+  GFunnel, GBlocks, GWidget, GPackage, GNodes, GLoop, GCard, GSheet, GHold, GShield, GOut, GGrid,
 } from "@/ui/glyphs";
 
 const scans = [
@@ -57,7 +57,8 @@ const worksWith = [
   { Glyph: GSheet, name: "Google Sheets" },
 ];
 
-export default function Landing() {
+export default async function Landing() {
+  const me = await signedIn();
   return (
     <div className="wb">
       <div className="wb-first">
@@ -97,7 +98,9 @@ export default function Landing() {
             refuses, and keeps the receipt. Nothing goes missing in the hand-off.
           </p>
           <div className="wb-ctas">
-            <Link className="wb-go wb-go-lg" href="/trial"><GRoute />Start a 14-day trial</Link>
+            {me
+              ? <Link className="wb-go wb-go-lg" href="/console"><GGrid />Open your console</Link>
+              : <Link className="wb-go wb-go-lg" href="/trial"><GRoute />Start a 14-day trial</Link>}
             <Link className="wb-ghost wb-ghost-lg" href="/break-it"><GScan />Track a lead in the demo</Link>
           </div>
           <dl className="wb-manifest">
@@ -239,7 +242,9 @@ export default function Landing() {
           ))}
         </div>
         <div className="wb-rates-foot">
-          <Link className="wb-go" href="/trial"><GRoute size={16} />Start a 14-day trial</Link>
+          {me
+            ? <Link className="wb-go" href="/account/billing"><GCard size={16} />Your plan and billing</Link>
+            : <Link className="wb-go" href="/trial"><GRoute size={16} />Start a 14-day trial</Link>}
           <Link className="wb-link" href="/pricing"><GPrice size={16} />Every rate, and what a lost lead costs you</Link>
         </div>
       </section>

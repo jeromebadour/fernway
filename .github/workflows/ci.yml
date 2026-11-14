@@ -731,6 +731,12 @@ jobs:
           # Profile saves; sign out ends the session.
           test "$(post /api/account/profile '{"name":"Lena H.","company":"Northpine Dental Group","timeZone":"Europe/Paris"}')" = 200
           curl -s -b $J $B/account | grep -q "Northpine Dental Group"
+          # Signed in, the public pages offer the console and the person, not sign in and a trial; signed out, unchanged.
+          curl -s -b $J $B/ > /tmp/in.html; curl -s $B/ > /tmp/out.html
+          grep -q 'href="/console"' /tmp/in.html; grep -q "Open your console" /tmp/in.html; grep -q 'href="/account"' /tmp/in.html
+          ! grep -q 'href="/sign-in"' /tmp/in.html || exit 1; ! grep -q "Start a 14-day trial" /tmp/in.html || exit 1
+          grep -q 'href="/sign-in"' /tmp/out.html; grep -q "Start a 14-day trial" /tmp/out.html; ! grep -q 'href="/console"' /tmp/out.html || exit 1
+          curl -s -b $J $B/pricing | grep -q "in billing"
           test "$(post /api/account/sign-out '{}')" = 200
           test "$(code /account)" = 307
           # A wrong email and a wrong password get the same answer; the right one signs in.
