@@ -2,6 +2,7 @@
 
 namespace Fernway\Laravel\Tests;
 
+use Fernway\Laravel\Events;
 use Fernway\Laravel\Events\LeadHeld;
 use Fernway\Laravel\Events\LeadScored;
 use Fernway\Laravel\Events\LeadSignedFor;
@@ -11,6 +12,9 @@ use RuntimeException;
 
 class WebhookTest extends TestCase
 {
+    /** Every event this package fires from a webhook: a refused call must fire none of them (Laravel's own request events still run). */
+    private const OURS = [Events\LeadPickedUp::class, Events\LeadSignedFor::class, Events\LeadHeld::class, Events\LeadReturned::class, Events\LeadScored::class, Events\WebhookTest::class];
+
     private static function body(string $type = 'lead.signed', string $id = 'evt_3fJ9kQ0vLr2mXp7aZt1cWn8e', array $data = []): array
     {
         return ['id' => $id, 'type' => $type, 'created' => '2026-11-12T14:03:11.402Z',
@@ -37,21 +41,25 @@ class WebhookTest extends TestCase
 
     public function test_a_wrong_secret_a_missing_signature_or_an_old_call_is_refused(): void
     {
-        Event::fake();
+        Event::fake(self::OURS);
         $this->webhook(self::body(), secret: 'whsec_someone_else')->assertStatus(400);
         $this->webhook(self::body(), t: time() - 301)->assertStatus(400);
         $this->postJson('/fernway/webhook', self::body())->assertStatus(400);
-        Event::assertNothingDispatched();
+        foreach (self::OURS as $event) {
+            Event::assertNotDispatched($event);
+        }
     }
 
     public function test_the_body_is_checked_as_sent_so_one_changed_byte_fails(): void
     {
-        Event::fake();
+        Event::fake(self::OURS);
         $raw = json_encode(self::body());
         $t = time();
         $sig = 't='.$t.',v1='.hash_hmac('sha256', $t.'.'.$raw, self::SECRET);
         $this->call('POST', '/fernway/webhook', [], [], [], ['HTTP_FERNWAY_SIGNATURE' => $sig, 'CONTENT_TYPE' => 'application/json'], str_replace('00817', '00818', $raw))->assertStatus(400);
-        Event::assertNothingDispatched();
+        foreach (self::OURS as $event) {
+            Event::assertNotDispatched($event);
+        }
     }
 
     public function test_a_retry_of_the_same_delivery_fires_once(): void
@@ -81,8 +89,10 @@ class WebhookTest extends TestCase
 
     public function test_an_event_this_version_does_not_know_is_taken_quietly(): void
     {
-        Event::fake();
+        Event::fake(self::OURS);
         $this->webhook(self::body('lead.something_new'))->assertOk()->assertJson(['known' => false]);
-        Event::assertNothingDispatched();
+        foreach (self::OURS as $event) {
+            Event::assertNotDispatched($event);
+        }
     }
 }
