@@ -594,7 +594,7 @@ jobs:
           W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
           $W route 1 roof-check "Roof check" pipe_sales stage_booked roof-check calendar=cal_demo | grep -q "books on calendar"
           $W route 1 callback "Call back" pipe_sales stage_booked callback | grep -q "route callback"
-          KEY=$($W apikey 1 "WordPress CI" | tail -1)
+          KEY=$($W apikey 1 "WordPress CI" --wordpress | tail -1)
           WPDIR=$PWD/integrations/wordpress
           for f in $(find $WPDIR -name '*.php'); do php -l "$f" > /dev/null; done
           node --check $WPDIR/plugin/fernway/assets/form.js; node --check $WPDIR/plugin/fernway/blocks/form/editor.js
@@ -811,6 +811,21 @@ jobs:
           ! grep -q 'href="/sign-in"' /tmp/in.html || exit 1; ! grep -q "Start a 14-day trial" /tmp/in.html || exit 1
           grep -q 'href="/sign-in"' /tmp/out.html; grep -q "Start a 14-day trial" /tmp/out.html; ! grep -q 'href="/console"' /tmp/out.html || exit 1
           curl -s -b $J $B/pricing | grep -q "in billing"
+          # Plan limits, on Starter: a key for code is refused at making and at the door; a WordPress key is made and gets
+          # through; the console says when a trial has ended. Then back to the trial for the rest of the step.
+          ACC=$(psql -At -c "select m.account_id from memberships m join users u on u.id = m.user_id where u.email = '$E'")
+          psql -q -c "update accounts set plan = 'starter', billing_status = 'active', trial_ends_at = now() - interval '1 day' where id = $ACC"
+          test "$(post /api/account/keys '{"label":"Our app","kind":"api"}')" = 422; has "The API is on the Scale plan"
+          test "$(post /api/account/keys '{"label":"Our site","kind":"wordpress"}')" = 201
+          WPKEY=$(python3 -c "import json; print(json.load(open('/tmp/r.json'))['key'])")
+          CODEKEY=$($COMPOSE exec -T worker node apps/worker/dist/cli.js apikey $ACC "Made on the trial" | tail -1)
+          lead() { curl -s -o /tmp/r.json -w '%{http_code}' -H "Authorization: Bearer $1" -H 'content-type: application/json' --data '{"idempotencyKey":"plan-ci-0001","route":"nowhere","contact":{"email":"a@b.co"}}' $B/api/v1/leads; }
+          test "$(lead "$CODEKEY")" = 403; has "The API is on the Scale plan"
+          test "$(lead "$WPKEY")" = 422; has "no route called"
+          psql -q -c "update accounts set plan = null, billing_status = null where id = $ACC"
+          curl -s -b $J $B/console | grep -q "Your trial has ended"
+          psql -q -c "update accounts set trial_ends_at = now() + interval '14 days' where id = $ACC"
+          ! curl -s -b $J $B/console | grep -q "Your trial has ended" || exit 1
           test "$(post /api/account/sign-out '{}')" = 200
           test "$(code /account)" = 307
           # A wrong email and a wrong password get the same answer; the right one signs in.

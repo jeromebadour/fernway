@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { listKeys, MAX_KEYS } from "@fernway/delivery";
+import { entitlementFor, listKeys, MAX_KEYS } from "@fernway/delivery";
 import { delivery } from "@/lib/connect";
 import { requirePerson } from "@/lib/session";
 import { whenFor } from "@/lib/when-for";
@@ -27,7 +27,7 @@ export default async function Keys() {
         <h1 className="ac-h1">Keys that send leads as {m.accountName}.</h1>
       </header>
       {!m.emailConfirmed && <ConfirmFirst what="Making an API key" />}
-      <KeyList keys={keys} max={MAX_KEYS} canMake={m.emailConfirmed} />
+      <KeyList keys={keys} max={MAX_KEYS} canMake={m.emailConfirmed} apiOk={(await entitlementFor(delivery().db, m.accountId)).features.has("api")} />
     </>
   );
 }

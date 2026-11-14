@@ -3,21 +3,22 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "./db.js";
-import { apiKeys } from "./schema.js";
+import { apiKeys, type KeyKind } from "./schema.js";
 
 const ALPHA = "abcdefghijklmnopqrstuvwxyz0123456789";
 const pick = (n: number) => Array.from(randomBytes(n), (b) => ALPHA[b % 36]).join("");
 const hash = (secret: string) => createHash("sha256").update(secret).digest("hex");
 
-export async function createApiKey(db: Db, accountId: number, label: string) {
+/** A key for the account's own code (the API, on Scale) or for Fernway for WordPress (every plan). */
+export async function createApiKey(db: Db, accountId: number, label: string, kind: KeyKind = "api") {
   const prefix = pick(8);
   const secret = pick(32);
-  await db.insert(apiKeys).values({ accountId, prefix, secretHash: hash(secret), label });
+  await db.insert(apiKeys).values({ accountId, prefix, secretHash: hash(secret), label, kind });
   return { key: `fw_${prefix}_${secret}`, prefix };
 }
 
-/** The account a key belongs to, or null (wrong shape, unknown, wrong secret, revoked). Notes when it was last used. */
-export async function accountForKey(db: Db, raw: string | null | undefined): Promise<number | null> {
+/** The account a key belongs to and the key's kind, or null (wrong shape, unknown, wrong secret, revoked). Notes when it was last used. */
+export async function keyFor(db: Db, raw: string | null | undefined): Promise<{ accountId: number; kind: KeyKind } | null> {
   const m = raw?.trim().match(/^fw_([a-z0-9]{8})_([a-z0-9]{32})$/);
   if (!m) return null;
   const [row] = await db.select().from(apiKeys).where(and(eq(apiKeys.prefix, m[1]!), isNull(apiKeys.revokedAt)));
@@ -27,7 +28,12 @@ export async function accountForKey(db: Db, raw: string | null | undefined): Pro
   // At most once a minute, so a busy key doesn't write on every lead.
   await db.update(apiKeys).set({ lastUsedAt: sql`now()` })
     .where(and(eq(apiKeys.id, row.id), sql`(${apiKeys.lastUsedAt} is null or ${apiKeys.lastUsedAt} < now() - interval '1 minute')`));
-  return row.accountId;
+  return { accountId: row.accountId, kind: row.kind };
+}
+
+/** The account a key belongs to, or null. */
+export async function accountForKey(db: Db, raw: string | null | undefined): Promise<number | null> {
+  return (await keyFor(db, raw))?.accountId ?? null;
 }
 
 export async function revokeApiKey(db: Db, prefix: string): Promise<boolean> {

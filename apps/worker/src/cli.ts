@@ -100,11 +100,13 @@ try {
     }
     case "apikey": {
       const accountId = accountArg(args[0]);
-      const label = args.slice(1).join(" ").trim() || fail("a label, e.g. apikey 1 Website");
+      // --wordpress: a key for Fernway for WordPress (every plan; its leads always count as WordPress's).
+      const wordpress = args.includes("--wordpress");
+      const label = args.slice(1).filter((a) => a !== "--wordpress").join(" ").trim() || fail("a label, e.g. apikey 1 Website [--wordpress]");
       const [a] = await db.select().from(accounts).where(eq(accounts.id, accountId));
       if (!a) fail(`no account ${accountId}`);
-      const { key: apiKey, prefix } = await createApiKey(db, accountId, label);
-      console.log(`API key ${prefix} for "${a!.name}" (${label}). It is shown once; keep it somewhere safe:\n${apiKey}`);
+      const { key: apiKey, prefix } = await createApiKey(db, accountId, label, wordpress ? "wordpress" : "api");
+      console.log(`API key ${prefix} for "${a!.name}" (${label}${wordpress ? ", for WordPress" : ""}). It is shown once; keep it somewhere safe:\n${apiKey}`);
       break;
     }
     case "apikeys": {

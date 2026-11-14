@@ -9,6 +9,7 @@ import { ingestLead, type Deps } from "./engine.js";
 import { readable } from "./track.js";
 import type { Db } from "./db.js";
 import { audit, type Actor } from "./console.js";
+import { entitlementFor, lacking, notOnPlan } from "./plans.js";
 import type { Role } from "./schema.js";
 import { leadScores, routes, sheetLinks, sheetRows, shipments } from "./schema.js";
 
@@ -162,6 +163,8 @@ export type LinkResult = { ok: true; title: string } | { ok: false; problems: st
  *  Leads picked up from now on are written; replacing a link starts the new sheet from now. */
 export async function linkSheet(db: Db, sheets: Sheets, m: Actor & { role: Role }, input: string): Promise<LinkResult> {
   if (m.role !== "owner" && m.role !== "admin") return { ok: false, problems: ["only the owner or an admin may link a sheet"] };
+  const plan = await entitlementFor(db, m.accountId);
+  if (!plan.features.has("sheets")) return { ok: false, problems: [`sheet: ${notOnPlan("sheets", plan)}`] };
   const id = sheetIdFrom(input);
   if (!id) return { ok: false, problems: ["sheet: the link of a Google Sheet, like https://docs.google.com/spreadsheets/d/…"] };
   const t = await sheets.title(id);
@@ -211,7 +214,10 @@ export type SheetRun = { written: number; updated: number; retry: number; failed
 /** Writes what is new or changed, up to 40 rows a run, per linked account. */
 export async function syncSheets(c: { db: Db; sheets: Sheets }): Promise<SheetRun> {
   const run: SheetRun = { written: 0, updated: 0, retry: 0, failed: 0 };
-  const links = await c.db.select().from(sheetLinks);
+  const all = await c.db.select().from(sheetLinks);
+  // A sheet whose account's plan no longer has Sheets is paused, not unlinked: it catches up when the plan has them.
+  const paused = new Set(await lacking(c.db, all.map((l) => l.accountId), "sheets"));
+  const links = all.filter((l) => !paused.has(l.accountId));
   for (const l of links) {
     // New leads since the link get their row; then every row whose lead changed, or that failed and is due again.
     await c.db.execute(sql`
@@ -308,6 +314,10 @@ export async function setSheetIn(db: Db, sheets: Sheets | null, m: Actor & { rol
   if (m.role !== "owner" && m.role !== "admin") return { ok: false, problems: ["only the owner or an admin may change this"] };
   const [l] = await db.select().from(sheetLinks).where(eq(sheetLinks.accountId, m.accountId));
   if (!l) return { ok: false, problems: ["sheet: link a sheet first"] };
+  if (routeKey !== null) {
+    const plan = await entitlementFor(db, m.accountId);
+    if (!plan.features.has("sheets")) return { ok: false, problems: [`sheet: ${notOnPlan("sheets", plan)}`] };
+  }
   if (routeKey === null) {
     if (l.inRoute) {
       await db.update(sheetLinks).set({ inRoute: null, inError: null }).where(eq(sheetLinks.accountId, m.accountId));
@@ -351,7 +361,9 @@ export type InRun = { sent: number; refreshed: number; refused: number };
  *  state and note are written back only where they differ from what the row shows. */
 export async function readSheetsIn(c: { db: Db; sheets: Sheets; deps: Deps }): Promise<InRun> {
   const run: InRun = { sent: 0, refreshed: 0, refused: 0 };
-  const links = await c.db.select().from(sheetLinks).where(isNotNull(sheetLinks.inRoute));
+  const linked = await c.db.select().from(sheetLinks).where(isNotNull(sheetLinks.inRoute));
+  const paused = new Set(await lacking(c.db, linked.map((l) => l.accountId), "sheets"));
+  const links = linked.filter((l) => !paused.has(l.accountId));
   for (const l of links) {
     const r = await c.sheets.read(l.spreadsheetId, IN_TAB);
     if (!r.ok) {

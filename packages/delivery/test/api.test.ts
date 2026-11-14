@@ -21,7 +21,7 @@ describe("the API's contract", () => {
     expect(Object.keys(contact.properties)).toContain("address");
     const slots = doc.paths["/api/v1/routes/{route}/slots"].get;
     expect(slots.operationId).toBe("getSlots");
-    expect(Object.keys(slots.responses).sort()).toEqual(["200", "401", "404", "422", "429", "503"]);
+    expect(Object.keys(slots.responses).sort()).toEqual(["200", "401", "403", "404", "422", "429", "503"]);
     expect(Object.keys(doc.paths["/api/v1/leads"].post.responses)).toContain("409");
     expect(() => JSON.parse(JSON.stringify(doc))).not.toThrow();
   });

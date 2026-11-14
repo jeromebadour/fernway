@@ -113,6 +113,8 @@
 .nt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; max-width: 860px; margin: 0 0 26px; padding: 16px 18px;
   border: 1px solid rgba(92,200,184,0.4); border-left: 3px solid var(--go); background: rgba(92,200,184,0.06); }
 .nt > svg { color: var(--go); margin-top: 2px; }
+.nt-hz { border-color: rgba(227,176,79,0.45); } .nt-hz > svg { color: var(--hazard); }
+.nt > a.fm-btn { align-self: center; }
 .nt-title { margin: 0; font-weight: 600; font-size: 16px; color: var(--paper); }
 .nt-line { margin: 4px 0 0; font-size: 14.5px; color: #cfd8e3; }
 .nt button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; cursor: pointer; font: 500 13px var(--font-body);

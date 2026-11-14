@@ -148,6 +148,7 @@ export function openApi(serverUrl: string) {
             200: json(apiAccepted, "Sent before with this idempotencyKey: the same waybill."),
             400: problem("The body isn't JSON."),
             401: problem("No API key, or not a live one."),
+            403: problem("A key for your own code, on a plan without the API (Scale). A key for Fernway for WordPress works on every plan."),
             409: problem("Booking routes: the slot was taken since the slots were read. Nothing was made; read them again.", examples.taken),
             422: problem("The lead was refused at the door; nothing was made. Each problem names its field and what the field needs.", examples.refused),
             429: problem("Over the limit: 60 requests a minute per key. Retry-After gives the wait in seconds; the same idempotencyKey sends nothing twice."),
@@ -163,6 +164,7 @@ export function openApi(serverUrl: string) {
           responses: {
             200: json(apiSlots, "Free times, oldest first. An empty list means the calendar is full.", examples.slots),
             401: problem("No API key, or not a live one."),
+            403: problem("A key for your own code, on a plan without the API (Scale). A key for Fernway for WordPress works on every plan."),
             404: problem("No route with that key on this key's account."),
             422: problem("The route books no meetings (it names no calendar)."),
             429: problem("Over the limit: 60 requests a minute per key. Retry-After gives the wait in seconds."),
@@ -179,6 +181,7 @@ export function openApi(serverUrl: string) {
           responses: {
             200: json(apiLead, "The lead and its scans.", examples.lead817),
             401: problem("No API key, or not a live one."),
+            403: problem("A key for your own code, on a plan without the API (Scale). A key for Fernway for WordPress works on every plan."),
             404: problem("No lead with that number on this key's account."),
             429: problem("Over the limit: 60 requests a minute per key. Retry-After gives the wait in seconds."),
           },

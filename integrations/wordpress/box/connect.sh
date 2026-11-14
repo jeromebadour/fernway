@@ -21,7 +21,7 @@ if [ "$key_status" = 404 ] && [ "${2:-}" != --new ]; then
   echo "== the saved key already works; nothing changed (--new makes another)"
 else
   echo "== a new API key for account $account"
-  out=$(fernway apikey "$account" "Alder & Pike WordPress")
+  out=$(fernway apikey "$account" "Alder & Pike WordPress" --wordpress)
   # The first line names the key (its prefix, not the secret); the last line is the key itself.
   head -1 <<<"$out" | sed 's/ It is shown once.*//; s/^/   /'
   tail -1 <<<"$out" | tr -d '\n' | wp option update fernway_api_key --quiet

@@ -6,6 +6,7 @@ import { z } from "zod";
 import type Stripe from "stripe";
 import { formatWaybill } from "@fernway/core";
 import { createApiKey } from "./apikeys.js";
+import { entitlementFor, notOnPlan } from "./plans.js";
 import { open, seal } from "./crypto.js";
 import type { Db } from "./db.js";
 import type { Deps } from "./engine.js";
@@ -13,7 +14,8 @@ import type { GhlContact } from "./ghl.js";
 import { hashPassword, passwordMatches } from "./people.js";
 import { removeFromGhl } from "./retention.js";
 import {
-  accounts, apiKeys, clocks, dateStyles, ghlConnections, memberships, recoveryCodes, routes, sessions, shipments, stripeInvoices, users,
+  accounts, apiKeys, clocks, dateStyles, ghlConnections, keyKinds, memberships, recoveryCodes, routes, sessions, shipments, stripeInvoices, users,
+  type KeyKind,
   type Role,
 } from "./schema.js";
 
@@ -218,25 +220,32 @@ export async function signOutDevice(db: Db, userId: number, currentSessionId: nu
 // API keys in the app: owners and admins.
 
 export const MAX_KEYS = 20;
-export type KeyRow = { prefix: string; label: string; createdAt: string; madeBy: string | null; lastUsedAt: string | null; revokedAt: string | null };
+export type KeyRow = { prefix: string; label: string; kind: KeyKind; createdAt: string; madeBy: string | null; lastUsedAt: string | null; revokedAt: string | null };
 
 export async function listKeys(db: Db, accountId: number): Promise<KeyRow[]> {
   const rows = await db.select({ k: apiKeys, name: users.name }).from(apiKeys).leftJoin(users, eq(users.id, apiKeys.madeBy))
     .where(eq(apiKeys.accountId, accountId)).orderBy(sql`${apiKeys.revokedAt} is not null`, desc(apiKeys.createdAt));
   return rows.map(({ k, name }) => ({
-    prefix: k.prefix, label: k.label, createdAt: k.createdAt.toISOString(), madeBy: name ?? null,
+    prefix: k.prefix, label: k.label, kind: k.kind, createdAt: k.createdAt.toISOString(), madeBy: name ?? null,
     lastUsedAt: k.lastUsedAt?.toISOString() ?? null, revokedAt: k.revokedAt?.toISOString() ?? null,
   }));
 }
 
 const label = z.string().trim().min(1, "a name for the key, like the site or app that uses it").max(80, "80 characters at most");
 
-export async function makeKey(db: Db, accountId: number, userId: number, labelIn: unknown): Promise<{ ok: true; key: string; prefix: string } | Problems> {
+export async function makeKey(db: Db, accountId: number, userId: number, labelIn: unknown, kindIn: unknown = "api"): Promise<{ ok: true; key: string; prefix: string } | Problems> {
   const l = label.safeParse(labelIn);
   if (!l.success) return { ok: false, problems: [`label: ${l.error.issues[0]!.message}`] };
+  const kind = keyKinds.find((k) => k === kindIn);
+  if (!kind) return { ok: false, problems: ["kind: for your code, or for Fernway for WordPress"] };
+  // A key for the account's own code is the API: on a plan with it. A WordPress key works on every plan.
+  if (kind === "api") {
+    const plan = await entitlementFor(db, accountId);
+    if (!plan.features.has("api")) return { ok: false, problems: [`kind: ${notOnPlan("api", plan)}`] };
+  }
   const [n] = await db.select({ n: sql<number>`count(*)::int` }).from(apiKeys).where(and(eq(apiKeys.accountId, accountId), isNull(apiKeys.revokedAt)));
   if ((n?.n ?? 0) >= MAX_KEYS) return { ok: false, problems: [`label: an account holds ${MAX_KEYS} live keys at most; revoke one first`] };
-  const made = await createApiKey(db, accountId, l.data);
+  const made = await createApiKey(db, accountId, l.data, kind);
   await db.update(apiKeys).set({ madeBy: userId }).where(eq(apiKeys.prefix, made.prefix));
   return { ok: true, ...made };
 }
