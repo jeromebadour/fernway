@@ -23,6 +23,21 @@ add_action(
 	}
 );
 
+/**
+ * The four faces every page shows at first paint, asked for before the stylesheet names them, so the text is drawn in
+ * them from the start instead of swapping in and moving the page (Lighthouse measured the footer shifting on short
+ * pages). The other weights stay on demand.
+ */
+add_action(
+	'wp_head',
+	static function () {
+		foreach ( array( 'archivo-latin-400-normal', 'archivo-latin-700-normal', 'ibm-plex-mono-latin-400-normal', 'ibm-plex-mono-latin-500-normal' ) as $face ) {
+			echo '<link rel="preload" href="' . esc_url( get_theme_file_uri( "assets/fonts/$face.woff2" ) ) . '" as="font" type="font/woff2" crossorigin />' . "\n";
+		}
+	},
+	1
+);
+
 /** The line search results and link previews show: the page's own excerpt, when it has one. */
 add_action(
 	'wp_head',
