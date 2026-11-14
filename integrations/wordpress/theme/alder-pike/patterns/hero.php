@@ -25,10 +25,10 @@
 			<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"alder-pike/storm-season","args":{"part":"number"}}}},"className":"ap-days"} --><p class="ap-days">23</p><!-- /wp:paragraph -->
 			<!-- wp:group {"layout":{"type":"default"}} -->
 			<div class="wp-block-group">
-				<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"alder-pike/storm-season","args":{"part":"label"}}}},"className":"ap-days-label"} --><p class="ap-days-label"><?php esc_html_e( 'days until storm season', 'alder-pike' ); ?></p><!-- /wp:paragraph -->
-				<!-- wp:paragraph {"className":"ap-storm-note"} --><p class="ap-storm-note"><?php esc_html_e( 'Tacoma averages 5.6 in of rain in November. Last fall we fixed 214 leaks; 160 started at the flashing.', 'alder-pike' ); ?></p><!-- /wp:paragraph -->
+				<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"alder-pike/storm-season","args":{"part":"label"}}}},"className":"ap-days-label"} --><p class="ap-days-label"><?php esc_html_e( 'Days until storm season', 'alder-pike' ); ?></p><!-- /wp:paragraph -->
+				<!-- wp:paragraph {"className":"ap-storm-note"} --><p class="ap-storm-note"><?php esc_html_e( 'Tacoma averages 6.5 in of rain in November. Last fall we fixed 214 leaks; 160 started at the flashing.', 'alder-pike' ); ?></p><!-- /wp:paragraph -->
 				<!-- wp:html -->
-				<figure class="ap-chart" aria-hidden="true"><svg viewBox="0 0 360 40" preserveAspectRatio="none" width="100%" height="40"><g fill="#3c454b"><rect x="0" y="32" width="36" height="8"/><rect x="40" y="34" width="36" height="6"/><rect x="80" y="35" width="36" height="5"/><rect x="120" y="33" width="36" height="7"/><rect x="160" y="28" width="36" height="12"/><rect x="200" y="18" width="36" height="22"/></g><g fill="#86aecd"><rect x="240" y="3" width="36" height="37"/><rect x="280" y="0" width="36" height="40"/><rect x="320" y="5" width="36" height="35"/></g></svg></figure>
+				<figure class="ap-chart" aria-hidden="true" title="Tacoma rain, April to December (NOAA normals)"><svg viewBox="0 0 360 40" preserveAspectRatio="none" width="100%" height="40"><g fill="#3c454b"><rect x="0" y="32" width="36" height="8"/><rect x="40" y="34" width="36" height="6"/><rect x="80" y="35" width="36" height="5"/><rect x="120" y="33" width="36" height="7"/><rect x="160" y="28" width="36" height="12"/><rect x="200" y="18" width="36" height="22"/></g><g fill="#86aecd"><rect x="240" y="3" width="36" height="37"/><rect x="280" y="0" width="36" height="40"/><rect x="320" y="5" width="36" height="35"/></g></svg></figure>
 				<!-- /wp:html -->
 			</div>
 			<!-- /wp:group -->
@@ -63,6 +63,9 @@
 				<!-- /wp:group -->
 				<!-- wp:group {"className":"ap-tag","layout":{"type":"flex","flexWrap":"nowrap"}} -->
 				<div class="wp-block-group ap-tag"><!-- wp:paragraph {"className":"ap-grade"} --><p class="ap-grade">B</p><!-- /wp:paragraph --><!-- wp:paragraph --><p><?php esc_html_e( 'Vents and boots', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div>
+				<!-- /wp:group -->
+				<!-- wp:group {"className":"ap-legend","layout":{"type":"flex","flexWrap":"wrap"}} -->
+				<div class="wp-block-group ap-legend"><!-- wp:paragraph {"className":"ap-legend-good"} --><p class="ap-legend-good"><?php esc_html_e( 'A to B sound', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-legend-watch"} --><p class="ap-legend-watch"><?php esc_html_e( 'C watch it', 'alder-pike' ); ?></p><!-- /wp:paragraph --><!-- wp:paragraph {"className":"ap-legend-bad"} --><p class="ap-legend-bad"><?php esc_html_e( 'D to F fix before rain', 'alder-pike' ); ?></p><!-- /wp:paragraph --></div>
 				<!-- /wp:group -->
 			</div>
 			<!-- /wp:group -->

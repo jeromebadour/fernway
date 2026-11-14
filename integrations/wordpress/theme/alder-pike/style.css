@@ -111,6 +111,13 @@ p a:not(.wp-element-button), li > p a { text-decoration: underline; text-decorat
 .ap-roof .ap-tag:nth-of-type(2) { left: 18%; top: 46%; }
 .ap-roof .ap-tag:nth-of-type(3) { left: 3%; top: 80%; }
 .ap-roof .ap-tag:nth-of-type(4) { left: 53%; top: 72%; }
+/* The grades' legend, in the band under the drawing; on a phone it sits below the drawing. */
+.ap-roof .ap-legend { position: absolute; right: 3%; bottom: 4%; gap: 14px !important; margin: 0 !important; font-family: var(--ap-mono); font-size: 11.5px; color: var(--ap-coal); }
+.ap-legend p { margin: 0 !important; display: flex; align-items: center; gap: 6px; }
+.ap-legend p::before { content: ""; width: 10px; height: 10px; flex: none; background: var(--wp--preset--color--grade-good); }
+.ap-legend .ap-legend-watch::before { background: var(--wp--preset--color--grade-watch); }
+.ap-legend .ap-legend-bad::before { background: var(--wp--preset--color--grade-bad); }
+@media (max-width: 600px) { .ap-roof .ap-legend { position: static; padding: 10px 14px 12px; gap: 6px 14px !important; } }
 
 /* Grades: the letter in its colour. Written as text so the owner edits it like any word. */
 .ap-tag p, .ap-row > p, .ap-line-t p { margin: 0 !important; }

@@ -43,7 +43,7 @@ export function ConsoleFrame({ who, demo, plan, children }: {
 function PlanBar({ note }: { note: PlanNote }) {
   const title = note.kind === "ended" ? "Your trial has ended" : `This month: ${note.used.toLocaleString("en-US")} leads signed for, on a plan for ${note.leads.toLocaleString("en-US")}`;
   const line = note.kind === "ended"
-    ? "Forms, the embed and WordPress keep delivering. Bookings, Stripe payments, the API, webhooks out and Sheets wait, as you left them, until you pick a plan."
+    ? "Forms, the embed form and WordPress keep delivering. Bookings, Stripe payments, the API, webhooks out and Sheets wait, as you left them, until you pick a plan."
     : "Every lead is still delivered. Move up for next month, so the plan fits what you send.";
   return (
     <div className="nt nt-hz" role="status">
