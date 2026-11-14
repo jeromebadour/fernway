@@ -1,0 +1,35 @@
+{
+    "name": "jeromebadour/fernway-laravel",
+    "description": "Send your Laravel app's leads into GoHighLevel through Fernway, with retries, and hear back through its signed webhooks.",
+    "keywords": ["laravel", "gohighlevel", "ghl", "crm", "leads", "webhooks", "fernway"],
+    "homepage": "https://fernway.jeromebadour.com/docs/laravel",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [{ "name": "Jerome Badour", "homepage": "https://jeromebadour.com" }],
+    "require": {
+        "php": "^8.2",
+        "guzzlehttp/guzzle": "^7.8",
+        "illuminate/console": "^12.0|^13.0",
+        "illuminate/contracts": "^12.0|^13.0",
+        "illuminate/http": "^12.0|^13.0",
+        "illuminate/queue": "^12.0|^13.0",
+        "illuminate/routing": "^12.0|^13.0",
+        "illuminate/support": "^12.0|^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0|^11.0",
+        "phpunit/phpunit": "^11.5|^12.0"
+    },
+    "autoload": { "psr-4": { "Fernway\\Laravel\\": "src/" } },
+    "autoload-dev": { "psr-4": { "Fernway\\Laravel\\Tests\\": "tests/" } },
+    "extra": {
+        "laravel": {
+            "providers": ["Fernway\\Laravel\\FernwayServiceProvider"],
+            "aliases": { "Fernway": "Fernway\\Laravel\\Facades\\Fernway" }
+        }
+    },
+    "scripts": { "test": "phpunit" },
+    "config": { "sort-packages": true },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

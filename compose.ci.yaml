@@ -22,8 +22,11 @@ services:
       GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: http://fake-ghl:4010
       FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token
-      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl
+      # The stand-in GHL, and the CI machine itself, where the Laravel step runs a fresh Laravel app to receive webhooks.
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl,host.docker.internal
   worker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       FERNWAY_GHL_API: http://fake-ghl:4010
       # Claude score against the stand-in Claude in fake-ghl.mjs.
@@ -32,4 +35,5 @@ services:
       GOOGLE_SHEETS_KEY: ${CI_GOOGLE_SHEETS_KEY:-}
       FERNWAY_GOOGLE_API: http://fake-ghl:4010
       FERNWAY_GOOGLE_TOKEN: http://fake-ghl:4010/token
-      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl
+      # The stand-in GHL, and the CI machine itself, where the Laravel step runs a fresh Laravel app to receive webhooks.
+      FERNWAY_WEBHOOK_INSECURE_HOSTS: fake-ghl,host.docker.internal
