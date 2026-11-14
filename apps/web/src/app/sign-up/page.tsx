@@ -44,7 +44,7 @@ export default async function SignUp() {
               <div className="wb-stamp au-stamp"><GSignUp size={15} />Your first</div>
             </div>
             <div className="wb-route">
-              <div><p className="wb-label">From</p><p>Your website<span>a form, the embed, WordPress or the API</span></p></div>
+              <div><p className="wb-label">From</p><p>Your website<span>a form, the embed form, WordPress or the API</span></p></div>
               <GRoute size={22} />
               <div><p className="wb-label">To</p><p>Your GoHighLevel<span>the pipeline you choose</span></p></div>
             </div>

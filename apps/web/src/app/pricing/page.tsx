@@ -16,7 +16,7 @@ const counting = [
   { G: GScan, tone: "in", what: "Sent twice by your site", rule: "Counts once.", how: "The same idempotency key keeps one waybill." },
   { G: GHold, tone: "hz", what: "Held or returned", rule: "Never counts.", how: "Until a resend gets it signed for." },
   { G: GRoute, tone: "go", what: "Over your plan", rule: "Still delivered.", how: "Nothing is cut off mid-month; we ask you to move up for the next one." },
-  { G: GClock, tone: "go", what: "Trial over, no plan yet", rule: "Still delivered.", how: "Forms, the embed and WordPress keep going; bookings, payments, the API, webhooks and Sheets wait as you left them." },
+  { G: GClock, tone: "go", what: "Trial over, no plan yet", rule: "Still delivered.", how: "Forms, the embed form and WordPress keep going; bookings, payments, the API, webhooks and Sheets wait as you left them." },
 ];
 
 export default async function Pricing() {

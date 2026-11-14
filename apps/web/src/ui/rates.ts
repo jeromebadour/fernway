@@ -1,7 +1,7 @@
 // Fernway's plans (2026-11-10 03:14): priced by leads signed for in GHL. Held and returned leads never count.
 export const rates = [
   {
-    plan: "Starter", price: 19, leads: 500, note: "Forms, the embed and WordPress", team: "2 people",
+    plan: "Starter", price: 19, leads: 500, note: "Forms, the embed form and WordPress", team: "2 people",
     has: ["Trial, demo and contact forms with tracking receipts", "The embed form for any site or GHL funnel", "The WordPress plugin and Elementor widget"],
   },
   {

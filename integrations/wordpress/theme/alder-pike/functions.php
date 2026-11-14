@@ -90,7 +90,7 @@ function alder_pike_storm_season( array $args ) {
 		if ( 'note' === $part ) {
 			return __( 'Leaks get a crew within a day. Roof checks still go ahead between fronts, so the dry days fill first.', 'alder-pike' );
 		}
-		return 'number' === $part ? __( 'Now', 'alder-pike' ) : __( 'storm season is here', 'alder-pike' );
+		return 'number' === $part ? __( 'Now', 'alder-pike' ) : __( 'Storm season is here', 'alder-pike' );
 	}
 	if ( 'note' === $part ) {
 		return __( 'Checks booked in the next three weeks get done before the first big front. After that, our crew\'s diary fills with leaks.', 'alder-pike' );
@@ -101,7 +101,7 @@ function alder_pike_storm_season( array $args ) {
 		return (string) $days;
 	}
 	/* translators: shown under the number of days left */
-	return 1 === $days ? __( 'day until storm season', 'alder-pike' ) : __( 'days until storm season', 'alder-pike' );
+	return 1 === $days ? __( 'Day until storm season', 'alder-pike' ) : __( 'Days until storm season', 'alder-pike' );
 }
 
 /** Booking pages carry their own form, so the pinned "book" button on phones would only cover it. */

@@ -2,7 +2,7 @@
 // gate asks here. Nothing is ever deleted by a plan: a feature the plan doesn't cover is refused when someone sets it up,
 // and paused (never removed) if it was set up before, so moving up brings it back as it was.
 //
-// Starter: forms, the embed, WordPress, 2 people. Growth: adds bookings and Stripe payments in, 5 people. Scale: adds the API (and the Laravel
+// Starter: forms, the embed form, WordPress, 2 people. Growth: adds bookings and Stripe payments in, 5 people. Scale: adds the API (and the Laravel
 // package), webhooks out and Google Sheets, no team limit. Over a plan's leads, leads are still delivered; the owner is
 // asked to move up for the next month.
 import { eq } from "drizzle-orm";
@@ -57,7 +57,7 @@ export function entitlementOf(
   }
   // A trial tries everything, so a team can see the whole of Fernway before it picks.
   if (a.trialEndsAt && a.trialEndsAt > now) return { kind: "trial", plan: null, features: new Set(EVERYTHING), team: null, leads: null };
-  // Over, with no plan: the forms, the embed and WordPress keep delivering (no lead is lost), at Starter's size.
+  // Over, with no plan: the forms, the embed form and WordPress keep delivering (no lead is lost), at Starter's size.
   return { kind: "ended", plan: null, features: new Set(BY_PLAN.starter.features), team: BY_PLAN.starter.team, leads: null };
 }
 
