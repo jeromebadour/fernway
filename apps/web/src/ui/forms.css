@@ -1,4 +1,4 @@
-/* Public forms: fields that help as you type (BUILD-RULES, Kami 2026-11-10), and the waybill beside them. */
+/* Public forms: fields that help as you type (BUILD-RULES, 2026-11-10), and the waybill beside them. */
 .wb .fm-page { border-top: 0; padding-top: 80px; }
 .wb .fm-h1 { margin: 0; font: 600 56px/1.04 var(--font-body); letter-spacing: -0.035em; color: var(--paper); }
 .fm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 64px; align-items: start; }

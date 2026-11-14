@@ -1,4 +1,4 @@
-// Fernway's plans (Kami 2026-11-10 03:14): priced by leads signed for in GHL. Held and returned leads never count.
+// Fernway's plans (2026-11-10 03:14): priced by leads signed for in GHL. Held and returned leads never count.
 export const rates = [
   {
     plan: "Starter", price: 19, leads: 500, note: "Forms, the embed and WordPress", team: "2 people",

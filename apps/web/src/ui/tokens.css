@@ -1,4 +1,4 @@
-/* Fernway's world (G, Kami 2026-11-09 21:51): every lead is a tracked shipment.
+/* Fernway's world (2026-11-09 21:51): every lead is a tracked shipment.
    Palette from B Arrivals, type from B, layout language from A Waybill. One meaning per colour, the same everywhere.
    The public site is navy only; the console's light theme comes with plan step 6. */
 :root {
@@ -18,7 +18,7 @@
   --ok: #86c28f;         /* delivered, checked */
   --re: #a5aff2;         /* re-sent */
   --hazard: #e3b04f;     /* held, real problems only */
-  --stop: #d38a7c;       /* removes or ends something: delete, sign out, revoke (Kami's 2.2 meanings) */
+  --stop: #d38a7c;       /* removes or ends something: delete, sign out, revoke (BUILD-RULES 2.2 meanings) */
 
   /* type */
   --font-body: "Instrument Sans", system-ui, sans-serif;

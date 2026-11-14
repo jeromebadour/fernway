@@ -1,4 +1,4 @@
-// Small helps for the fields people type in, shared by every form (Kami 2026-11-10: the details make the site its own).
+// Small helps for the fields people type in, shared by every form (2026-11-10: the details make the site its own).
 
 // Free mail providers: a typo in one of these is caught, and an address at one of them never suggests a company name.
 const FREE = ["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "yahoo.com", "icloud.com", "me.com",
