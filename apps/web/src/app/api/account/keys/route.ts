@@ -14,8 +14,8 @@ export async function POST(request: Request) {
   if (!s.p.emailConfirmed) return answer(403, { ok: false, problems: ["label: confirm your email first; the link is in your inbox"] });
   if (!(await within(`keys:${s.p.accountId}`, 20))) return answer(429, { ok: false, problems: ["label: too many keys made this hour; wait, then try again"] });
   const { db } = delivery();
-  const r = await makeKey(db, s.p.accountId, s.p.userId, s.body.label);
+  const r = await makeKey(db, s.p.accountId, s.p.userId, s.body.label, s.body.kind ?? "api");
   if (!r.ok) return answer(422, r);
-  await audit(db, { accountId: s.p.accountId, userId: s.p.userId, name: s.p.name }, "key.made", { kind: "key", id: `fw_${r.prefix}_` }, String(s.body.label).trim());
+  await audit(db, { accountId: s.p.accountId, userId: s.p.userId, name: s.p.name }, "key.made", { kind: "key", id: `fw_${r.prefix}_` }, `${String(s.body.label).trim()}${s.body.kind === "wordpress" ? " (for WordPress)" : ""}`);
   return answer(201, r);
 }

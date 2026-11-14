@@ -91,8 +91,9 @@ export default async function Docs() {
           <thead><tr><th className="dc-num">#</th><th>Status</th><th>Means</th><th>Good to know</th></tr></thead>
           <tbody>
             <tr><td className="dc-num">1</td><td><code className="dc-no">401</code></td><td>No key, or a revoked one.</td><td>The key travels in the <code>Authorization</code> header.</td></tr>
-            <tr><td className="dc-num">2</td><td><code className="dc-no">422</code></td><td>The lead was refused at the door.</td><td>Each problem names its field and what the field needs.</td></tr>
-            <tr><td className="dc-num">3</td><td><code className="dc-no">429</code></td><td>Over the limit: {PER_KEY_MINUTE} requests a minute per key.</td><td><code>Retry-After</code> gives the wait in seconds; the same key sends nothing twice.</td></tr>
+            <tr><td className="dc-num">2</td><td><code className="dc-no">403</code></td><td>The plan doesn&rsquo;t include the API.</td><td>The API is on Scale; a key for Fernway for WordPress works on every plan.</td></tr>
+            <tr><td className="dc-num">3</td><td><code className="dc-no">422</code></td><td>The lead was refused at the door.</td><td>Each problem names its field and what the field needs.</td></tr>
+            <tr><td className="dc-num">4</td><td><code className="dc-no">429</code></td><td>Over the limit: {PER_KEY_MINUTE} requests a minute per key.</td><td><code>Retry-After</code> gives the wait in seconds; the same key sends nothing twice.</td></tr>
           </tbody>
         </table>
         <CodeBlock label="422 answer" code={JSON.stringify({ ok: false, problems: ["contact.email: a real email address"] }, null, 2)} />

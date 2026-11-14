@@ -132,7 +132,10 @@ export const apiKeys = pgTable("api_keys", {
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   madeBy: bigint("made_by", { mode: "number" }),
+  kind: text("kind").$type<KeyKind>().notNull().default("api"),
 });
+export const keyKinds = ["api", "wordpress"] as const;
+export type KeyKind = (typeof keyKinds)[number];
 
 export const routes = pgTable("routes", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),

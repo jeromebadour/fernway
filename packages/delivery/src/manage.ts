@@ -6,6 +6,8 @@ import { and, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type Actor } from "./console.js";
 import type { Db } from "./db.js";
+import { PLANS } from "./billing.js";
+import { entitlementFor, notOnPlan } from "./plans.js";
 import { hashPassword } from "./people.js";
 import { ghlConnections, invites, memberships, routes, sessions, users, type Role } from "./schema.js";
 
@@ -63,9 +65,17 @@ export async function saveRoute(db: Db, m: Manager, input: unknown, id?: number)
   const v = parsed.data;
   const tags = [...new Set(v.tags.map((t) => t.toLowerCase()))];
   const fields = { label: v.label, tags, pipelineId: v.pipelineId, stageId: v.stageId, calendarId: v.calendarId };
+  // A calendar is a booking: on a plan with bookings only. One kept from the trial can still be renamed (it stays paused).
+  const bookingCheck = async (was: string | null) => {
+    if (!fields.calendarId || fields.calendarId === was) return null;
+    const e = await entitlementFor(db, m.accountId);
+    return e.features.has("bookings") ? null : ({ ok: false, problems: [`calendarId: ${notOnPlan("bookings", e)}`] } as Problems);
+  };
 
   if (id === undefined) {
     if (!v.key) return { ok: false, problems: ["key: a key for the route"] };
+    const refused = await bookingCheck(null);
+    if (refused) return refused;
     const [n] = await db.select({ n: count() }).from(routes).where(eq(routes.accountId, m.accountId));
     if ((n?.n ?? 0) >= MAX_ROUTES) return { ok: false, problems: [`form: an account has ${MAX_ROUTES} routes at most`] };
     const [made] = await db.insert(routes).values({ accountId: m.accountId, key: v.key, ...fields }).onConflictDoNothing().returning({ id: routes.id });
@@ -77,6 +87,8 @@ export async function saveRoute(db: Db, m: Manager, input: unknown, id?: number)
   const [was] = await db.select().from(routes).where(and(eq(routes.id, id), eq(routes.accountId, m.accountId)));
   if (!was) return { ok: false, problems: ["form: that route is not in this account"] };
   if (v.key && v.key !== was.key) return { ok: false, problems: ["key: a route's key stays as it was made"] };
+  const refused = await bookingCheck(was.calendarId);
+  if (refused) return refused;
   const changed: string[] = [];
   if (was.label !== fields.label) changed.push(`name ${fields.label}`);
   if (was.tags.join(",") !== tags.join(",")) changed.push(`tags ${tags.join(", ") || "none"}`);
@@ -175,6 +187,12 @@ export async function invite(db: Db, m: Manager, input: unknown): Promise<{ ok: 
   if (taken) return { ok: false, problems: ["email: already has a Fernway account; one person belongs to one account for now"] };
   const t = await teamView(db, m.accountId);
   if (t.members.length + t.invites.length >= MAX_TEAM) return { ok: false, problems: [`form: a team has ${MAX_TEAM} people at most, invites included`] };
+  // The plan's team size (Starter 2, Growth 5), invites included.
+  const e = await entitlementFor(db, m.accountId);
+  if (e.team !== null && t.members.length + t.invites.length >= e.team) {
+    const on = e.plan ? PLANS[e.plan].name : "Your plan";
+    return { ok: false, problems: [`form: ${on} takes ${e.team} people, invites included. Move up in Plan and billing to add more.`] };
+  }
   const token = randomBytes(32).toString("base64url");
   const [made] = await db.insert(invites).values({
     accountId: m.accountId, email: v.email, role: v.role, tokenHash: sha(token), invitedBy: m.userId,

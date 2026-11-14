@@ -17,6 +17,7 @@ import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { formatWaybill, RETRY_WAITS_MS } from "@fernway/core";
 import type { Db } from "./db.js";
 import { audit, type Actor } from "./console.js";
+import { entitlementFor, lacking, notOnPlan } from "./plans.js";
 import { open, seal } from "./crypto.js";
 import type { Role } from "./schema.js";
 import { hookEvents, leadScores, routes, shipments, webhookDeliveries, webhookEndpoints, type HookEvent } from "./schema.js";
@@ -128,6 +129,8 @@ export type HookResult = { ok: true; id: number; secret?: string } | { ok: false
 /** Makes an endpoint (its secret shown once, in the answer) or changes one (its secret stays). Audited. */
 export async function saveHook(db: Db, key: Buffer, m: Actor & { role: Role }, d: HookDraft, insecureHosts: string[] = []): Promise<HookResult> {
   if (m.role !== "owner" && m.role !== "admin") return { ok: false, problems: ["only the owner or an admin may change webhooks"] };
+  const plan = await entitlementFor(db, m.accountId);
+  if (!plan.features.has("webhooks")) return { ok: false, problems: [`form: ${notOnPlan("webhooks", plan)}`] };
   const problems: string[] = [];
   const label = String(d.label ?? "").trim();
   if (label.length < 1 || label.length > 80) problems.push("label: a name, up to 80 characters");
@@ -190,7 +193,11 @@ function bodyFor(c: Ctx, id: string, type: HookEvent, s: typeof shipments.$infer
 }
 
 /** Notes each lead event (since the endpoint was made, within two days) for each endpoint that asked for it, once. */
-export async function noteHookEvents(c: Ctx, skipAccounts: number[] = []): Promise<number> {
+export async function noteHookEvents(c: Ctx, skip: number[] = []): Promise<number> {
+  // An account whose plan no longer has webhooks out is paused, not removed: its endpoints wait, and pick up again (for
+  // events still within two days) when the plan has them. Left out of the query, so it never crowds out the others.
+  const owners = await c.db.selectDistinct({ id: webhookEndpoints.accountId }).from(webhookEndpoints);
+  const skipAccounts = [...skip, ...(await lacking(c.db, owners.map((o) => o.id), "webhooks"))];
   const due = (await c.db.execute<{ endpoint_id: string; account_id: string; shipment_id: string; event: HookEvent }>(sql`
     select e.id endpoint_id, e.account_id, s.id shipment_id, ev.event
     from webhook_endpoints e
@@ -266,6 +273,8 @@ export async function sendDueHooks(c: SendCtx): Promise<HookRun> {
 /** Sends a test to one endpoint now and says what came back. */
 export async function testHook(c: SendCtx, m: Actor & { role: Role }, id: number): Promise<{ ok: true; delivered: boolean; status: number | null; answer: string; ms: number } | { ok: false; problems: string[] }> {
   if (m.role !== "owner" && m.role !== "admin") return { ok: false, problems: ["only the owner or an admin may send a test"] };
+  const plan = await entitlementFor(c.db, m.accountId);
+  if (!plan.features.has("webhooks")) return { ok: false, problems: [`form: ${notOnPlan("webhooks", plan)}`] };
   const [e] = await c.db.select().from(webhookEndpoints).where(and(eq(webhookEndpoints.id, id), eq(webhookEndpoints.accountId, m.accountId)));
   if (!e) return { ok: false, problems: ["form: that endpoint is not in this account"] };
   const payload: HookPayload = { id: `evt_${randomBytes(12).toString("base64url")}`, type: "fernway.test", created: new Date().toISOString(), data: { message: `A test from Fernway, sent by ${m.name}.` } };

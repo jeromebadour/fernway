@@ -14,6 +14,7 @@ import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "./db.js";
 import type { GhlAnswer, GhlClient, GhlConnection } from "./ghl.js";
 import { checkLead } from "./lead.js";
+import { entitlementFor, notOnPlan } from "./plans.js";
 import { routes, scans, shipments, type LeadContact, type ScanKind, type Step } from "./schema.js";
 
 export type Deps = {
@@ -50,6 +51,11 @@ export async function ingestLead(deps: Deps, accountId: number, input: unknown, 
     .from(routes)
     .where(and(eq(routes.accountId, accountId), eq(routes.key, lead.route)));
   if (!route) return { ok: false, problems: [`route: no route called "${lead.route}"`] };
+  // A booking route needs a plan with bookings (one made in the trial pauses after it, rather than book unpaid).
+  if (route.calendarId) {
+    const e = await entitlementFor(deps.db, accountId);
+    if (!e.features.has("bookings")) return { ok: false, problems: [`route: "${lead.route}" books meetings. ${notOnPlan("bookings", e)}`] };
+  }
   if (route.calendarId && !lead.slot) return { ok: false, problems: ["slot: a time for the meeting"] };
   if (!route.calendarId && lead.slot) return { ok: false, problems: [`slot: route "${lead.route}" books no meetings`] };
 

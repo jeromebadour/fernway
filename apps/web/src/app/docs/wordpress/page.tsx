@@ -52,7 +52,7 @@ const theme = `/* In your theme's style.css: the form takes your site's look. */
 }`;
 
 const settings: [string, string][] = [
-  ["API key", "Made in the console under API keys; shown once. The field never shows a saved key back."],
+  ["API key", "Made in the console under API keys, for Fernway for WordPress (every plan); shown once. The field never shows a saved key back."],
   ["Route", "Where a form's leads go in GHL, unless the form names its own."],
   ["Country", "Two letters. Phone numbers without a country code, and addresses, are read as this country's."],
   ["Service area", "ZIP codes or their first digits. An address outside is still sent; the form says you'll confirm."],
@@ -94,7 +94,7 @@ export default function WordPress() {
 
       <section id="connect" className="dc-sec">
         <h2><span className="dc-n">2</span>Connect it</h2>
-        <p>In WordPress, open Settings, Fernway. Paste an API key, name the route, and press Test connection: it checks the key with Fernway, and for a booking route, counts the free times in its GHL calendar.</p>
+        <p>In the console, make an API key for Fernway for WordPress: it works on every plan, and its leads always show as from WordPress. In WordPress, open Settings, Fernway. Paste the key, name the route, and press Test connection: it checks the key with Fernway, and for a booking route, counts the free times in its GHL calendar.</p>
         <table className="dc-table">
           <thead><tr><th className="dc-num">#</th><th>Setting</th><th>What it does</th></tr></thead>
           <tbody>{settings.map(([k, v], i) => <tr key={k}><td className="dc-num">{i + 1}</td><td>{k}</td><td>{v}</td></tr>)}</tbody>

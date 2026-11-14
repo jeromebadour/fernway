@@ -1,5 +1,5 @@
 import "server-only";
-import { accountForKey, apiProblem } from "@fernway/delivery";
+import { apiProblem, entitlementFor, keyFor, notOnPlan, type KeyKind } from "@fernway/delivery";
 import { delivery } from "./connect";
 import { demoAccount } from "./intake";
 import { redis } from "./redis";
@@ -24,12 +24,13 @@ async function count(key: string, ttl: number) {
 }
 
 /** The account behind the request's key, or the answer that turns it away. */
-export async function caller(request: Request, kind: "send" | "read"): Promise<{ accountId: number } | { refused: Response }> {
+export async function caller(request: Request, kind: "send" | "read"): Promise<{ accountId: number; keyKind: KeyKind } | { refused: Response }> {
   const auth = request.headers.get("authorization") ?? "";
   const raw = auth.match(/^Bearer\s+(\S+)$/i)?.[1];
   if (!raw) return { refused: problem(401, 'authorization: send your key as "Authorization: Bearer fw_..."') };
-  const accountId = await accountForKey(delivery().db, raw);
-  if (accountId === null) return { refused: problem(401, "authorization: that key isn't a live Fernway key") };
+  const key = await keyFor(delivery().db, raw);
+  if (key === null) return { refused: problem(401, "authorization: that key isn't a live Fernway key") };
+  const { accountId } = key;
 
   const busy = (why: string, wait: number) => ({ refused: answer(429, apiProblem.parse({ ok: false, problems: [`limit: ${why}`] }), { "Retry-After": String(wait) }) });
   if (accountId === demoAccount()) {
@@ -42,5 +43,10 @@ export async function caller(request: Request, kind: "send" | "read"): Promise<{
   } else if ((await count(`fernway:api:key:${raw.split("_")[1]}:${Math.floor(Date.now() / 60_000)}`, 70)) > PER_KEY_MINUTE) {
     return busy(`${PER_KEY_MINUTE} requests a minute per key; wait a moment`, 60);
   }
-  return { accountId };
+  // The plan line: a key for the account's own code needs a plan with the API; a WordPress key works on every plan.
+  if (key.kind === "api") {
+    const plan = await entitlementFor(delivery().db, accountId);
+    if (!plan.features.has("api")) return { refused: problem(403, `plan: ${notOnPlan("api", plan)} A key for Fernway for WordPress works on every plan.`) };
+  }
+  return { accountId, keyKind: key.kind };
 }

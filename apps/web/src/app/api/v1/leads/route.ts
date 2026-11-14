@@ -38,7 +38,9 @@ export async function POST(request: Request) {
       return problem(409, "slot: that time was just taken; read the route's slots again and pick another");
     }
   }
-  const r = await ingestLead(intake().deps, who.accountId, { ...body, source: typeof said === "string" ? (said as "import" | "wordpress" | "laravel") : "api" });
+  // A WordPress key's leads are WordPress's, whatever the call says: the source can't be used to cross the plan line.
+  const source = who.keyKind === "wordpress" ? "wordpress" : typeof said === "string" ? (said as "import" | "wordpress" | "laravel") : "api";
+  const r = await ingestLead(intake().deps, who.accountId, { ...body, source });
   if (booking && r.ok && !r.duplicate) await forgetTimes(route as string, who.accountId);
   if (!r.ok) return problem(422, ...r.problems);
 
