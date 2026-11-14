@@ -1,5 +1,6 @@
 import "server-only";
-// The operator console's public demo: an invented Fernway running 24 accounts, read the same way as the real one.
+// The operator console's public demo: an invented Fernway running 42 accounts (the newest listed), read the same way
+// as the real one. Alder & Pike Roofing is the same invented roofer as the WordPress demo site, alderpike.jeromebadour.com.
 // Every name, number and id here is made up; times are set back from now, so the demo always reads as live.
 import type { AccountDetail, AccountRow, BoxReading, IncidentRow, StaffRow, Watch } from "@fernway/delivery";
 import type { emailView, ghlView, overviewView, queueView, stripeView } from "@fernway/delivery";
@@ -16,6 +17,7 @@ export const demoStaff = { userId: 1, name: "Nora Whitlock", role: "owner" as co
 // [id, name, owner, email, plan, billing, people, leads30, held, ghl, created days ago]
 type Seed = [number, string, string, string, "starter" | "growth" | "scale" | null, string | null, number, number, number, "connected" | "needs_reconnect" | null, number];
 const seeds: Seed[] = [
+  [42, "Alder & Pike Roofing", "Owen Pike", "owen@alderpike.roofing", "growth", "active", 3, 742, 1, "connected", 21],
   [41, "Northpine Dental", "Lena Hartmann", "lena@northpine.dental", "growth", "active", 4, 1862, 2, "connected", 96],
   [40, "Cedar Lane Vets", "Tom Whitfield", "tom@cedarlanevets.com", "scale", "active", 9, 6410, 0, "connected", 91],
   [39, "Harbor Physio", "Maya Lindqvist", "maya@harborphysio.com", "growth", "active", 3, 2276, 6, "connected", 88],
@@ -62,7 +64,7 @@ export function demoWatches(): Watch[] {
 
 export function demoOverview(): Awaited<ReturnType<typeof overviewView>> {
   return {
-    accounts: 41, paying: 29, trial: 6, people: 118, leads24: 4318, signed24: 4290, held24: 11, dbBytes: 412e6, openIncidents: 2,
+    accounts: 42, paying: 30, trial: 6, people: 121, leads24: 4318, signed24: 4290, held24: 11, dbBytes: 412e6, openIncidents: 2,
     runs: {
       deploy: { ok: true, at: ago(26 * 60), detail: "c41e7a2: web and worker healthy" },
       backup: { ok: true, at: ago(9 * 60), detail: "dump 38.6 MB, checked" },
@@ -104,6 +106,7 @@ export function demoQueue(): Awaited<ReturnType<typeof queueView>> {
       { id: 34, name: "Northgate Gym", moving: 0, waiting: 3, held: 3 },
       { id: 35, name: "Porto Runners", moving: 0, waiting: 5, held: 0 },
       { id: 41, name: "Northpine Dental", moving: 1, waiting: 0, held: 2 },
+      { id: 42, name: "Alder & Pike Roofing", moving: 1, waiting: 0, held: 1 },
       { id: 37, name: "Lumen Studio", moving: 0, waiting: 0, held: 1 },
     ],
     perHour,
@@ -154,13 +157,17 @@ export function demoAccountDetail(id: number): AccountDetail | null {
     { userId: 400 + id, name: "Oskar Lund", email: `oskar@${domain}`, role: "member", twoStep: false, confirmed: false, lastSeenAt: null },
   ].slice(0, Math.min(4, a.people));
   const price: Record<string, number> = { starter: 1900, growth: 4900, scale: 14900 };
+  // Nothing older than the account itself: its age decides how many months of invoices and leads it can have.
+  const age = Math.round((now() - Date.parse(a.createdAt)) / 86_400_000);
+  const billed = [0, 1, 2].filter((k) => 13 + k * 30 <= age);
+  const total = Math.round(a.leads30 * Math.min(3, Math.max(1, age / 30)));
   return {
     id: a.id, name: a.name, createdAt: a.createdAt, trialEndsAt: a.trialEndsAt, plan: a.plan as AccountDetail["plan"], billing: a.billing as AccountDetail["billing"],
     periodEnd: a.plan ? ahead(17 * 1440) : null, cancelAtPeriodEnd: false,
     stripeCustomer: a.plan ? `cus_${first}${id}Qd8xPz` : null, stripeSubscription: a.plan ? `sub_1Qd${id}${first}Tn4R` : null,
     people: team,
-    leads: { total: a.leads30 * 3, d30: a.leads30, signed: a.leads30 * 3 - a.held - 3, held: a.held, returned: 1, moving: 2, lastAt: ago(4) },
-    invoices: a.plan ? [0, 1, 2].map((k) => ({ id: `in_${id}${k}x`, number: `${first.toUpperCase().slice(0, 4)}${id}-000${3 - k}`, status: k === 0 && a.billing === "past_due" ? "open" : "paid",
+    leads: { total, d30: a.leads30, signed: Math.max(0, total - a.held - 3), held: a.held, returned: 1, moving: 2, lastAt: ago(4) },
+    invoices: a.plan ? billed.map((k) => ({ id: `in_${id}${k}x`, number: `${first.toUpperCase().slice(0, 4)}${id}-000${billed.length - k}`, status: k === 0 && a.billing === "past_due" ? "open" : "paid",
       cents: price[a.plan!] ?? 0, currency: "usd", createdAt: daysAgo(13 + k * 30), plan: a.plan })) : [],
     events: [],
     ghl: a.ghl ? { location: locationOf(a.id), status: a.ghl, expiresAt: ahead(20 * 60), connectedAt: daysAgo(40), error: a.ghl === "needs_reconnect" ? "invalid_grant: refresh token is invalid or has been revoked" : null } : null,
