@@ -35,7 +35,8 @@ class TestCommand extends Command
             try {
                 $this->components->info("Route {$route} books meetings: ".count($client->slots($route)).' free times in the next 14 days.');
             } catch (Refused $e) {
-                $this->components->warn("Route {$route}: ".implode('; ', $e->problems).($e->status === 422 ? ' (a route without a calendar takes leads but books nothing)' : ''));
+                // Fernway says why in its own words (a route with no calendar takes leads but books nothing).
+                $this->components->warn("Route {$route}: ".implode('; ', $e->problems));
             } catch (Unreachable $e) {
                 $this->components->warn("Route {$route}: its calendar could not be read just now ({$e->getMessage()}).");
             }

@@ -736,7 +736,6 @@ jobs:
       - name: Laravel - a fresh Laravel 13 app installs Fernway for Laravel, sends through the real Fernway, and hears back signed
         run: |
           W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
-          psql() { $COMPOSE exec -T db psql -U postgres -d fernway "$@"; }
           KEY=$($W apikey 1 "Laravel CI" | tail -1)
           # Fernway's own endpoint for this app: http to the CI machine is allowed here only (compose.ci.yaml).
           SECRET=$($W hook 1 "Laravel CI" http://host.docker.internal:8899/fernway/webhook signed | tail -1)
