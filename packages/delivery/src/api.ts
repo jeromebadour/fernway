@@ -9,7 +9,7 @@ import { scanKinds, shipments, shipmentStates } from "./schema.js";
 
 /** A lead as an API caller sends it: the engine's own lead, with the source set by Fernway to "api". */
 export const apiLeadBody = leadInput.omit({ source: true }).extend({
-  source: z.literal("import").optional().describe("Leave it out, or \"import\" from an import tool, so the lead shows as imported. Fernway sets api otherwise."),
+  source: z.enum(["import", "wordpress", "laravel"]).optional().describe("Leave it out, and Fernway sets api. Fernway's own tools name themselves (\"import\" from the import tool, \"wordpress\" from Fernway for WordPress, \"laravel\" from Fernway for Laravel), so the receipt and the console say where the lead came from."),
 });
 
 const number = z.string().regex(/^FW \d{2} \d{5}$/).describe('The waybill number, e.g. "FW 26 00817".');

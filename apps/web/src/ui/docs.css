@@ -100,13 +100,20 @@
 
 @media (max-width: 1100px) { .dc-pair, .dc-pair-even { grid-template-columns: 1fr; } }
 @media (max-width: 900px) {
-  .dc { grid-template-columns: 1fr; gap: 28px; padding-top: 36px; }
+  /* minmax(0, 1fr): the column is the screen's width, never the width of its widest row (the rail's links ran 482 px
+     wide on a 390 px phone, and every docs page was clipped on the right). */
+  .dc { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 36px; }
   .dc-rail { position: static; }
   .dc-rail li ul { display: none; }
-  .dc-rail > ul { display: flex; gap: 6px; }
+  .dc-rail > ul { display: flex; flex-wrap: wrap; gap: 6px; }
   .dc-rail .dc-spec, .dc-rail > .wb-label { display: none !important; }
   /* On a phone, code wraps rather than hiding its end; Copy still copies it exactly as written. */
   .dc-code pre, .dc-answer pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* Long field names in a table break where they must, so the table stays the screen's width. */
+  .dc-table { width: 100%; }
+  .dc-table td, .wb .dc-main .dc-table td code { overflow-wrap: anywhere; word-break: break-word; }
+  .wb .dc-sec h2 { flex-wrap: wrap; }
+  .wb .dc-sec h2 code { min-width: 0; }
   .wb .dc-head .fm-h1 { font-size: 38px; }
   .dc-states > div { grid-template-columns: 34px 1fr; gap: 6px 0; }
   .dc-states dd { grid-column: 2; }
@@ -120,3 +127,20 @@
 .dc-by .bd-who { min-width: 0; }
 .dc-rail .dc-by a { display: flex !important; }
 @media (max-width: 900px) { .dc-by { display: none; } }
+
+/* WordPress: the download, with what it is (files, size, SHA-256), and a list whose lines each carry a glyph. */
+.dc-dl { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin: 4px 0 18px; padding: 18px 20px; border: 1px solid var(--line); border-top: 3px solid var(--go); background: var(--kraft); }
+.dc-dl dl { display: grid; gap: 4px; margin: 0; min-width: 0; flex: 1 1 320px; }
+.dc-dl dl div { display: flex; gap: 12px; min-width: 0; }
+.dc-dl dt { flex: none; width: 70px; font: 500 12.5px var(--font-mono); color: var(--muted); }
+.dc-dl dd { margin: 0; min-width: 0; font-size: 14px; color: var(--paper); overflow-wrap: anywhere; }
+.dc-dl dd code { font-size: 12.5px; }
+.dc-list { list-style: none; margin: 0 0 18px; padding: 0; max-width: 720px; }
+.dc-list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 16px; line-height: 1.6; color: #cfd8e3; }
+.dc-list li:last-child { border-bottom: 0; }
+.dc-list li svg { flex: none; margin-top: 5px; color: var(--ok); }
+.dc-list b { color: var(--paper); }
+.dc-dash { color: var(--muted); }
+.dc-sha { font: 500 12.5px/1.6 var(--font-mono); word-spacing: 2px; }
+.dc-nowrap { white-space: nowrap; }
+.dc-table td.dc-tone-signed { color: var(--ok); } .dc-table td.dc-tone-held { color: var(--hazard); } .dc-table td.dc-tone-waiting { color: var(--re); }

@@ -5,6 +5,9 @@ describe("the API's contract", () => {
   it("takes the engine's own lead, with no source (Fernway sets it)", () => {
     expect(apiLeadBody.safeParse({ idempotencyKey: "order-1001", route: "trial", contact: { email: "a@b.co" } }).success).toBe(true);
     expect(apiLeadBody.safeParse({ idempotencyKey: "order-1001", route: "trial", source: "api", contact: { email: "a@b.co" } }).success).toBe(false);
+    // Fernway's own tools name themselves; a caller can't claim any other way in (a form, a payment, the demo).
+    for (const source of ["import", "wordpress", "laravel"]) expect(apiLeadBody.safeParse({ idempotencyKey: "order-1001", route: "trial", source, contact: { email: "a@b.co" } }).success).toBe(true);
+    for (const source of ["form", "stripe", "demo", "workflow"]) expect(apiLeadBody.safeParse({ idempotencyKey: "order-1001", route: "trial", source, contact: { email: "a@b.co" } }).success).toBe(false);
   });
 
   it("documents both endpoints from the same schemas, request fields included", () => {
