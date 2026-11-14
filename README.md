@@ -86,4 +86,5 @@ npm run typecheck && npm run lint && npm run test:unit
 
 ## License
 
-All rights reserved (see `LICENSE`). Published to read as part of Jerome Badour's portfolio.
+Fernway itself: all rights reserved (see `LICENSE`), published to read as part of Jerome Badour's portfolio.
+The Laravel package in `integrations/laravel` is MIT, so any app may install and use it.

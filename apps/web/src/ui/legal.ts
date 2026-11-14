@@ -207,7 +207,7 @@ export const terms: LegalDoc = {
       id: "the-code",
       title: "The code",
       clauses: [
-        "Fernway's code is public on [GitHub](https://github.com/jeromebadour/fernway) to read. It is not open source: all rights are reserved.",
+        "Fernway's code is public on [GitHub](https://github.com/jeromebadour/fernway) to read. It is not open source: all rights are reserved. The one exception is the Laravel package (Fernway for Laravel), which is MIT licensed so any app may install and use it.",
         "GoHighLevel is a trademark of HighLevel, Inc. Fernway is not made, endorsed or checked by HighLevel.",
       ],
     },
@@ -215,7 +215,7 @@ export const terms: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "Version 1.1 added accounts and plans; version 1.2 says what the trial includes and what happens when it ends. If these terms change, the new version and its date appear here before it applies.",
+        "Version 1.1 added accounts and plans; version 1.2 says what the trial includes and what happens when it ends, and that the Laravel package is MIT. If these terms change, the new version and its date appear here before it applies.",
         `Questions: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },

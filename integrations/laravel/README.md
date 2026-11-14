@@ -74,3 +74,7 @@ Its own tests run on Laravel 12 (PHP 8.2) and 13 (PHP 8.4). Fernway's CI also in
 that sends real leads through Fernway into a stand-in GoHighLevel and receives Fernway's signed webhooks.
 
 Built by [Jerome Badour](https://jeromebadour.com). All rights reserved.
+
+## License
+
+MIT. See `LICENSE`.
