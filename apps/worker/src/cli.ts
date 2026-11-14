@@ -115,7 +115,7 @@ try {
       if (!rows.length) console.log(`no keys for account ${accountId}`);
       for (const r of rows) {
         const used = r.lastUsedAt ? `last used ${r.lastUsedAt.toISOString()}` : "never used";
-        console.log(`${r.prefix}  ${r.label}  ${used}${r.revokedAt ? `  REVOKED ${r.revokedAt.toISOString()}` : ""}`);
+        console.log(`${r.prefix}  ${r.kind}  ${r.label}  ${used}${r.revokedAt ? `  REVOKED ${r.revokedAt.toISOString()}` : ""}`);
       }
       break;
     }
