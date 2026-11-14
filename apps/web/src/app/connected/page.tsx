@@ -3,6 +3,8 @@ import "../not-found.css";
 import { GCheck, GMark, GRoute } from "@/ui/glyphs";
 
 // Where Connect GHL ends: what happened, in Fernway's words, and the way back.
+export const metadata = { title: "GHL connection · Fernway", robots: { index: false, follow: false } };
+
 const problems: Record<string, { title: string; text: string }> = {
   link: { title: "This connect link has expired.", text: "Connect links last 30 minutes. Make a new one and open it straight away." },
   expired: { title: "This connection attempt expired.", text: "Start again from the connect link, in the same browser, within 15 minutes." },

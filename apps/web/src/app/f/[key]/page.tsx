@@ -7,7 +7,7 @@ import "@/ui/forms.css";
 import "./embed.css";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Fernway form" };
+export const metadata: Metadata = { title: "Fernway form", robots: { index: false, follow: false } };
 
 // A Fernway embed form, as shown inside a customer's page (embed.js frames it) or opened from the console's Preview.
 // The form's own owner decides its fields, look and the sites allowed to show it; browsers enforce the sites through

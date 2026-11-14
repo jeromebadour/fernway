@@ -15,6 +15,8 @@ import { AccountNav } from "./nav";
 // The account area's frame: its own top bar (the signed-in person, sign out) and the sections down the left.
 export const dynamic = "force-dynamic";
 
+// Behind a sign-in: never in search results.
+export const metadata = { robots: { index: false, follow: false } };
 export default async function AccountLayout({ children }: { children: ReactNode }) {
   accountsOrNotFound();
   const m = await requirePerson();

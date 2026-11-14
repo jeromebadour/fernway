@@ -661,6 +661,9 @@ jobs:
           B=http://127.0.0.1
           curl -sf $B/ > /tmp/home.html
           grep -q "Know what your roof" /tmp/home.html; grep -q 'class="fernway fw-compact' /tmp/home.html; grep -q "Call me back" /tmp/home.html
+          # The tab icon is the theme's house mark; an invented business stays out of search (blog_public 0 prints noindex).
+          grep -q '<link rel="icon" type="image/svg+xml" href="[^"]*/alder-pike/assets/img/icon.svg"' /tmp/home.html
+          grep -q "<meta name='robots' content='noindex" /tmp/home.html
           curl -sf $B/roof-check/ > /tmp/rc.html
           grep -q 'class="fernway fw-full' /tmp/rc.html; grep -q 'name="fw_day"' /tmp/rc.html
           curl -s -o /dev/null -w '%{http_code}' $B/no-such-page/ | grep -qx 404; curl -s $B/no-such-page/ | grep -q "This page has a leak"
@@ -921,6 +924,19 @@ jobs:
           for p in / /pricing /trial /contact /demo /track /break-it /privacy /terms /about /docs /docs/api /delivery /status /changelog /api/slots /demo/operator /demo/operator/staff /demo/console /demo/console/team; do
             if curl -s -D - -o /dev/null $B$p | grep -qi '^set-cookie'; then echo "$p sets a cookie"; exit 1; fi
           done
+          # Search engines: the public pages are indexed; the demos, receipts and private areas never are; robots.txt and
+          # the sitemap agree; the tab icon is served.
+          curl -s $B/ | grep -q '<meta name="robots" content="index, follow"/>'
+          curl -s $B/pricing | grep -q '<meta name="robots" content="index, follow"/>'
+          curl -s $B/demo/console | grep -q '<meta name="robots" content="noindex, follow"/>'
+          curl -s $B/demo/operator | grep -q '<meta name="robots" content="noindex'
+          curl -s $B/robots.txt | grep -qx 'Disallow: /console'
+          curl -s $B/robots.txt | grep -qx 'Disallow: /track/'
+          curl -s $B/robots.txt | grep -q '^Sitemap: .*/sitemap.xml$'
+          curl -s $B/sitemap.xml | grep -q '<loc>.*/pricing</loc>'
+          if curl -s $B/sitemap.xml | grep -q '/demo/console\|/console<'; then echo "the sitemap lists a private page"; exit 1; fi
+          for i in /icon.svg /apple-icon.png /favicon.ico; do test "$(curl -s -o /dev/null -w '%{http_code}' $B$i)" = 200; done
+          curl -s $B/ | grep -q '<link rel="icon" href="/icon.svg'
 
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a

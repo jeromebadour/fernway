@@ -4,7 +4,7 @@ import { accountsOrNotFound } from "@/lib/accounts-on";
 import { GhlApp } from "./app";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Fernway" };
+export const metadata: Metadata = { title: "Fernway", robots: { index: false, follow: false } };
 
 // Fernway's page inside GoHighLevel's left menu. GHL frames it and tells it who is looking; no Fernway sign-in.
 export default function Page() {

@@ -13,8 +13,10 @@ export const metadata: Metadata = {
   title: "Fernway · Lead delivery for GoHighLevel",
   description:
     "Fernway carries every form, booking and payment from your site into GoHighLevel, re-sends anything GHL refuses, and keeps the receipt.",
-  // Not indexed until launch (plan step 11).
-  robots: { index: false, follow: false },
+  // Indexed since launch. Private areas (console, account, operator, receipts, links) set their own noindex, and
+  // robots.txt keeps crawlers out of them; tests in CI check both.
+  robots: { index: true, follow: true },
+  metadataBase: new URL(process.env.APP_URL ?? "https://fernway.jeromebadour.com"),
 };
 
 export const viewport: Viewport = { themeColor: "#0a1019" };
