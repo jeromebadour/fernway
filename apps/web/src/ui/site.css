@@ -27,6 +27,14 @@
 .wb-nav a:hover, .wb-nav a[aria-current="page"] { color: var(--paper); }
 .wb-nav a[aria-current="page"] svg { color: var(--go); }
 .wb-top-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+/* Signed in: the way back to the console, and the person, as the account area's bar shows them. */
+.wb-me { gap: 14px; }
+.wb-me-who { display: flex; align-items: center; gap: 10px; color: var(--paper); text-decoration: none; padding: 2px 4px 2px 2px; border: 1px solid transparent; }
+.wb-me-who:hover { border-color: var(--line); }
+.wb-me-who .wb-ava { width: 36px; height: 36px; font-size: 13px; }
+.wb-me-who > span:last-child { display: grid; line-height: 1.25; }
+.wb-me-who b { font-size: 14.5px; }
+.wb-me-who em { font-size: 12.5px; font-style: normal; color: var(--muted); }
 
 .wb-go, .wb-ghost { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; height: 40px; padding: 0 16px; }
 .wb-go { background: var(--go); color: var(--go-ink) !important; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); padding-right: 24px; }
@@ -251,6 +259,10 @@
   .wb-nav, .wb-top-right { display: none; }
   .wb-menu { display: grid; place-items: center; margin-left: auto; width: 44px; height: 44px; color: var(--paper);
     border: 1.5px solid var(--line); background: none; cursor: pointer; }
+  /* Signed in on a phone: the person's badge stays beside the menu, the way to their account. */
+  .wb-top-right.wb-me { display: flex; margin-left: auto; }
+  .wb-me .wb-ghost, .wb-me-who > span:last-child { display: none; }
+  .wb-me + .wb-menu { margin-left: 10px; }
   .wb-main { display: block; padding: 28px 20px 44px; }
   .wb-kicker { font-size: 13px; letter-spacing: 0.18em; margin-bottom: 16px; }
   .wb h1 { font-size: 42px; line-height: 1.04; letter-spacing: -0.03em; }

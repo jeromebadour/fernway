@@ -1,7 +1,10 @@
 // The public site's shared frame: the top bar, the footer and the phone's pinned trial button (styles in site.css).
 import Link from "next/link";
 import { JEROME } from "./builder";
-import { GDepot, GFind, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan, GSignIn, GUser } from "./glyphs";
+import { accountsOn } from "@/lib/accounts-on";
+import { cookies } from "next/headers";
+import { currentPerson, SESSION_COOKIE } from "@/lib/session";
+import { GDepot, GFind, GGrid, GManifest, GMark, GMenu, GOut, GPrice, GRoute, GScan, GSignIn, GUser } from "./glyphs";
 
 const nav = [
   { href: "/#how", label: "Product", G: GDepot },
@@ -11,7 +14,21 @@ const nav = [
   { href: "/track", label: "Track a lead", G: GFind },
 ];
 
-export function SiteHeader({ current }: { current?: string }) {
+/** Who is signed in, for the public pages: nobody when accounts are off, or the session can't be read. */
+// Reading the request's cookies first makes every page with this header drawn per request: a page built once, before
+// accounts were on or for someone else, would show everyone the same header.
+export async function signedIn() {
+  const jar = await cookies();
+  if (!accountsOn() || !jar.has(SESSION_COOKIE)) return null;
+  return currentPerson().catch(() => null);
+}
+
+const initialsOf = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+// Signed in, the right side is the person's own way back in (their console and account), as in the account area's
+// bar; signed out, it is the way in. Read on the server, so the page never shows one and then the other.
+export async function SiteHeader({ current }: { current?: string }) {
+  const me = await signedIn();
   return (
     <header className="wb-top">
       <Link className="wb-brand" href="/"><GMark /><span>FERNWAY</span></Link>
@@ -20,10 +37,20 @@ export function SiteHeader({ current }: { current?: string }) {
           <Link key={href} href={href} aria-current={current === href ? "page" : undefined}><G size={16} />{label}</Link>
         ))}
       </nav>
-      <div className="wb-top-right">
-        <Link className="wb-ghost" href="/sign-in"><GSignIn size={16} />Sign in</Link>
-        <Link className="wb-go" href="/trial"><GRoute size={16} />Start a trial</Link>
-      </div>
+      {me ? (
+        <div className="wb-top-right wb-me">
+          <Link className="wb-ghost" href="/console"><GGrid size={16} />Console</Link>
+          <Link className="wb-me-who" href="/account" aria-label={`Your account: ${me.name}`}>
+            <span className="wb-ava ac-ava">{initialsOf(me.name)}</span>
+            <span><b>{me.name}</b><em>{me.accountName}</em></span>
+          </Link>
+        </div>
+      ) : (
+        <div className="wb-top-right">
+          <Link className="wb-ghost" href="/sign-in"><GSignIn size={16} />Sign in</Link>
+          <Link className="wb-go" href="/trial"><GRoute size={16} />Start a trial</Link>
+        </div>
+      )}
       <button className="wb-menu" type="button" aria-label="Menu"><GMenu size={20} /></button>
     </header>
   );
@@ -53,6 +80,8 @@ export function SiteFooter() {
   );
 }
 
-export function Thumb() {
+/** The phone's pinned trial button: only for someone not signed in. */
+export async function Thumb() {
+  if (await signedIn()) return null;
   return <div className="wb-thumb"><Link className="wb-go" href="/trial"><GRoute size={18} />Start a 14-day trial</Link></div>;
 }

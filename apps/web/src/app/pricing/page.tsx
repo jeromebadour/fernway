@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "@/ui/site.css";
 import "./pricing.css";
-import { GCheck, GHold, GManifest, GPrice, GResend, GRoute, GScan } from "@/ui/glyphs";
+import { GCard, GCheck, GHold, GManifest, GPrice, GResend, GRoute, GScan } from "@/ui/glyphs";
 import { perLead, rates } from "@/ui/rates";
-import { SiteFooter, SiteHeader, Thumb } from "@/ui/site";
+import { SiteFooter, SiteHeader, signedIn, Thumb } from "@/ui/site";
 import { LostLeadCalculator } from "./calculator";
 
 export const metadata: Metadata = { title: "Pricing · Fernway" };
@@ -18,7 +18,8 @@ const counting = [
   { G: GRoute, tone: "go", what: "Over your plan", rule: "Still delivered.", how: "Nothing is cut off mid-month; we ask you to move up for the next one." },
 ];
 
-export default function Pricing() {
+export default async function Pricing() {
+  const me = await signedIn();
   return (
     <div className="wb">
       <SiteHeader current="/pricing" />
@@ -44,9 +45,16 @@ export default function Pricing() {
                 {has.map((h) => <li key={h}><GCheck size={14} />{h}</li>)}
                 <li><GCheck size={14} />Team: {team}</li>
               </ul>
-              <Link className={"pick" in r ? "wb-go pr-cta" : "wb-ghost pr-cta"} href={`/trial?plan=${plan.toLowerCase()}`}>
-                <GRoute size={16} />Try {plan} free for 14 days
-              </Link>
+              {/* Signed in, a plan is chosen where it is paid for: the account's billing page. */}
+              {me ? (
+                <Link className={"pick" in r ? "wb-go pr-cta" : "wb-ghost pr-cta"} href="/account/billing">
+                  <GCard size={16} />Choose {plan} in billing
+                </Link>
+              ) : (
+                <Link className={"pick" in r ? "wb-go pr-cta" : "wb-ghost pr-cta"} href={`/trial?plan=${plan.toLowerCase()}`}>
+                  <GRoute size={16} />Try {plan} free for 14 days
+                </Link>
+              )}
             </article>
           ))}
         </div>
