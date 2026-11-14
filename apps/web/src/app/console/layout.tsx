@@ -10,6 +10,7 @@ import { requirePerson } from "@/lib/session";
 import { ConsoleFrame } from "./_pages/frame";
 
 export const dynamic = "force-dynamic";
+export const metadata = { robots: { index: false, follow: false } };
 
 export default async function ConsoleLayout({ children }: { children: ReactNode }) {
   accountsOrNotFound();

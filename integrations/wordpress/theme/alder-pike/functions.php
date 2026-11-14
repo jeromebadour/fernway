@@ -104,6 +104,19 @@ function alder_pike_storm_season( array $args ) {
 	return 1 === $days ? __( 'Day until storm season', 'alder-pike' ) : __( 'Days until storm season', 'alder-pike' );
 }
 
+/** The tab icon: the house mark, unless the owner has set a Site Icon in WordPress (that one wins). */
+add_action(
+	'wp_head',
+	static function () {
+		if ( has_site_icon() ) {
+			return;
+		}
+		printf( '<link rel="icon" type="image/svg+xml" href="%s">' . "\n", esc_url( get_theme_file_uri( 'assets/img/icon.svg' ) ) );
+		printf( '<link rel="apple-touch-icon" href="%s">' . "\n", esc_url( get_theme_file_uri( 'assets/img/apple-icon.png' ) ) );
+	},
+	5
+);
+
 /** Booking pages carry their own form, so the pinned "book" button on phones would only cover it. */
 add_filter(
 	'body_class',
