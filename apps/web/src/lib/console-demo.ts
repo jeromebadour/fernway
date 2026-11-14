@@ -3,7 +3,7 @@ import "server-only";
 // stored: every lead is worked out from its place in line and the time now, so the board always reads as live, and the
 // same lead keeps its number, name and story between visits.
 import { formatWaybill, parseWaybill } from "@fernway/core";
-import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type SheetView, type HookView, type ShipmentState } from "@fernway/delivery";
+import { costOf, scoreTag, scoreWords, type AuditAction, type AuditGroup, type AuditTarget, type BoardView, type LeadScore, type LeadView, type LogRow, type LogState, type RouteRow, type ScoreView, type SheetView, type HookView, type ShipmentState, type StripeInView } from "@fernway/delivery";
 import type { ConsoleData, ConsoleWho } from "./console-data";
 import { demoWhen } from "./operator-demo";
 
@@ -20,6 +20,7 @@ const routes = [
   { id: 1, key: "booking", label: "Booking requests", tags: ["booking", "website"], pipelineId: "pipe_patients", stageId: "stage_new", calendarId: null },
   { id: 2, key: "contact", label: "Contact form", tags: ["contact"], pipelineId: null, stageId: null, calendarId: null },
   { id: 3, key: "assessment", label: "Free assessment", tags: ["assessment"], pipelineId: "pipe_patients", stageId: "stage_assessed", calendarId: "cal_assessment" },
+  { id: 4, key: "class-pack", label: "Paid class packs", tags: ["paid", "class-pack"], pipelineId: "pipe_patients", stageId: "stage_paid", calendarId: null },
 ];
 const reasons = {
   phone: '{"message":"The phone number is not valid for the country of the location"}',
@@ -40,8 +41,8 @@ function lead(i: number, now: number): Lead {
   const [first, last, company] = names[i % names.length]!;
   // About one lead every 26 minutes, busier in the day than at night.
   const created = now - (i * 26 + ((i * 37) % 13) + 3) * MIN - ((i * 7919) % 50_000);
-  const route = routes[[0, 0, 0, 0, 0, 0, 1, 1, 2, 2][i % 10]!]!;
-  const source = route.key === "contact" ? "api" : route.key === "assessment" ? "embed" : i % 3 === 0 ? "wordpress" : "form";
+  const route = routes[[0, 0, 0, 0, 0, 0, 1, 3, 2, 2][i % 10]!]!;
+  const source = route.key === "contact" ? "api" : route.key === "class-pack" ? "stripe" : route.key === "assessment" ? "embed" : i % 3 === 0 ? "wordpress" : "form";
   let state: ShipmentState = "signed", reason: string | null = null, nextAt: number | null = null;
   let tries = i % 23 === 0 ? 2 : 1;
   if (i === 0) state = "in_transit";
@@ -109,6 +110,23 @@ function hookView(now: number): HookView {
       { ...desk, madeBy: "Maya Lindqvist", createdAt: iso(now - 9 * 1440 * MIN), day: { delivered: 54, waiting: 0, failed: 0 }, lastAt: deliveries[2]!.at, lastStatus: 200 },
     ],
     deliveries,
+  };
+}
+
+// Stripe payments in: Maya linked the clinic's Stripe 20 days ago; each class pack paid online became a lead.
+const PACKS = [["Five-class pack", 9500], ["Ten-class pack", 17500], ["Mat Pilates month", 6000]] as const;
+function stripeView(now: number): StripeInView {
+  const since = now - 30 * 1440 * MIN;
+  const paid = all(now).filter((l) => l.route.key === "class-pack" && l.created >= since);
+  const pack = (l: Lead) => PACKS[l.i % PACKS.length]!;
+  return {
+    onPlan: true,
+    address: "https://fernway.jeromebadour.com/api/stripe/in/stin_demoHarborPhysio000000",
+    link: { token: "stin_demoHarborPhysio000000", routeKey: "class-pack", routeLabel: "Paid class packs", madeBy: "Maya Lindqvist", createdAt: iso(now - 20 * 1440 * MIN),
+      lastAt: iso(paid[0]?.created ?? now), lastResult: paid[0] ? `checkout cs_live_demo${paid[0].seq} picked up as ${paid[0].waybill}` : null },
+    leads30: paid.length,
+    latest: paid.slice(0, 5).map((l) => ({ id: l.id, waybill: l.waybill, state: l.state, tries: l.tries, name: who(l),
+      message: `Paid ${(pack(l)[1] / 100).toFixed(2)} GBP through Stripe (checkout cs_live_demo${l.seq}).`, at: iso(l.created) })),
   };
 }
 
@@ -275,6 +293,7 @@ const auditLines = (now: number) => {
     { who: "Jonas Berg", action: "lead.resent", targetKind: "lead", targetId: l(46), detail: "returned after 8 tries", at: at(180) },
     { who: "Sara Okafor", action: "leads.resent", targetKind: null, targetId: null, detail: "4 held for: Email is invalid", at: at(1200) },
     { who: "Maya Lindqvist", action: "member.invited", targetKind: "invite", targetId: "oskar.lund@harborphysio.com", detail: "as member", at: at(1440) },
+    { who: "Maya Lindqvist", action: "stripe.linked", targetKind: "stripe", targetId: "Stripe", detail: "paid checkouts to route Paid class packs", at: at(20 * 1440) },
     { who: "Sara Okafor", action: "member.joined", targetKind: "member", targetId: "3", detail: "as member", at: at(4 * 1440) },
     { who: "Jonas Berg", action: "member.invited", targetKind: "invite", targetId: "sara.okafor@harborphysio.com", detail: "as member", at: at(5 * 1440) },
     { who: "Jonas Berg", action: "hook.made", targetKind: "hook", targetId: "Clinic n8n", detail: "n8n.harborphysio.com · Signed for, Held, Scored", at: at(3 * 1440) },
@@ -293,7 +312,7 @@ const auditLines = (now: number) => {
     { who: "Maya Lindqvist", action: "plan.changed", targetKind: "plan", targetId: "growth", detail: "Growth, $49 a month", at: at(41 * 1440 + 30) },
   ];
 };
-const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."], hooks: ["hook."] };
+const groups: Record<AuditGroup, string[]> = { leads: ["lead.", "leads."], routes: ["route."], ghl: ["ghl."], team: ["member.", "invite."], keys: ["key."], plan: ["plan."], forms: ["form."], score: ["score."], sheet: ["sheet."], hooks: ["hook."], stripe: ["stripe."] };
 
 export function demoConsoleWho(): ConsoleWho {
   const now = Date.now();
@@ -306,6 +325,7 @@ export function demoConsoleWho(): ConsoleWho {
     score: async () => scoreView(now),
     sheet: async () => sheetView(now),
     hooks: async () => hookView(now),
+    stripe: async () => stripeView(now),
     scoreOf: async (id) => {
       const i = 900_000 + TOP - id;
       return Number.isInteger(i) && i >= 0 && i < N ? demoScore(lead(i, now), now) : null;
@@ -320,7 +340,7 @@ export function demoConsoleWho(): ConsoleWho {
     ],
     choices: async () => ({
       pipelines: [
-        { id: "pipe_patients", name: "Patients", stages: [{ id: "stage_new", name: "New booking" }, { id: "stage_assessed", name: "New assessment" }, { id: "stage_plan", name: "Treatment plan" }] },
+        { id: "pipe_patients", name: "Patients", stages: [{ id: "stage_new", name: "New booking" }, { id: "stage_assessed", name: "New assessment" }, { id: "stage_plan", name: "Treatment plan" }, { id: "stage_paid", name: "Paid class pack" }] },
         { id: "pipe_corporate", name: "Corporate wellness", stages: [{ id: "stage_enquiry", name: "Enquiry" }, { id: "stage_proposal", name: "Proposal sent" }] },
       ],
       calendars: [{ id: "cal_assessment", name: "Free assessment", minutes: 45 }, { id: "cal_followup", name: "Follow-up", minutes: 30 }],

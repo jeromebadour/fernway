@@ -35,6 +35,10 @@ export const GSheet = (p: P) => (<S {...p}><path d="M3 2h10l4 4v12H3z" /><path d
 export const GSignal = (p: P) => (<S {...p}><rect x="2" y="8" width="4" height="4" fill="currentColor" stroke="none" /><path d="M9 6a5 5 0 0 1 0 8" /><path d="M12 3a9 9 0 0 1 0 14" /><path d="M16 10h2" /></S>);
 export const GLoop = (p: P) => (<S {...p}><path d="M4 10a4 4 0 0 1 8 0a4 4 0 0 0 8 0" /><path d="M2 10h2" /></S>);
 export const GCard = (p: P) => (<S {...p}><rect x="2" y="4" width="16" height="12" /><path d="M2 8h16M5 13h4" /></S>);
+/** A payment arriving: a card with an arrow coming into it (Stripe payments in; GCard stays Fernway's own billing). */
+export const GPayIn = (p: P) => (<S {...p}><rect x="2" y="8" width="16" height="10" /><path d="M2 12h16M10 1v6M7 4l3 3 3-3" /></S>);
+/** A signing secret: a seal pressed on a sheet. */
+export const GSeal = (p: P) => (<S {...p}><path d="M3 2h10l4 4v12H3z" /><path d="M10 9l3 3-3 3-3-3z" /></S>);
 export const GGrid = (p: P) => (<S {...p}><rect x="3" y="2" width="14" height="16" /><path d="M3 7h14M3 12h14M9 2v16" /></S>);
 export const GMenu = (p: P) => (<S {...p}><path d="M3 5h14M3 10h14M3 15h9" /></S>);
 export const GHold = (p: P) => (<S {...p}><rect x="3" y="3" width="14" height="14" /><path d="M8 7v6M12 7v6" /></S>);

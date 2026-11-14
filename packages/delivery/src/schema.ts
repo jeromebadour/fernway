@@ -247,9 +247,9 @@ export const alerts = pgTable("alerts", {
 
 export const auditActions = ["lead.resent", "leads.resent", "route.made", "route.changed", "ghl.connected", "ghl.disconnected",
   "member.invited", "member.joined", "member.role", "member.removed", "invite.cancelled", "key.made", "key.revoked", "plan.changed",
-  "form.made", "form.changed", "form.revoked", "score.on", "score.off", "sheet.linked", "sheet.unlinked", "sheet.in.on", "sheet.in.off", "hook.made", "hook.changed", "hook.removed", "hook.resent"] as const;
+  "form.made", "form.changed", "form.revoked", "score.on", "score.off", "sheet.linked", "sheet.unlinked", "sheet.in.on", "sheet.in.off", "hook.made", "hook.changed", "hook.removed", "hook.resent", "stripe.linked", "stripe.changed", "stripe.unlinked"] as const;
 export type AuditAction = (typeof auditActions)[number];
-export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score" | "sheet" | "hook";
+export type AuditTarget = "lead" | "route" | "member" | "invite" | "key" | "ghl" | "plan" | "form" | "score" | "sheet" | "hook" | "stripe";
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   accountId: bigint("account_id", { mode: "number" }).notNull(),
@@ -467,4 +467,16 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   lastMs: integer("last_ms"),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** An account's own Stripe, linked by the signing secret of a Stripe webhook pointed at /api/stripe/in/<token>. */
+export const stripeLinks = pgTable("stripe_links", {
+  accountId: bigint("account_id", { mode: "number" }).primaryKey(),
+  token: text("token").notNull(),
+  secretSealed: text("secret_sealed").notNull(),
+  routeKey: text("route_key").notNull(),
+  madeBy: text("made_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastAt: timestamp("last_at", { withTimezone: true }),
+  lastResult: text("last_result"),
 });

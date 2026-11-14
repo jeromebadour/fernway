@@ -2,7 +2,7 @@
 // gate asks here. Nothing is ever deleted by a plan: a feature the plan doesn't cover is refused when someone sets it up,
 // and paused (never removed) if it was set up before, so moving up brings it back as it was.
 //
-// Starter: forms, the embed, WordPress, 2 people. Growth: adds bookings, 5 people. Scale: adds the API (and the Laravel
+// Starter: forms, the embed, WordPress, 2 people. Growth: adds bookings and Stripe payments in, 5 people. Scale: adds the API (and the Laravel
 // package), webhooks out and Google Sheets, no team limit. Over a plan's leads, leads are still delivered; the owner is
 // asked to move up for the next month.
 import { eq } from "drizzle-orm";
@@ -10,20 +10,21 @@ import { billingView, PLANS } from "./billing.js";
 import type { Db } from "./db.js";
 import { accounts, type BillingStatus, type PlanKey } from "./schema.js";
 
-export type Feature = "bookings" | "api" | "webhooks" | "sheets";
+export type Feature = "bookings" | "payments" | "api" | "webhooks" | "sheets";
 
 const BY_PLAN: Record<PlanKey, { features: Feature[]; team: number | null }> = {
   starter: { features: [], team: 2 },
-  growth: { features: ["bookings"], team: 5 },
-  scale: { features: ["bookings", "api", "webhooks", "sheets"], team: null },
+  growth: { features: ["bookings", "payments"], team: 5 },
+  scale: { features: ["bookings", "payments", "api", "webhooks", "sheets"], team: null },
 };
-const EVERYTHING: Feature[] = ["bookings", "api", "webhooks", "sheets"];
+const EVERYTHING: Feature[] = ["bookings", "payments", "api", "webhooks", "sheets"];
 
 /** The smallest plan with a feature: what a refusal tells the owner to move up to. */
-export const NEEDS: Record<Feature, PlanKey> = { bookings: "growth", api: "scale", webhooks: "scale", sheets: "scale" };
+export const NEEDS: Record<Feature, PlanKey> = { bookings: "growth", payments: "growth", api: "scale", webhooks: "scale", sheets: "scale" };
 
 const WORDS: Record<Feature, string> = {
   bookings: "Bookings",
+  payments: "Stripe payments",
   api: "The API",
   webhooks: "Webhooks out",
   sheets: "Google Sheets",
@@ -70,7 +71,7 @@ export async function entitlementFor(db: Db, accountId: number): Promise<Entitle
 /** The refusal, said the same way everywhere: what is missing, which plan has it, and what to do. */
 export function notOnPlan(f: Feature, e: Entitlement): string {
   const where = e.kind === "ended" ? "Your trial has ended" : e.plan ? `${PLANS[e.plan].name} doesn't include it` : "Not on this plan";
-  return `${WORDS[f]} ${f === "bookings" || f === "webhooks" ? "are" : "is"} on the ${PLANS[NEEDS[f]].name} plan. ${where}: pick a plan in Plan and billing.`;
+  return `${WORDS[f]} ${f === "bookings" || f === "webhooks" || f === "payments" ? "are" : "is"} on the ${PLANS[NEEDS[f]].name} plan. ${where}: pick a plan in Plan and billing.`;
 }
 
 /** The accounts among these whose plan lacks a feature, for the worker's loops (each account read once a run). */

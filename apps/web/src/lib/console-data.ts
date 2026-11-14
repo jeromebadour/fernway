@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, scoreOf, scoreView, sheetView, hookView, shipmentByWaybill, syncLog, teamView, trackToken,
+  auditView, boardView, connectionView, formsView, ghlEventsFor, leadView, routesView, scoreOf, scoreView, sheetView, hookView, stripeInView, shipmentByWaybill, syncLog, teamView, trackToken,
   type AuditGroup, type LogState, type Role,
 } from "@fernway/delivery";
 import type { When } from "@/ui/when";
@@ -22,6 +22,7 @@ export type ConsoleData = {
   score(): ReturnType<typeof scoreView>;
   sheet(): ReturnType<typeof sheetView>;
   hooks(): ReturnType<typeof hookView>;
+  stripe(): ReturnType<typeof stripeInView>;
   scoreOf(id: number): ReturnType<typeof scoreOf>;
   choices(): Promise<Choices>;
   connection(): ReturnType<typeof connectionView>;
@@ -52,6 +53,7 @@ export async function consoleWho(back: string): Promise<ConsoleWho> {
       score: () => scoreView(db, id),
       sheet: () => sheetView(db, id, sheetsClient()?.email ?? null),
       hooks: () => hookView(db, id),
+      stripe: () => stripeInView(db, cfg.key, id, process.env.APP_URL ?? "https://fernway.jeromebadour.com"),
       scoreOf: (sid) => scoreOf(db, id, sid),
       choices: () => ghlChoices(id),
       connection: () => connectionView(db, id),

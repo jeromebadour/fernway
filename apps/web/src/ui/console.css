@@ -503,3 +503,9 @@ a.wb-go.fm-btn { text-decoration: none; }
   .wh-meta { grid-column: 1 / -1; }
 }
 .wh-doc { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
+
+/* Stripe payments in: the address Stripe calls, and what Fernway did with its last call. */
+.si-addr { display: grid; gap: 8px; margin: 14px 0 0; }
+.si-last { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; color: #cfd8e3; font-size: 14.5px; line-height: 1.55; }
+.si-last > svg { flex: none; margin-top: 3px; color: var(--ok); }
+.si-last b { color: var(--paper); font-weight: 600; }

@@ -436,6 +436,47 @@ jobs:
           test "$(psql -At -c "select count(*) from webhook_deliveries where state = 'delivered'")" = 2
           test "$(psql -At -c "select count(*) from audit_log where action = 'hook.made'")" = 1
 
+      - name: Stripe payments in - a paid checkout from the account's own Stripe becomes one lead, signed for in GHL
+        run: |
+          W="$COMPOSE exec -T worker node apps/worker/dist/cli.js"
+          ACC=$(psql -At -c "select account_id from ghl_connections order by account_id limit 1")
+          ROUTE=$(psql -At -c "select key from routes where account_id = $ACC and calendar_id is null order by id limit 1")
+          SECRET=whsec_ci_$(openssl rand -hex 16)
+          # Linked from the command line, the secret on stdin; a route with a meeting time is refused.
+          if echo "$SECRET" | $W stripe-link $ACC demo > /tmp/s.txt 2>&1; then exit 1; fi
+          grep -q "a payment books nothing" /tmp/s.txt
+          TOKEN=$(echo "$SECRET" | $W stripe-link $ACC $ROUTE | grep -o 'stin_[A-Za-z0-9_-]*')
+          test "$(psql -At -c "select count(*) from stripe_links where account_id = $ACC and secret_sealed not like '%whsec_%'")" = 1
+          # Stripe's call, signed Stripe's way with the account's secret (a checkout event as Stripe sends it).
+          event() { node -e '
+            const c = require("crypto"), [id, sec, type] = process.argv.slice(1);
+            const body = JSON.stringify({ id: "evt_" + id, object: "event", type: type || "checkout.session.completed", data: { object: {
+              id: "cs_test_" + id, object: "checkout.session", payment_status: "paid", amount_total: 4900, currency: "usd",
+              customer_details: { name: "Ines Carvalho", email: "stripe-ci@northpine-ci.com", phone: "+1 503 555 0199", business_name: "Northpine Dental" } } } });
+            const t = Math.floor(Date.now() / 1000);
+            require("fs").writeFileSync("/tmp/ev.json", body);
+            console.log("t=" + t + ",v1=" + c.createHmac("sha256", sec).update(t + "." + body).digest("hex"));' "$@"; }
+          call() { curl -s -o /tmp/r.json -w '%{http_code}' -H "Stripe-Signature: $1" -H 'content-type: application/json' --data-binary @/tmp/ev.json http://127.0.0.1:3103/api/stripe/in/$TOKEN; }
+          SIG=$(event CI1 "$SECRET"); test "$(call "$SIG")" = 200; grep -q '"result":"picked up"' /tmp/r.json
+          WB=$(node -p 'JSON.parse(require("fs").readFileSync("/tmp/r.json")).waybill')
+          # Stripe sending it again, or its async success, is the same lead.
+          SIG=$(event CI1 "$SECRET"); test "$(call "$SIG")" = 200; grep -q "\"waybill\":\"$WB\"" /tmp/r.json
+          SIG=$(event CI1 "$SECRET" checkout.session.async_payment_succeeded); test "$(call "$SIG")" = 200; grep -q "\"waybill\":\"$WB\"" /tmp/r.json
+          test "$(psql -At -c "select count(*) from shipments where idempotency_key = 'stripe-cs_test_CI1' and source = 'stripe'")" = 1
+          for i in $(seq 1 30); do test "$(psql -At -c "select state from shipments where idempotency_key = 'stripe-cs_test_CI1'")" = signed && break; sleep 2; done
+          test "$(psql -At -c "select state from shipments where idempotency_key = 'stripe-cs_test_CI1'")" = signed
+          # Someone else's signature, and a stranger's address, are refused.
+          SIG=$(event CI2 whsec_not_this_account_0123456789); test "$(call "$SIG")" = 400
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Stripe-Signature: $SIG" --data-binary @/tmp/ev.json http://127.0.0.1:3103/api/stripe/in/stin_nobodyHere0123456789ab)" = 404
+          # On Starter the link is paused: 403, so Stripe keeps the payment and sends it again; nothing is made.
+          psql -q -c "update accounts set plan = 'starter', billing_status = 'active', trial_ends_at = now() - interval '1 day' where id = $ACC"
+          SIG=$(event CI3 "$SECRET"); test "$(call "$SIG")" = 403; grep -q "Stripe payments are on the Growth plan" /tmp/r.json
+          test "$(psql -At -c "select count(*) from shipments where idempotency_key = 'stripe-cs_test_CI3'")" = 0
+          psql -q -c "update accounts set plan = null, billing_status = null, trial_ends_at = null where id = $ACC"
+          test "$(call "$SIG")" = 200
+          $W stripe-link $ACC off | grep -q "Stripe unlinked"
+          SIG=$(event CI4 "$SECRET"); test "$(call "$SIG")" = 404
+          test "$(psql -At -c "select count(*) from audit_log where action in ('stripe.linked', 'stripe.unlinked')")" = 2
       - name: Make - the hot leads blueprint parses and holds placeholders, never a secret
         run: |
           python3 - <<'PY'
