@@ -55,38 +55,53 @@ $privacy = '<!-- wp:group {"align":"full","className":"ap-page","layout":{"type"
 	. '<!-- wp:paragraph --><p>The site sets no tracking cookies. WordPress keeps the last 50 sends in its own log so the form can be checked, and empties it after 30 days.</p><!-- /wp:paragraph -->'
 	. '</div><!-- /wp:group -->';
 
+// Each page: its title, the patterns it is made of, its template, and the line search results and link previews show.
 $pages = array(
-	'home'       => array( 'Home', array( 'hero', 'how-it-works', 'report-card', 'rain-season', 'work-orders', 'booking' ), '' ),
-	'services'   => array( 'Services', array( 'page-services' ), '' ),
-	'roof-check' => array( 'Book a free roof check', array( 'page-roof-check' ), 'page-booking' ),
-	'about'      => array( 'About', array( 'page-about' ), '' ),
-	'privacy'    => array( 'Privacy', null, '' ),
+	'home'       => array( 'Home', array( 'hero', 'how-it-works', 'report-card', 'rain-season', 'work-orders', 'booking' ), '',
+		'Alder & Pike Roofing, Tacoma: a free roof check with a report card in 48 hours, every part graded A to F, and a fixed price when work is needed.' ),
+	'services'   => array( 'Services', array( 'page-services' ), '',
+		'Leak repairs, full replacement, insurance claims, gutters and moss: each job starts from a line on your roof\'s report card, with its price.' ),
+	'roof-check' => array( 'Book a free roof check', array( 'page-roof-check' ), 'page-booking',
+		'Book a free roof check in Tacoma: pick a morning or an afternoon, and get your roof\'s report card within 48 hours.' ),
+	'about'      => array( 'About', array( 'page-about' ), '',
+		'Alder & Pike grades its own work too: the company\'s 2025 report card, and the crew behind every roof check.' ),
+	'privacy'    => array( 'Privacy', null, '', 'What this demo site keeps when you send its form, and for how long.' ),
 );
 
-foreach ( $pages as $slug => list( $title, $patterns, $template ) ) {
+// The demo follows the repo: a page whose content, template or line has changed in the theme is brought up to date;
+// one that already matches is kept, so running this again changes nothing.
+foreach ( $pages as $slug => list( $title, $patterns, $template, $excerpt ) ) {
+	$post = array(
+		'post_type'     => 'page',
+		'post_status'   => 'publish',
+		'post_name'     => $slug,
+		'post_title'    => $title,
+		'post_content'  => null === $patterns ? $privacy : alder_pike_setup_content( $patterns ),
+		'post_excerpt'  => $excerpt,
+		'page_template' => $template,
+	);
 	$existing = get_page_by_path( $slug, OBJECT, 'page' );
 	if ( $existing ) {
-		echo "page $slug: kept (id {$existing->ID})\n";
 		$ids[ $slug ] = $existing->ID;
-		continue;
+		$same = $existing->post_content === $post['post_content'] && $existing->post_excerpt === $excerpt
+			&& (string) get_page_template_slug( $existing->ID ) === $template;
+		if ( $same ) {
+			echo "page $slug: kept (id {$existing->ID})\n";
+			continue;
+		}
+		$post['ID'] = $existing->ID;
+		$id         = wp_update_post( $post, true );
+		$verb       = 'updated';
+	} else {
+		$id   = wp_insert_post( $post, true );
+		$verb = 'made';
 	}
-	$id = wp_insert_post(
-		array(
-			'post_type'    => 'page',
-			'post_status'  => 'publish',
-			'post_name'    => $slug,
-			'post_title'   => $title,
-			'post_content' => null === $patterns ? $privacy : alder_pike_setup_content( $patterns ),
-			'page_template' => $template,
-		),
-		true
-	);
 	if ( is_wp_error( $id ) ) {
 		fwrite( STDERR, "page $slug: " . $id->get_error_message() . "\n" );
 		exit( 1 );
 	}
 	$ids[ $slug ] = $id;
-	echo "page $slug: made (id $id)\n";
+	echo "page $slug: $verb (id $id)\n";
 }
 
 update_option( 'show_on_front', 'page' );

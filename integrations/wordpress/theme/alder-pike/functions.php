@@ -18,7 +18,20 @@ add_action(
 	static function () {
 		add_theme_support( 'editor-styles' );
 		add_editor_style( 'style.css' );
+		// A page's excerpt is its description: editable in the page's sidebar, printed below as the meta description.
+		add_post_type_support( 'page', 'excerpt' );
 	}
+);
+
+/** The line search results and link previews show: the page's own excerpt, when it has one. */
+add_action(
+	'wp_head',
+	static function () {
+		if ( is_singular() && has_excerpt() ) {
+			echo '<meta name="description" content="' . esc_attr( wp_strip_all_tags( get_the_excerpt() ) ) . '" />' . "\n";
+		}
+	},
+	1
 );
 
 add_action(
