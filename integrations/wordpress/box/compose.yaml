@@ -22,6 +22,8 @@ x-wp-env: &wp-env
   WORDPRESS_CONFIG_EXTRA: |
     if ( ! empty( $$_SERVER['HTTP_X_REAL_IP'] ) ) { $$_SERVER['REMOTE_ADDR'] = $$_SERVER['HTTP_X_REAL_IP']; }
     if ( ( $$_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '' ) === 'https' ) { $$_SERVER['HTTPS'] = 'on'; }
+    // The command line (setup.sh) writes pages too: it is the HTTPS site as well, so it never saves an http:// address.
+    if ( defined( 'WP_CLI' ) && WP_CLI ) { $$_SERVER['HTTPS'] = 'on'; }
     define( 'WP_HOME', 'https://alderpike.jeromebadour.com' );
     define( 'WP_SITEURL', 'https://alderpike.jeromebadour.com' );
     define( 'FORCE_SSL_ADMIN', true );
