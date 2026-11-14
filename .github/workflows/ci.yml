@@ -937,6 +937,11 @@ jobs:
           if curl -s $B/sitemap.xml | grep -q '/demo/console\|/console<'; then echo "the sitemap lists a private page"; exit 1; fi
           for i in /icon.svg /apple-icon.png /favicon.ico; do test "$(curl -s -o /dev/null -w '%{http_code}' $B$i)" = 200; done
           curl -s $B/ | grep -q '<link rel="icon" href="/icon.svg'
+          # The public deploys feed jeromebadour.com reads: its shape, days oldest first, no cookie, Alder & Pike by name.
+          curl -s $B/api/public/deploys | node -e 'const j=JSON.parse(require("fs").readFileSync(0)); if (j.live_since!=="2026-11-09"||!Array.isArray(j.deploys)||j.deploys[0]!=="2026-11-09"||!/^[0-9a-f]{7}$|^dev$/.test(j.commit)||j.deploys.some((d,i)=>!/^\d{4}-\d{2}-\d{2}$/.test(d)||(i&&d<=j.deploys[i-1]))) process.exit(1)'
+          curl -s "$B/api/public/deploys?site=alderpike" | grep -q '"live_since":"2026-11-13"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$B/api/public/deploys?site=nope")" = 404
+          if curl -s -D - -o /dev/null $B/api/public/deploys | grep -qi '^set-cookie'; then echo "the deploys feed sets a cookie"; exit 1; fi
 
       - name: A backup is made, and it restores
         # The real scripts, as root, as the box's timers run them: a checked pg_dump, then the restore test into a
