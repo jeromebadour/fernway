@@ -4,7 +4,7 @@
     "keywords": ["laravel", "gohighlevel", "ghl", "crm", "leads", "webhooks", "fernway"],
     "homepage": "https://fernway.jeromebadour.com/docs/laravel",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "authors": [{ "name": "Jerome Badour", "homepage": "https://jeromebadour.com" }],
     "require": {
         "php": "^8.2",

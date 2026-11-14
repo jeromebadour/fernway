@@ -151,8 +151,8 @@ export const privacy: LegalDoc = {
 export const terms: LegalDoc = {
   title: "Terms of Use",
   intro: "What Fernway is, what sending one of its forms does and doesn't do, and what you agree to by using it.",
-  version: "1.1",
-  effective: "11 November 2026",
+  version: "1.2",
+  effective: "14 November 2026",
   short: [
     "Fernway is a portfolio product, not a company or a service for sale.",
     "Accounts and plans work, but payments run in Stripe's test mode: nothing is ever charged.",
@@ -183,6 +183,7 @@ export const terms: LegalDoc = {
       title: "Accounts",
       clauses: [
         "**Sign up** opens a Fernway account on a 14-day trial, for you as its owner. Keep your password and recovery codes to yourself; you are responsible for what is done with your sign-in.",
+        "The trial includes everything Fernway does. If it ends before a plan is picked, forms, the embed form and the WordPress plugin keep delivering; bookings, Stripe payments, the API, webhooks out and Google Sheets pause, set up as they were, until a plan that includes them is picked; the team keeps everyone in it, but takes no one new past two people. Each plan includes what [Pricing](/pricing) lists for it. No plan, and no change of plan, deletes anything.",
         "Delete the account whenever you like from the account area; what that removes is set out in the [Privacy Policy](/privacy). An account that breaks these terms may be closed.",
       ],
     },
@@ -206,7 +207,7 @@ export const terms: LegalDoc = {
       id: "the-code",
       title: "The code",
       clauses: [
-        "Fernway's code is public on [GitHub](https://github.com/jeromebadour/fernway) to read. It is not open source: all rights are reserved.",
+        "Fernway's code is public on [GitHub](https://github.com/jeromebadour/fernway) to read. It is not open source: all rights are reserved. The one exception is the Laravel package (Fernway for Laravel), which is MIT licensed so any app may install and use it.",
         "GoHighLevel is a trademark of HighLevel, Inc. Fernway is not made, endorsed or checked by HighLevel.",
       ],
     },
@@ -214,7 +215,7 @@ export const terms: LegalDoc = {
       id: "changes",
       title: "Changes and contact",
       clauses: [
-        "If these terms change, the new version and its date appear here before it applies.",
+        "Version 1.1 added accounts and plans; version 1.2 says what the trial includes and what happens when it ends, and that the Laravel package is MIT. If these terms change, the new version and its date appear here before it applies.",
         `Questions: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`,
       ],
     },
