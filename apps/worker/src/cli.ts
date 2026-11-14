@@ -40,6 +40,8 @@ import {
   ghlConnections,
   ingestLead,
   keyFrom,
+  linkStripe,
+  unlinkStripe,
   lookupKey,
   PLANS,
   planKeys,
@@ -242,6 +244,23 @@ try {
       const r = await setSheetIn(db, sheets, m, args[1] === "off" ? null : (args[1] ?? fail("a route, or off")));
       if (!r.ok) fail(r.problems.join("; "));
       console.log(args[1] === "off" ? `account ${acc}: Leads in off` : `account ${acc}: Leads in on; its rows become leads on ${args[1]}`);
+      break;
+    }
+    case "stripe-link": {
+      // stripe-link <account> <route>   (the Stripe webhook's signing secret on stdin, never on the command line)
+      // stripe-link <account> off
+      const acc = accountArg(args[0]);
+      const m = { accountId: acc, userId: null, name: "Fernway (setup tool)", role: "owner" as const };
+      if (args[1] === "off") {
+        console.log((await unlinkStripe(db, m)) ? `account ${acc}: Stripe unlinked` : `account ${acc}: no Stripe linked`);
+        break;
+      }
+      const route = args[1] ?? fail("stripe-link <account> <route>, with the signing secret on stdin; or stripe-link <account> off");
+      let secret = "";
+      for await (const chunk of process.stdin) secret += chunk;
+      const r = await linkStripe(db, key, m, { secret: secret.trim(), route });
+      if (!r.ok) { fail(r.problems.join("; ")); break; }
+      console.log(`account ${acc}: Stripe linked; paid checkouts become leads on ${route}; Stripe calls /api/stripe/in/${r.token}`);
       break;
     }
     case "sheet-tab": {

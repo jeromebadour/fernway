@@ -28,3 +28,4 @@ export * from "./score.js";
 export * from "./sheets.js";
 export * from "./hooks.js";
 export * from "./plans.js";
+export * from "./stripe-in.js";

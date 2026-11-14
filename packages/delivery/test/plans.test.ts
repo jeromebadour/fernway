@@ -18,13 +18,13 @@ describe("who gets what", () => {
   it("an account Fernway's operator made (no trial, no plan) carries everything", () => {
     const e = entitlementOf({ plan: null, billingStatus: null, trialEndsAt: null }, now);
     expect(e).toMatchObject({ kind: "house", team: null, leads: null });
-    expect([...e.features].sort()).toEqual(["api", "bookings", "sheets", "webhooks"]);
+    expect([...e.features].sort()).toEqual(["api", "bookings", "payments", "sheets", "webhooks"]);
   });
 
   it("a trial tries everything, and once over with no plan keeps only what Starter has", () => {
     const trial = entitlementOf({ plan: null, billingStatus: null, trialEndsAt: new Date(now.getTime() + day) }, now);
     expect(trial.kind).toBe("trial");
-    expect(trial.features.size).toBe(4);
+    expect(trial.features.size).toBe(5);
     const ended = entitlementOf({ plan: null, billingStatus: null, trialEndsAt: new Date(now.getTime() - day) }, now);
     expect(ended).toMatchObject({ kind: "ended", team: 2 });
     expect(ended.features.size).toBe(0);
@@ -35,9 +35,9 @@ describe("who gets what", () => {
     expect(at("starter")).toMatchObject({ kind: "plan", team: 2, leads: 500 });
     expect([...at("starter").features]).toEqual([]);
     expect(at("growth")).toMatchObject({ team: 5, leads: 5000 });
-    expect([...at("growth").features]).toEqual(["bookings"]);
+    expect([...at("growth").features]).toEqual(["bookings", "payments"]);
     expect(at("scale")).toMatchObject({ team: null, leads: 25000 });
-    expect([...at("scale").features].sort()).toEqual(["api", "bookings", "sheets", "webhooks"]);
+    expect([...at("scale").features].sort()).toEqual(["api", "bookings", "payments", "sheets", "webhooks"]);
   });
 
   it("a payment being retried keeps the plan; a cancelled one falls back like an ended trial", () => {

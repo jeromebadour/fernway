@@ -1,7 +1,7 @@
 import type { ConsoleWho } from "@/lib/console-data";
 import Link from "next/link";
 import { auditGroups, type AuditGroup } from "@fernway/delivery";
-import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GScore, GSheet, GShield, GSignal, GSignUp, GTrash, GUser, GWidget } from "@/ui/glyphs";
+import { GCard, GKey, GMail, GNodes, GRecord, GResend, GRoute, GScore, GSheet, GShield, GPayIn, GSignal, GSignUp, GTrash, GUser, GWidget } from "@/ui/glyphs";
 import { Pager } from "@/ui/pager";
 import { stamp } from "@/ui/when";
 
@@ -35,9 +35,12 @@ const said: Record<string, { word: string; G: G; tone: string }> = {
   "hook.changed": { word: "Changed a webhook endpoint", G: GSignal, tone: "in" },
   "hook.removed": { word: "Removed a webhook endpoint", G: GSignal, tone: "hz" },
   "hook.resent": { word: "Resent a webhook delivery", G: GSignal, tone: "re" },
+  "stripe.linked": { word: "Linked Stripe", G: GPayIn, tone: "ok" },
+  "stripe.changed": { word: "Changed the Stripe link", G: GPayIn, tone: "in" },
+  "stripe.unlinked": { word: "Unlinked Stripe", G: GPayIn, tone: "hz" },
 };
 const groups: { k: AuditGroup | "all"; label: string }[] = [
-  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "score", label: "Lead score" }, { k: "sheet", label: "Google Sheets" }, { k: "hooks", label: "Webhooks" }, { k: "ghl", label: "GHL" },
+  { k: "all", label: "All" }, { k: "leads", label: "Leads" }, { k: "routes", label: "Routes" }, { k: "forms", label: "Embed forms" }, { k: "score", label: "Lead score" }, { k: "sheet", label: "Google Sheets" }, { k: "hooks", label: "Webhooks" }, { k: "stripe", label: "Stripe payments" }, { k: "ghl", label: "GHL" },
   { k: "team", label: "Team" }, { k: "keys", label: "API keys" }, { k: "plan", label: "Plan" },
 ];
 
@@ -57,6 +60,7 @@ export async function Audit({ who, searchParams }: { who: ConsoleWho; searchPara
     if (r.targetKind === "ghl") return <Link className="ad-t" href={`${who.base}/ghl`}><code>{r.targetId}</code></Link>;
     if (r.targetKind === "form") return <Link className="ad-t" href={`${who.base}/forms`}>{r.targetId}</Link>;
     if (r.targetKind === "hook") return <Link className="ad-t" href={`${who.base}/webhooks`}>{r.targetId}</Link>;
+    if (r.targetKind === "stripe") return <Link className="ad-t" href={`${who.base}/stripe`}>{r.targetId}</Link>;
     if (r.targetKind === "sheet") return <Link className="ad-t" href={`${who.base}/sheets`}>{r.targetId}</Link>;
     if (r.targetKind === "score") return <Link className="ad-t" href={`${who.base}/score`}>{r.targetId}</Link>;
     if (r.targetKind === "member") return <Link className="ad-t" href={`${who.base}/team`}>Team</Link>;

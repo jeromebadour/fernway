@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GGrid, GManifest, GNodes, GRecord, GRoute, GScore, GSheet, GSignal, GUser, GWidget } from "@/ui/glyphs";
+import { GGrid, GManifest, GNodes, GPayIn, GRecord, GRoute, GScore, GSheet, GSignal, GUser, GWidget } from "@/ui/glyphs";
 
 const sections = [
   { href: "", label: "Delivery board", G: GGrid },
@@ -10,6 +10,7 @@ const sections = [
   { href: "/forms", label: "Embed forms", G: GWidget },
   { href: "/score", label: "Lead score", G: GScore },
   { href: "/sheets", label: "Google Sheets", G: GSheet },
+  { href: "/stripe", label: "Stripe payments", G: GPayIn },
   { href: "/webhooks", label: "Webhooks", G: GSignal },
   { href: "/ghl", label: "GHL connection", G: GNodes },
   { href: "/team", label: "Team", G: GUser },
