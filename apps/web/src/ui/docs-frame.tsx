@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import "./site.css";
 import "./forms.css";
 import "./docs.css";
-import { GBrackets, GDown, GJump, GManifest, GPlay, GSignal } from "./glyphs";
+import { GBlocks, GBrackets, GDown, GJump, GManifest, GPlay, GSignal } from "./glyphs";
 import { BuilderCard } from "./builder";
 import { SiteFooter, SiteHeader } from "./site";
 
@@ -12,6 +12,7 @@ const pages = [
   { href: "/docs", label: "Quick start", G: GPlay },
   { href: "/docs/api", label: "API reference", G: GBrackets },
   { href: "/docs/webhooks", label: "Webhooks", G: GSignal },
+  { href: "/docs/wordpress", label: "WordPress", G: GBlocks },
 ];
 
 export function DocsFrame({ current, sections, children }: { current: string; sections: { id: string; label: string }[]; children: ReactNode }) {

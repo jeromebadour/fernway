@@ -20,3 +20,5 @@ npm-debug.log*
 dump.rdb
 apps/web/changelog.txt
 apps/web/src/ui/changelog.json
+apps/web/src/ui/plugin-zip.json
+apps/web/public/downloads/

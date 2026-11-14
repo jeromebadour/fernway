@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "pretypecheck": "node scripts/changelog.mjs",
-    "prebuild": "node scripts/changelog.mjs",
+    "pretypecheck": "node scripts/changelog.mjs && node scripts/plugin-zip.mjs",
+    "prebuild": "node scripts/changelog.mjs && node scripts/plugin-zip.mjs",
     "dev": "next dev -p 3103",
     "build": "next build",
     "start": "next start -p 3103",

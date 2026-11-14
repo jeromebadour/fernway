@@ -153,7 +153,7 @@ final class Form {
 		set_transient( $bucket, $count + 1, HOUR_IN_SECONDS );
 
 		$key  = preg_match( '/^[A-Za-z0-9-]{8,80}$/', (string) ( $in['fw_key'] ?? '' ) ) ? (string) $in['fw_key'] : wp_generate_uuid4();
-		$body = array( 'idempotencyKey' => 'wp-' . $key, 'route' => $settings['route'], 'contact' => $lead['contact'] );
+		$body = array( 'idempotencyKey' => 'wp-' . $key, 'source' => 'wordpress', 'route' => $settings['route'], 'contact' => $lead['contact'] );
 		if ( $lead['slot'] ) {
 			$body['slot'] = $lead['slot'];
 		}

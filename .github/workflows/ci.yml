@@ -633,6 +633,8 @@ jobs:
           curl -s 127.0.0.1:4010/__contacts | python3 -c "
           import json,sys; c=[x for x in json.load(sys.stdin) if x.get('email')=='dana@example.com'][-1]
           assert (c['address1'],c['city'],c['state'],c['postalCode'],c['country'],c['phone'])==('14 Cedar Ln','Tacoma','WA','98406','US','+12535550142'), c"
+          # The plugin names itself, so Fernway's receipt and console say the lead came from WordPress.
+          test "$($COMPOSE exec -T db psql -U postgres -d fernway -Atc "select count(*) from shipments where source = 'wordpress'")" -ge 1
           # The calendar file carries Fernway's own meeting time.
           curl -sfG $B/wp-json/fernway/v1/calendar --data-urlencode "n=$N" --data-urlencode "t=$T" | grep -q "^DTSTART:"
           # The same send again (a double click, a retry) is the same lead; the log says so, and holds no visitor data.
@@ -701,6 +703,10 @@ jobs:
             -v $WPDIR/box/alderpike-limits.conf:/etc/nginx/conf.d/alderpike-limits.conf:ro -v $WPDIR/box/alderpike-app.conf:/etc/nginx/snippets/alderpike-app.conf:ro \
             -v $WPDIR/box/nginx-alderpike:/etc/nginx/conf.d/zz-alderpike.conf:ro nginx:stable nginx -t
           bash -n $WPDIR/box/setup.sh; bash -n $WPDIR/box/connect.sh
+          # The download on /docs/wordpress is this plugin, file for file, and the page shows the zip's own SHA-256.
+          curl -sf http://127.0.0.1:3103/downloads/fernway-for-wordpress.zip -o /tmp/fw-wp.zip
+          rm -rf /tmp/fw-wp && mkdir /tmp/fw-wp && unzip -q /tmp/fw-wp.zip -d /tmp/fw-wp && diff -r /tmp/fw-wp/fernway $WPDIR/plugin/fernway
+          S=$(sha256sum /tmp/fw-wp.zip | cut -c1-16); curl -sf http://127.0.0.1:3103/docs/wordpress | grep -q "$S"
 
       - name: Accounts, end to end (switched on for this step only; production keeps them off)
         run: |

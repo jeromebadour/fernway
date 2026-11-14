@@ -77,6 +77,11 @@ function Responses({ op }: { op: Op }) {
   );
 }
 
+/** An API path that may break only after a slash on a narrow screen, never inside a word. */
+function Path({ p }: { p: string }) {
+  return <>{p.split("/").map((part, i) => (i === 0 ? part : <span key={i}>/<wbr />{part}</span>))}</>;
+}
+
 export default function ApiReference() {
   const doc = openApi(appUrl());
   const post = doc.paths["/api/v1/leads"].post as unknown as Op;
@@ -104,7 +109,7 @@ export default function ApiReference() {
       </section>
 
       <section id="send" className="dc-sec">
-        <h2><span className="dc-verb dc-post">POST</span><code>/api/v1/leads</code></h2>
+        <h2><span className="dc-verb dc-post">POST</span><code><Path p="/api/v1/leads" /></code></h2>
         <p className="dc-sum">{post.summary}. {post.description}</p>
         <h3>Body</h3>
         <table className="dc-table dc-fields">
@@ -122,7 +127,7 @@ export default function ApiReference() {
       </section>
 
       <section id="get" className="dc-sec">
-        <h2><span className="dc-verb dc-get">GET</span><code>/api/v1/leads/{"{number}"}</code></h2>
+        <h2><span className="dc-verb dc-get">GET</span><code><Path p="/api/v1/leads/{number}" /></code></h2>
         <p className="dc-sum">{get.summary}. {get.description} The number goes in the path with dashes: <code>FW-26-00817</code>.</p>
         <CodeBlock label="200 answer" code={JSON.stringify(examples.lead817, null, 2)} />
         <h3>Answers</h3>
@@ -130,7 +135,7 @@ export default function ApiReference() {
       </section>
 
       <section id="slots" className="dc-sec">
-        <h2><span className="dc-verb dc-get">GET</span><code>/api/v1/routes/{"{route}"}/slots</code></h2>
+        <h2><span className="dc-verb dc-get">GET</span><code><Path p="/api/v1/routes/{route}/slots" /></code></h2>
         <p className="dc-sum">{slots.summary}. {slots.description}</p>
         <p>Show the times in your visitor&rsquo;s own time zone. If someone took the picked time in between, sending the lead answers <code>409</code> and nothing is made.</p>
         <div className="dc-pair dc-pair-even">
